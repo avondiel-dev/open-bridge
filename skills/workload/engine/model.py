@@ -143,8 +143,8 @@ EVIDENCE = ("exit-code", "log-trace", "delivery-receipt")
 NOTIFY_ON = ("failure", "timeout", "missing")
 
 TOP_LEVEL_KEYS = ("schema_version", "scope", "id", "title", "purpose", "persona_ref",
-                  "placement", "schedule", "execution", "response", "reconcile",
-                  "retired", "learned_from")
+                  "system", "placement", "schedule", "execution", "response",
+                  "reconcile", "retired", "learned_from")
 
 #: Kinds the Bridge both owns AND executes, so they need a deadline and evidence.
 EXECUTED_KINDS = ("recurring", "interval", "watch", "oneshot")
@@ -294,6 +294,12 @@ MANDANT_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 #: collision cannot be introduced later by naming one.
 PERSONA_PATTERN = re.compile(r"^(_shared|_infrastructure|[a-z][a-z0-9-]*)$")
 PERSON_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+#: Which larger thing a run is a part of. Same shape rule as the hat above and
+#: the same reason for a reserved answer: `_standalone` is a run somebody looked
+#: at and found to stand alone, while absent is a run nobody classified. The two
+#: carry different advice, so they must not print the same.
+SYSTEM_PATTERN = re.compile(r"^(_standalone|[a-z][a-z0-9-]*)$")
 
 
 def unsafe_reason(value) -> str:
@@ -504,6 +510,10 @@ class Workload:
     #: or None for UNDECIDED, which is a third state and not a synonym for
     #: either reserved answer.
     persona_ref: Optional[str] = None
+    #: Which larger thing this run is a part of. A slug, `_standalone`, or None
+    #: for UNDECIDED. Membership is carried, never derived: two runs belong
+    #: together because both say so, not because their names rhyme.
+    system: Optional[str] = None
     schedule: Schedule = field(default_factory=Schedule)
     execution: Execution = field(default_factory=Execution)
     response: Response = field(default_factory=Response)
@@ -612,6 +622,7 @@ def load_declaration(path: Path) -> Workload:
         scope=scope,
         title=raw.get("title"),
         persona_ref=raw.get("persona_ref"),
+        system=raw.get("system"),
         schedule=schedule,
         execution=execution,
         response=response,
@@ -1449,6 +1460,15 @@ def validate(raw: Mapping, *, source: str) -> list:
         add("persona_ref",
             f"{persona!r} is not a persona slug: it must match {PERSONA_PATTERN.pattern}",
             "name the slug under identity/personas/, or _shared / _infrastructure")
+
+    # The system a run belongs to. Same shape rule, and deliberately no read:
+    # a system of one is legitimate while the second half is still being built,
+    # so "no other declaration names this" is not an error to raise here.
+    system = raw.get("system")
+    if system is not None and not SYSTEM_PATTERN.match(str(system)):
+        add("system",
+            f"{system!r} is not a system slug: it must match {SYSTEM_PATTERN.pattern}",
+            "name the system this run is part of, or _standalone")
 
     # retiring means a reason, because a rename loses the why
     retired = raw.get("retired")

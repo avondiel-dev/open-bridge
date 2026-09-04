@@ -24,6 +24,17 @@ purpose: "<One sentence: what this exists for. Required.>"
 # a persona slug must match ^[a-z][a-z0-9-]*$.
 # persona_ref: <persona-slug>
 
+# Optional. WHICH LARGER THING this run is a part of, which is a different
+# question from the hat above: that one is about whose work it is, this one is
+# about what breaks with it. An agent, its tunnel and the puller that feeds it
+# are three runs and one system.
+#   <slug>        the system's name. Members are found by carrying the same one;
+#                 nothing else has to agree, least of all their labels.
+#   _standalone   looked at, and it runs alone. Absent means UNDECIDED, which is
+#                 a third state: "nobody classified this" and "this stands
+#                 alone" carry different advice.
+# system: <slug>
+
 # ── 1 · HOW IT IS PROVISIONED ────────────────────────────────────────────────
 placement:
   host: <host>                  # slug under infra/remotes/ (e.g. my-server), or `local`

@@ -1098,6 +1098,42 @@ class TheTwoGatesAnswerTheSameWay(CoreHygiene):
                     f"{name} passes the hand written gate AND would be started, so "
                     f"it belongs in the case above and not on this list")
 
+    def test_both_gates_know_the_same_top_level_keys(self):
+        # The OTHER direction, and the one the cases above cannot see. They ask
+        # whether a declaration the schema REFUSES gets started anyway. A key
+        # that exists in one allowlist and not the other fails the opposite way
+        # and just as quietly:
+        #
+        #   only in the schema  -> `load_declaration` refuses it as an unknown
+        #                          top level key, so a declaration that passes
+        #                          CI is rejected on the machine.
+        #   only in TOP_LEVEL_KEYS -> the loader takes it and the document gate
+        #                          refuses it under `additionalProperties: false`,
+        #                          so it runs here and fails every downstream
+        #                          instance that validates.
+        #
+        # Both were reachable by adding a field to one file and forgetting the
+        # other, which is a two-file edit nobody's review catches by reading.
+        import yaml
+
+        schema_path = self.real_schema()
+        if schema_path is None:
+            self.skipTest("no workflow/workloads/_schema.yaml above this copy of the "
+                          "skill: the document gate lives in the repository, so a "
+                          "detached copy cannot compare the two allowlists")
+        schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        self.assertIs(schema.get("additionalProperties"), False,
+                      "this comparison is only load bearing while the schema closes "
+                      "the top level; an open schema accepts keys the loader refuses")
+        documented = set(schema.get("properties") or {})
+        self.assertTrue(documented, "the schema declares no top level properties, so "
+                                    "this check would pass over nothing")
+        self.assertEqual(documented, set(model.TOP_LEVEL_KEYS),
+                         "the document gate and the loader disagree about which top "
+                         "level keys exist: "
+                         f"only in the schema {sorted(documented - set(model.TOP_LEVEL_KEYS))}, "
+                         f"only in TOP_LEVEL_KEYS {sorted(set(model.TOP_LEVEL_KEYS) - documented)}")
+
 
 class EveryConfigKeySteersSomething(MachineGuard):
     """A key the loader parses and nothing ever consults is not a setting.
