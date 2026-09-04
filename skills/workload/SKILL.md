@@ -435,12 +435,27 @@ Four of those are worth spelling out, because each one used to be a `0`:
   reader's own day when the two have parted: a grid of hours belongs to no day,
   and without the sentence yesterday's calendar and today's are one picture.
 
-- **The page opens with what needs a person, not with an inventory.** Every
-  finding this skill produces carries a HINT, its own sentence about what to do
-  next, and until 2026-08-27 no renderer had ever put one on a page. The block
-  lists the findings above `info` with that sentence, each linking to its own
-  row, and it invents nothing: every word in it is on the page further down. An
-  all clear is a SENTENCE and not an empty box, and it says what it is a
+- **The page opens with what needs a person, not with an inventory** — as a
+  COUNT and a way to the rows, never as a second copy of them. Every finding
+  this skill produces carries a HINT, its own sentence about what to do next,
+  and until 2026-08-27 no renderer had ever put one on a page. It now sits in
+  the row the finding belongs to, next to the finding itself.
+
+  Until 2026-09-04 the opening block instead wrote every finding out in full, a
+  second time: the same detail and the same hint that its own row already
+  carried. Measured on the live page, twenty-five entries over a table holding
+  the same twenty-five. That is not a summary, it is a second account, and on
+  the day the two disagree one of them is wrong with no way to tell which. The
+  opening line now states how many findings on how many runs, and offers the
+  `attention` facet as the way there; the reader filters the table they already
+  have instead of reading a copy of it.
+
+  The shortcut PRESSES the pill rather than filtering on its own, so the pill's
+  state and the table can never disagree, and it is drawn only where the pill
+  exists — a facet appears from two values up, so on a page where every run
+  needs a person there is no pill and therefore no button.
+
+  An all clear is a SENTENCE and not an empty box, and it says what it is a
   statement about ("what was measured, never a promise about what was not"),
   because an empty box teaches a reader to skip the one place that will one day
   not be empty.
