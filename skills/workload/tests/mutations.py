@@ -2940,8 +2940,12 @@ MUTATIONS = (
         name="a-section-heading-counts-the-whole-table",
         file="engine/view.py",
         # Retargeted 2026-08-27: the groups are sections of the table now.
-        search="        body.append(_group_head_html(band, title, len(here), on))",
-        replace="        body.append(_group_head_html(band, title, len(in_service), on))",
+        # Retargeted 2026-09-04: the section list is computed, so the loop hands
+        # over a key and its own rows instead of iterating LANE_GROUPS.
+        search="""        body.append(_group_head_html(key, title, len(here), on,
+                                     with_scale=with_scale))""",
+        replace="""        body.append(_group_head_html(key, title, len(in_service), on,
+                                     with_scale=with_scale))""",
         test="tests.test_view.TheDayDrawsNoBeatItDidNotMeasure"
              ".test_a_section_counts_only_the_runs_under_it",
         scar="every heading claims the whole day, so three groups of five, ten "
@@ -3065,7 +3069,10 @@ MUTATIONS = (
     Mutation(
         name="one-ruler-at-the-top-again",
         file="engine/view.py",
-        search='    scale = "" if band == "unplaced" else (',
+        # Retargeted 2026-09-04: the ruler follows the section's own answer
+        # instead of being re-derived from the band, because on the system
+        # axis any section can hold runs that are not on the day.
+        search='    scale = "" if not with_scale else (',
         replace='    scale = "" and (',
         test="tests.test_view.TheRulerStaysWithinReachOfItsTracks"
              ".test_every_section_that_draws_a_day_carries_its_own_ruler",
@@ -3075,7 +3082,10 @@ MUTATIONS = (
     Mutation(
         name="a-ruler-over-the-runs-that-are-not-on-the-day",
         file="engine/view.py",
-        search='    scale = "" if band == "unplaced" else (',
+        # Retargeted 2026-09-04: the ruler follows the section's own answer
+        # instead of being re-derived from the band, because on the system
+        # axis any section can hold runs that are not on the day.
+        search='    scale = "" if not with_scale else (',
         replace='    scale = "" if False else (',
         test="tests.test_view.TheRulerStaysWithinReachOfItsTracks"
              ".test_the_section_that_places_nothing_carries_no_ruler",

@@ -68,8 +68,8 @@ workload render     <id> [--offline --uid U --home P]
 workload provision  <id> [--dry-run] [--yes] [--force] [--accept-degraded] [--enable]
 workload adopt      <id> [--yes]        # a hand made unit: declare its placement.label_prefix
 workload reconcile  [<id>...] [--all] [--host H] [--no-probe] [--verbose] [--propose-inventory] [--json] [--notify]
-workload view       [<id>...] [--host H] [--no-probe] [--out PATH] --now STAMP [--poll-sec S]
-workload publish    [<id>...] [--host H] [--no-probe] --to HOST --dest DIR --now STAMP [--page-name NAME] [--attach PATH]... [--url URL] [--stale-after-min N] [--poll-sec S] [--yes]
+workload view       [<id>...] [--host H] [--no-probe] [--out PATH] --now STAMP [--poll-sec S] [--group-by band|system]
+workload publish    [<id>...] [--host H] [--no-probe] --to HOST --dest DIR --now STAMP [--page-name NAME] [--attach PATH]... [--url URL] [--stale-after-min N] [--poll-sec S] [--group-by band|system] [--yes]
 workload retire     <id> --reason TEXT [--superseded-by ID] [--keep-artifact] [--yes] [--dry-run]
 ```
 
@@ -89,6 +89,28 @@ Four of those are worth spelling out, because each one used to be a `0`:
   a yes, and this is the only command that stops a running service. It is the one
   place where a bare command line does not preview: ask for the preview with
   `--dry-run`, which reports what it would do and exits `1`.
+- `--group-by` decides which question the table is sectioned by, and there are
+  two because there are two questions. `band` (the default) sections by WHEN a
+  run fires and draws byte for byte the page this drew before the flag existed.
+  `system` sections by WHAT a run is a part of, read off the declarations' own
+  `system:` field, which is how an agent, its tunnel and the puller that feeds
+  it appear as one block instead of three rows in three different sections.
+
+  The default does not move, and that is the point: an axis that silently
+  re-sectioned an operations page would make every reader re-learn a page they
+  already knew, for a question they may not have been asking.
+
+  A heading and its rows are paired by ONE attribute, which the page's own
+  script compares literally in order to hide a heading whose rows were all
+  filtered away. Both halves therefore come out of `_sections` and are never
+  computed twice; keyed apart, every heading would count zero rows and the
+  table would vanish the first time somebody typed in the search box. That
+  invariant is asserted on BOTH axes, not on the new one alone.
+
+  A run naming no system is NOT folded in with the ones that stand alone on
+  purpose. `_standalone` was looked at, absent was not, and only one of the two
+  asks the reader for anything.
+
 - `view` and `publish` render the same page: a 24 hour calendar first, then
   what is in service, then what is retired as a counted sentence, then the
   entries a machine's inventory file names that nothing knows, then a count of

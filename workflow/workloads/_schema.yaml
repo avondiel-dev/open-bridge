@@ -99,6 +99,41 @@ properties:
       detector. It does not check that identity/personas/<slug>.yaml exists;
       only a read can answer that.
 
+  system:
+    type: string
+    pattern: "^(_standalone|[a-z][a-z0-9-]*)$"
+    description: |
+      WHICH LARGER THING this run is a part of. A slug an instance chooses, the
+      reserved `_standalone`, or absent for UNDECIDED, which is a third state
+      and deliberately not a synonym for either answer.
+
+      This is not `persona_ref` asked twice. That field answers whose hat a run
+      wears, which is a question about billing, handover and what happens when
+      a sphere ends. This one answers what breaks with it, which is a question
+      about operating the machine. The two cut across each other: on the
+      instance this field was written for, one sphere held twenty of
+      thirty-eight runs, and inside it sat four independent systems whose only
+      connection was that the same person owns them.
+
+      The need is not cosmetic either, and it shows up first in the names. A
+      run declared as `x-puller` that feeds an agent declared as `y-agent` says
+      nothing about that anywhere a machine can read it: the connection lives
+      in the purpose line as prose, and a reader six months later has to
+      reconstruct it. Renaming is the wrong repair, because a launchd label is
+      held deliberately (`placement.label_prefix` exists for exactly that), so
+      the relation has to be DECLARED rather than spelled.
+
+      Absent is kept apart from `_standalone` for the reason the reserved
+      answers exist above: a run nobody has classified would otherwise read
+      exactly like a run somebody looked at and found to stand alone, and the
+      advice under the second is "nothing to do" while the advice under the
+      first is "decide".
+
+      A SHAPE rule, like every reference in this file. It does not check that
+      any other declaration names the same system, and it does not have to: a
+      system of one is a legitimate answer on the day the second half is still
+      being built.
+
   placement:
     type: object
     required: [host, kind, runtime, owner]

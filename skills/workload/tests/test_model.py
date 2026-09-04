@@ -1292,6 +1292,82 @@ class BothGatesKnowTheHat(MachineGuard):
                                        source="hat-test.yaml")
                 self.assertEqual([f for f in found if "persona_ref" in str(f)], [])
 
+
+class BothGatesKnowTheSystem(MachineGuard):
+    """`system` must pass BOTH gates, exactly like the hat above.
+
+    The field answers a different question from `persona_ref` and the two are
+    kept apart on purpose. The hat is about whose work a run is, which decides
+    billing, a handover, and what happens when a sphere ends. The system is
+    about what breaks with it. On the instance this was written for, one hat
+    held twenty of thirty-eight runs and four independent systems sat inside it,
+    so the hat could not answer the operating question even in principle.
+
+    Membership is CARRIED and never derived. Deriving it from the name was the
+    obvious shortcut and it is wrong on the real data: a puller feeding an agent
+    shared no prefix with it in two of three cases, and renaming was already
+    ruled out because a launchd label is held deliberately.
+    """
+
+    def _decl(self, **extra):
+        base = {
+            "schema_version": 1, "scope": "user", "id": "system-test",
+            "purpose": "a declaration used to test the system reference",
+            "placement": {"host": "host-a", "kind": "daemon",
+                          "runtime": "launchd", "owner": "human"},
+        }
+        base.update(extra)
+        return base
+
+    def _write(self, raw):
+        import tempfile, yaml, pathlib
+        d = pathlib.Path(tempfile.mkdtemp())
+        f = d / "system-test.yaml"
+        f.write_text(yaml.safe_dump(raw, allow_unicode=True), encoding="utf-8")
+        return f
+
+    def test_the_loader_accepts_a_system_slug(self):
+        w = model.load_declaration(self._write(self._decl(system="an-agent")))
+        self.assertEqual(w.system, "an-agent")
+
+    def test_the_loader_accepts_the_reserved_answer(self):
+        w = model.load_declaration(self._write(self._decl(system="_standalone")))
+        self.assertEqual(w.system, "_standalone")
+
+    def test_absent_is_a_third_state_and_not_standalone(self):
+        # The whole reason `_standalone` exists. Without it a run nobody
+        # classified would read exactly like one somebody looked at and found to
+        # run alone, and the advice under those two is not the same.
+        w = model.load_declaration(self._write(self._decl()))
+        self.assertIsNone(w.system)
+
+    def test_a_written_out_name_is_refused_by_the_shape(self):
+        found = model.validate(self._decl(system="Knowledge Agent"),
+                               source="system-test.yaml")
+        self.assertTrue([f for f in found if "system" in str(f)],
+                        "a written-out name passed the hand-written gate")
+
+    def test_an_invented_reserved_word_is_refused(self):
+        found = model.validate(self._decl(system="_everything"),
+                               source="system-test.yaml")
+        self.assertTrue([f for f in found if "system" in str(f)],
+                        "an underscore word nobody defined was accepted as reserved")
+
+    def test_and_a_good_one_leaves_the_gate_silent(self):
+        for ok in ("an-agent", "loop", "_standalone"):
+            with self.subTest(value=ok):
+                found = model.validate(self._decl(system=ok),
+                                       source="system-test.yaml")
+                self.assertEqual([f for f in found if "system" in str(f)], [])
+
+    def test_a_system_of_one_is_not_an_error(self):
+        # No cross-file read here, deliberately. While the second half of a
+        # system is still being built, the first half naming it is correct and
+        # a validator that refused it would push the author to lie or to wait.
+        found = model.validate(self._decl(system="half-built"),
+                               source="system-test.yaml")
+        self.assertEqual([f for f in found if "system" in str(f)], [])
+
 class EvidenceNothingWillWrite(MachineGuard):
     """A declaration may not name an evidence its own artifact never produces.
 
