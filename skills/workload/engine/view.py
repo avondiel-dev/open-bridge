@@ -859,7 +859,17 @@ if (typeof document !== 'undefined') {
     bar.hidden = false;
     var chosen = {};
 
-    var FACETS = ['kind', 'persona', 'host', 'runtime', 'state'];
+    /* Aus den gerenderten Knöpfen, nie aus einer zweiten Liste. Eine Facette
+       ohne Knopf kann niemand wählen, also braucht sie hier auch keinen Eintrag;
+       und eine Facette MIT Knopf ist damit garantiert bekannt. Vorher stand die
+       Liste hier als Literal, und ein Knopf, den sie nicht kannte, hätte beim
+       Druck jede Zeile versteckt. */
+    var FACETS = [];
+    Array.prototype.forEach.call(
+      bar.querySelectorAll('[data-facet]'), function (b) {
+        var f = b.getAttribute('data-facet');
+        if (f && FACETS.indexOf(f) === -1) { FACETS.push(f); }
+      });
     function matches(group) {
       var have = {};
       FACETS.forEach(function (facet) {
@@ -929,6 +939,22 @@ if (typeof document !== 'undefined') {
           apply();
         });
       });
+    /* Die Abkürzung im Banner ist KEIN zweiter Filter, sie drückt die Pille.
+       Ein Codeweg, damit der Zustand der Pille und das, was die Tabelle zeigt,
+       nicht auseinanderlaufen können. Findet sie keine Pille, tut sie nichts
+       und sagt es, statt eine Auswahl vorzutäuschen, die niemand sieht. */
+    var shortcut = document.querySelector('#attention button[data-facet]');
+    if (shortcut) {
+      shortcut.addEventListener('click', function () {
+        var pill = bar.querySelector(
+          'button[data-facet="' + shortcut.getAttribute('data-facet')
+          + '"][data-value="' + shortcut.getAttribute('data-value') + '"]');
+        if (!pill) { return; }
+        pill.click();
+        shortcut.setAttribute('aria-pressed', pill.getAttribute('aria-pressed'));
+      });
+    }
+
     var clear = bar.querySelector('button.clear');
     if (clear) {
       clear.addEventListener('click', function () {
@@ -936,6 +962,7 @@ if (typeof document !== 'undefined') {
         if (box) { box.value = ''; }
         Array.prototype.forEach.call(bar.querySelectorAll('button[data-facet]'),
           function (b) { b.setAttribute('aria-pressed', 'false'); });
+        if (shortcut) { shortcut.setAttribute('aria-pressed', 'false'); }
         apply();
       });
     }
@@ -2924,14 +2951,14 @@ def _facets_html(rows) -> str:
     """
     if not rows:
         return ""
-    facets = (("kind", "kind"), ("persona", "sphere"),
-              ("host", "host"), ("runtime", "runtime"), ("state", "state"))
     out = []
-    for key, label in facets:
+    for key, label in FACETS:
         counts = {}
         for row in rows:
             if key == "state":
                 values = sorted({_state(f) for f in row.findings}) or [UNREPORTED]
+            elif key == "attention":
+                values = [_attention_of(row)]
             else:
                 values = [str(getattr(row, key, "") or "")]
             for value in values:
@@ -3117,6 +3144,38 @@ _RANK = {"high": 0, "medium": 1, "info": 2}
 #: state of a healthy machine and would drown the two that are not.
 NEEDS_A_PERSON = ("high", "medium")
 
+#: Was ein Lauf in der Aufmerksamkeits-Facette trägt. Zwei Werte, weil es zwei
+#: Antworten gibt und nicht drei: entweder will dieser Lauf etwas von einem
+#: Menschen, oder er berichtet.
+ATTENTION_OPEN = "needs-a-person"
+ATTENTION_INFO = "information"
+
+
+def _attention_of(row) -> str:
+    """Ob dieser Lauf einen Menschen braucht, aus seinen eigenen Befunden.
+
+    Abgeleitet und nie getragen: die Schwere steht schon in jedem Befund, und
+    ein zweites Feld daneben wäre eine zweite Wahrheit, die am Tag der ersten
+    Abweichung die falsche ist.
+    """
+    return (ATTENTION_OPEN
+            if any(_sev(f) in NEEDS_A_PERSON for f in row.findings)
+            else ATTENTION_INFO)
+
+
+#: Die Facetten der Filterleiste, in Anzeigereihenfolge. Aufmerksamkeit steht
+#: VORNE, weil sie die Frage beantwortet, mit der jemand eine Betriebsseite
+#: öffnet; alles danach schneidet einen Bestand.
+#:
+#: Diese Liste stand bis 2026-09-04 ein zweites Mal als Literal im Skript
+#: (`var FACETS = ['kind', ...]`). Zwei Listen für einen Vertrag laufen
+#: auseinander, und die stille Richtung ist die schlimmere: eine Facette, die
+#: nur die Python-Seite kennt, rendert einen Knopf, den das Skript nicht kennt,
+#: und ein Druck darauf versteckt JEDE Zeile. Das Skript liest die Liste jetzt
+#: aus den gerenderten Knöpfen, es gibt also nur noch diese eine.
+FACETS = (("attention", "attention"), ("kind", "kind"), ("persona", "sphere"),
+          ("host", "host"), ("runtime", "runtime"), ("state", "state"))
+
 
 def _ident(workload_id: str) -> str:
     """The anchor a run answers to. ONE derivation, because two would drift.
@@ -3149,16 +3208,34 @@ def _open_html(rows) -> str:
                 "person.</strong> No run on this page carries a finding above "
                 "information. That is a statement about what was measured, "
                 "never a promise about what was not.</p>")
-    items = "".join(
-        f'<li><span class="sev sev-{_esc(_sev(f))}">{_esc(_sev(f))}</span>'
-        f'<a href="#run-{_ident(row.workload_id)}">{_esc(row.workload_id)}</a>'
-        f'<div class="what">{_esc(getattr(f, "detail", ""))}</div>'
-        + (f'<div class="todo">{_esc(getattr(f, "hint", ""))}</div>'
-           if getattr(f, "hint", "") else "")
-        + "</li>"
-        for row, f in open_ones)
-    return ('<section class="open"><p class="eyebrow">Needs a person '
-            f"({len(open_ones)})</p><ul>{items}</ul></section>")
+    runs = len({row.workload_id for row, _ in open_ones})
+    # EINE Zeile statt einer zweiten Liste. Bis 2026-09-04 stand hier jeder
+    # Befund ausgeschrieben, ein zweites Mal: derselbe Satz noch einmal im
+    # Dossier seiner eigenen Zeile. Fünfundzwanzig Einträge über einer Tabelle,
+    # die dieselben fünfundzwanzig trägt, sind keine Zusammenfassung, sondern
+    # eine zweite Fassung, die am Tag der ersten Abweichung die falsche ist.
+    #
+    # Was der Block richtig gemacht hat, bleibt: die Seite öffnet mit der
+    # ANTWORT auf "braucht hier etwas mich", nicht mit einem Bestand. Nur ist
+    # die Antwort eine Zahl und ein Weg dorthin, und der Weg ist der Filter,
+    # den die Leiste ohnehin trägt. Ohne Skript bleibt der Satz stehen und die
+    # Tabelle ist vollständig, was der ehrliche Zustand eines ungefilterten
+    # Dokuments ist.
+    # Der Knopf nur, wenn die Facette AUCH eine Pille bekommt. Sie wird erst ab
+    # zwei Werten gezeichnet, und auf einer Seite, auf der jeder Lauf einen
+    # Menschen braucht, gibt es keine zweite Antwort. Ein Knopf ohne Pille wäre
+    # ein Steuerelement, das nichts tut, und genau davor warnt die Filterleiste
+    # in ihrem eigenen Kopf.
+    filterable = len({_attention_of(r) for r in rows}) > 1
+    shortcut = (f'<button type="button" class="pick" data-facet="attention" '
+                f'data-value="{ATTENTION_OPEN}" aria-pressed="false">'
+                "show only those</button>") if filterable else ""
+    plural = "" if runs == 1 else "s"
+    return ('<p class="banner" id="attention"><strong>'
+            f"{len(open_ones)} finding{'' if len(open_ones) == 1 else 's'} on "
+            f"{runs} run{plural} need{'s' if runs == 1 else ''} a person.</strong> "
+            "Each one sits in its own row below, with the step this skill "
+            f"advises. {shortcut}</p>")
 
 
 def _machines_html(rep, asked=()) -> str:
@@ -3239,9 +3316,16 @@ def _row_html(row: Row, asked=(), lane=None, on=None, *, section=None) -> str:
         # Each reason names its own state. A run can carry several findings,
         # and once the sentences leave the cell that held their state word,
         # nothing else maps a sentence back to a verdict.
+        # Der HINWEIS gehört hierhin, seit die Liste über der Tabelle weg ist.
+        # Er ist die einzige Stelle, an der dieser Skill sagt, was als nächstes
+        # zu tun ist, und er stand vorher NUR in jener Liste: wer sie ersatzlos
+        # streicht, wirft die Handlungsanweisung weg und lässt den Befund stehen.
         reasons = "".join(
             f'<div class="hint"><span class="lead">{_esc(_state(f))}</span>'
-            f'{_esc(getattr(f, "detail", ""))}</div>'
+            f'{_esc(getattr(f, "detail", ""))}'
+            + (f'<div class="todo">{_esc(getattr(f, "hint", ""))}</div>'
+               if getattr(f, "hint", "") else "")
+            + "</div>"
             for f in row.findings)
     else:
         verdicts = f'<span class="unreported">{UNREPORTED}</span>'
@@ -3314,6 +3398,7 @@ def _row_html(row: Row, asked=(), lane=None, on=None, *, section=None) -> str:
         f'<tbody data-id="{_esc(row.workload_id)}" data-kind="{_esc(row.kind)}"'
         f' data-persona="{_esc(row.persona)}" data-host="{_esc(row.host)}"'
         f' data-runtime="{_esc(row.runtime)}" data-state="{_esc(states)}"'
+        f' data-attention="{_esc(_attention_of(row))}"'
         f' data-search="{_esc(haystack)}"'
         f' data-sort-id="{_esc(row.workload_id.lower())}"'
         f' data-sort-when="{placed if placed is not None else 999999}"'

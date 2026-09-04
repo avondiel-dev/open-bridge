@@ -2635,28 +2635,58 @@ class ThePageOpensWithWhatNeedsAPerson(ViewBase):
         return view.render(report_mod.Report(findings=[f], header=""), [w],
                            generated_at=STAMP), w
 
-    def test_a_finding_that_needs_a_person_is_named_above_the_table(self):
-        page, w = self.loud()
-        head = page.split('<section class="block">', 1)[0]
-        self.assertIn('class="open"', head,
-                      "the block is missing or below the table it summarises")
-        self.assertIn(w.id, head,
-                      "the run that needs a person is not named where a reader "
-                      "looks first")
-
-    def test_the_skills_own_instruction_reaches_the_page(self):
+    def test_the_answer_stands_above_the_table_as_a_count(self):
+        # The page still opens with the ANSWER to "does anything here need me".
+        # It is a count and a way to the rows, not a second copy of them: until
+        # 2026-09-04 every finding was written out here AND again in its own
+        # row's dossier, which is two accounts of one fact.
         page, _ = self.loud()
-        self.assertIn("bootout and bootstrap it", page,
-                      "the hint is computed for every finding and still "
-                      "reaches no reader")
+        head = page.split('<section class="block">', 1)[0]
+        self.assertIn('id="attention"', head,
+                      "the answer is missing or below the table it is about")
+        self.assertRegex(head, r"1 finding on 1 run needs a person",
+                         "the opening line does not say how much needs a person")
 
-    def test_the_link_points_at_a_row_that_exists(self):
+    def test_the_skills_own_instruction_reaches_the_runs_own_row(self):
+        # The hint used to live ONLY in the block above the table. Removing the
+        # block without moving it would have thrown away the one sentence this
+        # skill writes about what to do next, and left the finding standing.
         page, w = self.loud()
-        target = re.search(r'class="open".*?href="#([^"]+)"', page, re.S)
-        self.assertIsNotNone(target, "the entry links nowhere")
-        self.assertIn(f'id="{target.group(1)}"', page,
-                      "the link points at an anchor this page does not carry, "
-                      "which scrolls nowhere and looks like a dead row")
+        self.assertIn("bootout and bootstrap it", self.run_block(page, w.id),
+                      "the hint is computed for every finding and does not "
+                      "reach the row the finding belongs to")
+
+    def test_the_shortcut_names_a_pill_the_bar_actually_carries(self):
+        # A control that cannot act must not be on the page. The shortcut works
+        # by PRESSING the facet pill, so a pill that was never drawn (a facet
+        # is drawn only from two values up) leaves a button that does nothing.
+        w = self.load("calendar-export")
+        quiet = self.load("daily-health-report")
+        f = report_mod.Finding(workload_id=w.id, state="overdue", severity="high",
+                               detail="d", hint="h", source="machine")
+        page = view.render(report_mod.Report(findings=[f], header=""),
+                           [w, quiet], generated_at=STAMP)
+        shortcut = re.search(r'id="attention".*?data-facet="([^"]+)"'
+                             r'\s+data-value="([^"]+)"', page, re.S)
+        self.assertIsNotNone(shortcut, "the opening line offers no way to the rows")
+        facet, value = shortcut.groups()
+        self.assertRegex(
+            page, r'<button type="button" data-facet="%s" data-value="%s"'
+                  % (re.escape(facet), re.escape(value)),
+            "the shortcut names a facet value the filter bar never drew, so "
+            "pressing it does nothing at all")
+
+    def test_no_shortcut_where_there_would_be_no_pill(self):
+        # Every run needs a person: `attention` then has ONE value, the bar
+        # draws no pill for it, and a shortcut would be furniture.
+        w = self.load("calendar-export")
+        f = report_mod.Finding(workload_id=w.id, state="overdue", severity="high",
+                               detail="d", hint="h", source="machine")
+        page = view.render(report_mod.Report(findings=[f], header=""), [w],
+                           generated_at=STAMP)
+        self.assertIn('id="attention"', page, "the answer itself is missing")
+        self.assertNotIn('class="pick"', page,
+                         "a button is offered for a filter the bar cannot show")
 
     def test_information_alone_is_a_sentence_and_not_an_empty_box(self):
         page = self.page(findings=[self.finding("calendar-export", "in_sync",
@@ -2669,14 +2699,23 @@ class ThePageOpensWithWhatNeedsAPerson(ViewBase):
                       "the all clear reads as a promise about the whole "
                       "machine rather than about what was measured")
 
-    def test_it_invents_nothing_of_its_own(self):
+    def test_a_finding_is_stated_once_and_not_twice(self):
+        # The case that replaced "the summary must agree with the row". Two
+        # accounts of one fact cannot disagree if there is only one, and the
+        # old shape wrote every detail and every hint out a second time above
+        # the table. Measured on the live page: twenty-five entries over a
+        # table carrying the same twenty-five.
         page, w = self.loud()
-        head = page.split('<section class="block">', 1)[0]
-        said = re.search(r'<div class="what">([^<]*)</div>', head)
-        self.assertIsNotNone(said, "the entry carries no sentence at all")
-        self.assertIn(said.group(1), self.run_block(page, w.id),
-                      "the summary says something the run's own row does not, "
-                      "so the page carries two accounts of one finding")
+        detail = "it was due at 09:00 and its newest line is from 06:00"
+        self.assertEqual(page.count(detail), 1,
+                         "the finding's sentence is on the page more than once")
+        # Ohne den Apostroph gemessen: `_esc` schreibt ihn als Entity, und ein
+        # Vergleich gegen den Rohtext zaehlt dann null und meldet Erfolg aus dem
+        # falschen Grund.
+        self.assertEqual(page.count("then bootout and bootstrap it"), 1,
+                         "the hint is on the page more than once")
+        self.assertIn(detail, self.run_block(page, w.id),
+                      "the one place it is stated is not the run's own row")
 
 
 class AReaderCanLookForAWordThePillsDoNotHave(ViewBase):

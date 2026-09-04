@@ -3329,7 +3329,7 @@ MUTATIONS = (
         search='        + (f\'<div class="todo">{_esc(getattr(f, "hint", ""))}</div>\'',
         replace='        + (f\'<div class="todo"></div>\'',
         test="tests.test_view.ThePageOpensWithWhatNeedsAPerson"
-             ".test_the_skills_own_instruction_reaches_the_page",
+             ".test_the_skills_own_instruction_reaches_the_runs_own_row",
         scar="this skill's own sentence about what to do next, computed for "
              "every finding and reaching no reader, which is where it sat "
              "until 2026-08-27",
@@ -3350,18 +3350,25 @@ MUTATIONS = (
         search="    if declared:\n        body.append(_open_html(in_service))",
         replace="    if False:\n        body.append(_open_html(in_service))",
         test="tests.test_view.ThePageOpensWithWhatNeedsAPerson"
-             ".test_a_finding_that_needs_a_person_is_named_above_the_table",
+             ".test_the_answer_stands_above_the_table_as_a_count",
         scar="a page that opens with an inventory, leaving a reader to work "
              "out whether anything is wrong across twenty-five rows",
     ),
     Mutation(
-        name="the-anchor-is-derived-twice",
+        name="the-shortcut-names-a-facet-that-is-not-there",
         file="engine/view.py",
-        search='f\'<a href="#run-{_ident(row.workload_id)}">{_esc(row.workload_id)}</a>\'',
-        replace='f\'<a href="#run-{_esc(row.workload_id)}-x">{_esc(row.workload_id)}</a>\'',
+        # Umgezogen 2026-09-04 aus `the-anchor-is-derived-twice`. Die Liste
+        # ueber der Tabelle ist weg, mit ihr der Link und damit die ZWEITE
+        # Ableitung des Ankers, die jene Nadel bewacht hat. Der Defekt kann
+        # baulich nicht mehr auftreten, die NAHT aber schon: die Abkuerzung
+        # im Banner muss eine Pille benennen, die die Leiste wirklich
+        # gezeichnet hat, sonst versteckt ein Druck darauf jede Zeile.
+        search='data-value="{ATTENTION_OPEN}" aria-pressed="false">',
+        replace='data-value="needs-a-person-x" aria-pressed="false">',
         test="tests.test_view.ThePageOpensWithWhatNeedsAPerson"
-             ".test_the_link_points_at_a_row_that_exists",
-        scar="a link that scrolls nowhere and reads as a row that is not there",
+             ".test_the_shortcut_names_a_pill_the_bar_actually_carries",
+        scar="ein Knopf, der eine Facette benennt, die es nicht gibt: ein "
+             "Druck darauf versteckt jede Zeile und die Tabelle sieht leer aus",
     ),
     Mutation(
         name="the-haystack-keeps-its-case",
