@@ -10,7 +10,8 @@ turned into tasks) produces derived artifacts. The moment those artifacts are
 written, two things are **mandatory — together, never one without the other**:
 
 1. **Archive the original out of the inbox.** The source recording (audio +
-   its naked transcript) is the immutable, recoverable original. It moves out
+   its naked transcript) is the immutable, recoverable original. For the AUDIO half
+   that is conditional; see § Retention below. It moves out
    of the scan inbox (`work.imports_dir`, e.g. `imports/`) into the recording
    archive (`work.audio_archive_dir` under `doc_sensor.onedrive_root` — the PARA
    `processed/` store). Before moving: **dedup by md5 + byte-size** against the
@@ -24,6 +25,30 @@ written, two things are **mandatory — together, never one without the other**:
    `record:` / `source:` pointer back to the archived original — so any claim
    traces to the recording in one hop. A derived document never floats without
    provenance.
+
+## Retention: what "original" means once a policy exists
+
+The durable record is the **naked transcript**; the audio is raw material for it. An
+instance may declare `work.meetings.audio_retention` and choose to drop the recording
+once its transcript is verified. **Read that block, never infer it** from what a
+neighbouring file happens to look like. An absent block means `policy: keep`, the audio
+stays, and this section changes nothing.
+
+Where the policy does drop audio, neither half above is weakened. The archive move still
+happens, the back-link still points at the archived transcript, and `require_transcript:
+true` is the hard stop that keeps a recording without a transcript from ever being
+removed. What changes is only how long the audio half survives after that.
+
+The price is real and belongs in the decision, not in a footnote: without the recording
+there is no re-transcription with a better model later, and no checking a disputed quote
+against the tape. From then on the transcript is the only source.
+
+Mechanics (hash before delete, what to leave on the worker, reporting skipped files) live
+in the reference implementation, `skills/debrief/references/full-workflow.md` step 4b.
+Execute that step; do not rebuild it. **Every documentation path that produces derived
+artifacts owes this step too**, exactly as it owes the two halves above. A path that
+archives but never applies the policy leaves recordings piling up behind a rule that
+reads as enforced.
 
 ## Why
 
