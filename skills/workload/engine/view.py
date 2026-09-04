@@ -1707,7 +1707,7 @@ def elsewhere(rep, workloads, machine_units=()) -> tuple:
 
 def render(rep, workloads, *, generated_at: str, stale_after_min=None,
            hosts=(), poll_sec=None, links=(), panels=(), overview_label="",
-           machine_units=()) -> str:
+           machine_units=(), group_by: str = "band") -> str:
     """One self-contained page. `generated_at` is passed in, never taken.
 
     A renderer that reads its own clock produces different bytes on every run,
@@ -1891,6 +1891,10 @@ def render(rep, workloads, *, generated_at: str, stale_after_min=None,
     # with half of what is known about it in each place.
     by_lane = {lane.workload_id: lane
                for lane in lanes(rep, list(workloads), on=on)}
+    # Carried, never derived. Two runs belong to one system because both say so;
+    # guessing it from a shared name prefix is wrong on the real data, where a
+    # puller and the agent it feeds shared no prefix in two cases out of three.
+    systems = {w.id: getattr(w, "system", None) for w in workloads}
 
     body.append('<section class="block"><p class="eyebrow">Declarations</p>')
     # The count is an element, not a literal, because a filter changes how many
@@ -1915,17 +1919,16 @@ def render(rep, workloads, *, generated_at: str, stale_after_min=None,
                 '<th data-sort="recorded">recorded</th>'
                 '<th data-sort="state">state</th>'
                 "</tr></thead>")
-    for band, title in LANE_GROUPS:
-        here = [row for row in in_service
-                if _band_of(by_lane.get(row.workload_id)) == band]
-        if not here:
-            continue
+    for key, title, here, with_scale in _sections(in_service, by_lane,
+                                                  systems, group_by):
         # By the clock inside each section, not by name: see `_order_key`.
         here.sort(key=lambda row: _order_key(by_lane.get(row.workload_id),
                                              row.workload_id))
-        body.append(_group_head_html(band, title, len(here), on))
+        body.append(_group_head_html(key, title, len(here), on,
+                                     with_scale=with_scale))
         for row in here:
-            body.append(_row_html(row, asked, by_lane.get(row.workload_id), on))
+            body.append(_row_html(row, asked, by_lane.get(row.workload_id), on,
+                                  section=key))
     if not in_service:
         body.append('<tbody><tr><td colspan="4" class="meta">no declaration is '
                     "in service here yet</td></tr></tbody>")
@@ -2412,6 +2415,83 @@ LANE_GROUPS = (
     ("unplaced", "Not on the day"),
 )
 
+#: The axes the table can be grouped by. `band` answers WHEN a run fires,
+#: `system` answers WHAT it is a part of. Both are real operating questions and
+#: neither answers the other, which is why this is a choice at render time and
+#: not a migration: a fleet of pullers reads best by clock, a fleet of
+#: agent-plus-tunnel-plus-puller stacks reads best by system.
+#:
+#: `band` is the default and its output is byte for byte the page this drew
+#: before a second axis existed. An axis that quietly changed the old page
+#: would make every reader re-learn a page they already knew.
+GROUP_BY = ("band", "system")
+
+#: The two sections at the end of the system axis, and they are two on purpose.
+#: `_standalone` is a run somebody looked at and found to stand alone, so the
+#: advice under it is "nothing to do". The other is a run nobody classified,
+#: where the advice is "decide". Folding them together hides the second behind
+#: the first, and the second is the only one that asks for anything.
+SYSTEM_ALONE = "_standalone"
+SYSTEM_UNDECIDED = "_undecided"
+
+SYSTEM_TAIL = (
+    (SYSTEM_ALONE, "On their own"),
+    (SYSTEM_UNDECIDED, "No system named yet"),
+)
+
+
+def _sections(rows, by_lane, systems, axis):
+    """Every section of the table as (key, title, rows, with_scale), in order.
+
+    The key is what BOTH the heading and its rows carry as `data-band`, and
+    that is not a leftover name: the script pairs a heading with its rows by
+    comparing exactly that attribute, so a heading whose key differs from its
+    rows' hides itself the moment anything is filtered. Handing both out of one
+    place is what makes the two impossible to disagree about.
+
+    `with_scale` travels per section instead of being re-derived from the key.
+    On the band axis exactly one section holds runs that are not on the day; on
+    the system axis any section can, and an hour ruler over rows that hold a
+    sentence instead of a position invites the reading that they are somewhere
+    on it.
+
+    Empty sections are not returned. A heading with no rows under it is a count
+    of runs the reader cannot see.
+    """
+    if axis not in GROUP_BY:
+        raise ValueError(f"unknown grouping axis {axis!r}: expected one of "
+                         f"{', '.join(GROUP_BY)}")
+
+    def placeable(here):
+        return any(_band_of(by_lane.get(row.workload_id)) != "unplaced"
+                   for row in here)
+
+    out = []
+    if axis == "band":
+        for band, title in LANE_GROUPS:
+            here = [row for row in rows
+                    if _band_of(by_lane.get(row.workload_id)) == band]
+            if here:
+                out.append((band or "clock", title, here, band != "unplaced"))
+        return out
+
+    # The system axis. Named systems in NAME order and never in size order: a
+    # page somebody reads every morning must not reshuffle itself the day a
+    # system grows a fourth member.
+    named = sorted({(systems.get(row.workload_id) or "")
+                    for row in rows} - {"", SYSTEM_ALONE})
+    for name in named:
+        here = [row for row in rows if systems.get(row.workload_id) == name]
+        if here:
+            out.append((name, name, here, placeable(here)))
+    for key, title in SYSTEM_TAIL:
+        want = SYSTEM_ALONE if key == SYSTEM_ALONE else None
+        here = [row for row in rows
+                if (systems.get(row.workload_id) or None) == want]
+        if here:
+            out.append((key, title, here, placeable(here)))
+    return out
+
 
 def _marks_html(lane, on=None) -> str:
     """Every mark this lane carries, or empty where it carries none.
@@ -2461,6 +2541,17 @@ def _band_of(lane) -> str:
     if lane.band in ("cadence", "continuous"):
         return lane.band
     return "" if _marks_html(lane) else "unplaced"
+
+
+def _row_section(section, lane) -> str:
+    """The section key a ROW carries, which must equal its heading's.
+
+    The script pairs a heading with its rows by comparing this exact value, so
+    the two are computed from one place and never twice. `section` is what the
+    caller already decided in `_sections`; the fallback keeps a direct caller
+    on the band axis instead of making it invent a key.
+    """
+    return section if section is not None else (_band_of(lane) or "clock")
 
 
 def _drawn_for(generated_at: str, zone: str):
@@ -2732,7 +2823,8 @@ def _track_html(lane, on=None) -> str:
 NOT_PLACED = "nothing placed it on the day"
 
 
-def _group_head_html(band: str, title: str, count: int, on=None) -> str:
+def _group_head_html(section: str, title: str, count: int, on=None, *,
+                     with_scale: bool = True) -> str:
     """A section heading inside the table, spanning it.
 
     It carries the band as data so the script can take it away with its last
@@ -2750,12 +2842,12 @@ def _group_head_html(band: str, title: str, count: int, on=None) -> str:
     # rows actually carry a track. Not in the section for the runs nothing
     # could place: an hour scale over cells that hold a sentence instead of a
     # day invites the reading that they are somewhere on it.
-    scale = "" if band == "unplaced" else (
+    scale = "" if not with_scale else (
         f'<div class="lens" data-scale="day">{_day_scale_html()}</div>'
         f'<div class="lens" data-scale="week" hidden>{_week_scale_html()}</div>'
         f'<div class="lens" data-scale="month" hidden>'
         f"{_month_scale_html(on)}</div>")
-    return (f'<tbody class="grouphead" data-band="{_esc(band or "clock")}">'
+    return (f'<tbody class="grouphead" data-band="{_esc(section)}">'
             f'<tr><th><span class="eyebrow">{_esc(title)} '
             f'(<span class="n" data-total="{count}">{count}</span>)'
             f'</span></th><th class="dayhead">{scale}</th>'
@@ -3102,7 +3194,7 @@ def _machines_html(rep, asked=()) -> str:
     return f'<p class="meta">{" · ".join(parts)}</p>' if parts else ""
 
 
-def _row_html(row: Row, asked=(), lane=None, on=None) -> str:
+def _row_html(row: Row, asked=(), lane=None, on=None, *, section=None) -> str:
     """One run as a pair of rows: the run, then its dossier and its reasons.
 
     ONE row per run, and it carries the run's own day. Until 2026-08-27 the day
@@ -3227,7 +3319,7 @@ def _row_html(row: Row, asked=(), lane=None, on=None) -> str:
         f' data-sort-when="{placed if placed is not None else 999999}"'
         f' data-sort-recorded="{_esc(getattr(lane, "trace_at", "") or "")}"'
         f' data-sort-state="{worst}"'
-        f' data-band="{_esc(_band_of(lane) or "clock")}">'
+        f' data-band="{_esc(_row_section(section, lane))}">'
         f'<tr class="run" id="run-{ident}" tabindex="0" role="button"'
         f' aria-expanded="true" aria-controls="why-{ident}">'
         f'<td class="id">{_esc(row.workload_id)}{retired}'

@@ -36,14 +36,14 @@ class ViewBase(MachineGuard):
 
     def page(self, *, findings=(), header="", workloads=None, history=None,
              runs=None, links=(), panels=(), overview_label="", machine_units=(),
-             state_dir=""):
+             state_dir="", group_by="band"):
         rep = report_mod.Report(findings=list(findings), header=header,
                                 history=dict(history or {}), runs=dict(runs or {}),
                                 state_dir=state_dir)
         loads = workloads if workloads is not None else [self.load("calendar-export")]
         return view.render(rep, loads, generated_at=STAMP, links=links,
                            panels=panels, overview_label=overview_label,
-                           machine_units=machine_units)
+                           machine_units=machine_units, group_by=group_by)
 
 
     def run_block(self, html, workload_id):
@@ -3148,3 +3148,104 @@ class ThePageNamesTheDayItDrew(ViewBase):
                            [self.load("twice-daily-report")],
                            generated_at="whenever")
         self.assertNotIn('id="drawnfor"', page)
+
+
+class TheTableIsSectionedByOneOfTwoQuestions(ViewBase):
+    """`--group-by`, and the invariant that makes a second axis safe at all.
+
+    A heading and its rows are paired by ONE attribute, `data-band`, and the
+    script compares them literally: it hides a heading whose rows are all
+    filtered away by counting the rows that carry the same value. So the axis
+    is not free to change one of the two. If a heading is keyed by system while
+    its rows stay keyed by band, every heading counts zero rows and the whole
+    table disappears the first time somebody types in the search box, which is
+    the kind of defect nobody sees in a screenshot.
+
+    The case below therefore does not check that the sections "look right". It
+    reads the rendered page and asserts that every row sits under a heading
+    carrying its own key, on BOTH axes.
+    """
+
+    def stack(self):
+        """Three runs: two of one system, one that names none."""
+        import dataclasses
+
+        base = self.load("calendar-export")
+        return [
+            dataclasses.replace(base, id="an-agent", system="a-stack"),
+            dataclasses.replace(base, id="an-agent-tunnel", system="a-stack"),
+            dataclasses.replace(base, id="a-loner", system="_standalone"),
+            dataclasses.replace(base, id="unclassified", system=None),
+        ]
+
+    def sections(self, html):
+        heads = re.findall(
+            r'<tbody class="grouphead" data-band="([^"]*)"[^>]*>.*?'
+            r'data-total="(\d+)"', html, re.S)
+        rows = re.findall(
+            r'<tbody [^>]*data-sort-id="[^"]+"[^>]*data-band="([^"]*)"', html)
+        return heads, rows
+
+    def test_the_default_axis_is_the_clock_and_says_so_by_drawing_it(self):
+        # The old page, unchanged. A new axis that moved the default would make
+        # every reader re-learn a page they already knew.
+        heads, _ = self.sections(self.page(workloads=self.stack()))
+        self.assertTrue(heads, "no section was drawn at all")
+        for key, _count in heads:
+            self.assertIn(key, ("clock", "cadence", "continuous", "unplaced"),
+                          f"{key!r} is not a band, so the default axis moved")
+
+    def test_runs_that_name_one_system_land_under_one_heading(self):
+        heads, _ = self.sections(self.page(workloads=self.stack(),
+                                           group_by="system"))
+        found = dict(heads)
+        self.assertEqual(found.get("a-stack"), "2",
+                         f"the two runs of a-stack were not gathered: {heads}")
+
+    def test_every_row_carries_its_own_headings_key_on_both_axes(self):
+        # THE case. Everything else here is a convenience next to it.
+        for axis in view.GROUP_BY:
+            with self.subTest(axis=axis):
+                heads, rows = self.sections(
+                    self.page(workloads=self.stack(), group_by=axis))
+                keys = [key for key, _ in heads]
+                for key, count in heads:
+                    self.assertEqual(rows.count(key), int(count),
+                                     f"{axis}: heading {key!r} says {count} and "
+                                     f"{rows.count(key)} rows carry that key, so "
+                                     f"the script would hide it")
+                for key in rows:
+                    self.assertIn(key, keys,
+                                  f"{axis}: a row carries {key!r} and no heading does")
+
+    def test_nobody_looked_is_its_own_section_and_not_folded_into_alone(self):
+        # The whole reason `_standalone` is a value. One of these two asks the
+        # reader for a decision and the other does not, so they must not print
+        # as one number.
+        heads, _ = self.sections(self.page(workloads=self.stack(),
+                                           group_by="system"))
+        found = dict(heads)
+        self.assertEqual(found.get(view.SYSTEM_ALONE), "1")
+        self.assertEqual(found.get(view.SYSTEM_UNDECIDED), "1")
+
+    def test_named_systems_come_in_name_order_and_never_in_size_order(self):
+        # An operations page somebody reads every morning must not reshuffle
+        # itself the day a system grows a member.
+        import dataclasses
+
+        base = self.load("calendar-export")
+        loads = [dataclasses.replace(base, id="z-one", system="zulu"),
+                 dataclasses.replace(base, id="a-one", system="alpha"),
+                 dataclasses.replace(base, id="a-two", system="alpha")]
+        heads, _ = self.sections(self.page(workloads=loads, group_by="system"))
+        named = [key for key, _ in heads if not key.startswith("_")]
+        self.assertEqual(named, ["alpha", "zulu"],
+                         "sections are not in name order, so the page reshuffles "
+                         "itself when a system grows")
+
+    def test_an_axis_nobody_defined_is_refused_and_not_quietly_the_default(self):
+        # Falling back to `band` would draw a plausible page for a request
+        # nobody could satisfy, and the caller would never learn its flag was
+        # ignored.
+        with self.assertRaises(ValueError):
+            self.page(workloads=self.stack(), group_by="whatever")

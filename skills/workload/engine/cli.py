@@ -553,7 +553,8 @@ def _page(args):
                             links=view_links(cfg),
                             panels=view_panels(cfg),
                             overview_label=view_overview_label(cfg),
-                            machine_units=view_machine_units(cfg))
+                            machine_units=view_machine_units(cfg),
+                            group_by=getattr(args, "group_by", "band"))
 
 
 #: Where the neighbour links live in the bridge configuration.
@@ -886,6 +887,15 @@ def _add_reconcile_command(sub) -> None:
                           "Without it the page still ages honestly, it just never "
                           "refreshes itself. A reader with the tab open sees the "
                           "new numbers instead of a frozen one")
+    page.add_argument("--group-by", dest="group_by", default="band",
+                     choices=["band", "system"],
+                     help="which question the table is sectioned by. `band` (the "
+                          "default) groups by WHEN a run fires and draws exactly "
+                          "the page this drew before the second axis existed; "
+                          "`system` groups by WHAT it is a part of, out of the "
+                          "declarations' own `system:` field. A run that names no "
+                          "system lands under a heading that says so rather than "
+                          "being folded in with the ones that stand alone on purpose")
     page.add_argument("--now", required=True,
                       help="the timestamp printed on the page. Required and not "
                            "defaulted: the renderer reads no clock, so the same "
@@ -924,6 +934,15 @@ def _add_reconcile_command(sub) -> None:
                           "Without it the page still ages honestly, it just never "
                           "refreshes itself. A reader with the tab open sees the "
                           "new numbers instead of a frozen one")
+    out.add_argument("--group-by", dest="group_by", default="band",
+                     choices=["band", "system"],
+                     help="which question the table is sectioned by. `band` (the "
+                          "default) groups by WHEN a run fires and draws exactly "
+                          "the page this drew before the second axis existed; "
+                          "`system` groups by WHAT it is a part of, out of the "
+                          "declarations' own `system:` field. A run that names no "
+                          "system lands under a heading that says so rather than "
+                          "being folded in with the ones that stand alone on purpose")
     out.add_argument("--yes", action="store_true",
                      help="actually write. Without it nothing is written and the steps "
                           "are printed")
