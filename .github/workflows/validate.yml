@@ -1,10 +1,12 @@
 name: Validate YAML and Frontmatter
 
+# A fork whose default branch is a user/* branch (this repo's own instances
+# included) would otherwise get no validation at all, so the glob is here too.
 on:
   push:
-    branches: [main]
+    branches: [main, 'user/**']
   pull_request:
-    branches: [main]
+    branches: [main, 'user/**']
   # Reusable: release.yml calls this suite on tag pushes so a release
   # runs the exact same checks as a PR — no duplicated steps.
   workflow_call:
@@ -267,12 +269,30 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # This job ends on a pytest step. Without this install it fails with
+      # "No module named pytest" on every run, which nobody saw because the
+      # suite was gated to a branch this instance never pushes to.
+      - name: Install test dependencies
+        run: pip install pyyaml pytest
+
       # Full-repo scan (no file args = CI mode). Catches scrub-leak
       # pipe-list scopes plus PII content classes (personal names,
       # /Users/ paths, @your-org.com addresses, customer names) with
       # per-class allowlists for governance files — see the script header.
+      # Core-branch only. On a user/* branch the instance's own name, paths
+      # and customers are the CORRECT content, so a full-repo scan there
+      # reports the working state as a leak.
       - name: Scan for content leaks
+        if: ${{ !startsWith(github.ref_name, 'user/') }}
         run: python3 scripts/no-scrub-leak.py
+
+      # A control character in generated markup is invisible in the source and
+      # kills the publish step somewhere else entirely. See the script header.
+      - name: Reject control characters in generated markup, CSS and JS
+        run: python3 scripts/check-generated-output.py
+
+      - name: Guard's own contract
+        run: python3 -m pytest scripts/tests/test_generated_output_escapes.py -q
 
   skill-scope:
     name: Skill Scope + AGENTS.md
@@ -332,6 +352,7 @@ jobs:
           echo "All agent files have valid frontmatter."
 
       - name: Block personas with PII on the core branch
+        if: ${{ !startsWith(github.ref_name, 'user/') }}
         run: |
           # Personas carry tax_id, vat_id, iban, address — USER-layer only.
           # The only persona files allowed on the core branch are the template
@@ -357,6 +378,7 @@ jobs:
           echo "No USER-layer persona files leaked to the core branch."
 
       - name: Block active agent instances on the core branch
+        if: ${{ !startsWith(github.ref_name, 'user/') }}
         run: |
           # .claude/agents/active/<instance-id>/ holds stateful, learned,
           # per-user instance files (role.md, process.md, knowledge.md,

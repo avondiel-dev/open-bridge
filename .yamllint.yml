@@ -21,6 +21,10 @@ rules:
 ignore:
   - work/
   - .claude/
+  # Materialized clones of OTHER repos (workspace members, org overlays).
+  # Gitignored, zero tracked files, and not this repo's content: linting
+  # them reports a foreign project's style as this project's failure.
+  - .bridge/
   # Deliberately unparseable. It is the negative control proving that a
   # broken declaration fails the call instead of being skipped in silence,
   # so a linter that could parse it would mean the control had stopped

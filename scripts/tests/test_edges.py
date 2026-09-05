@@ -140,7 +140,7 @@ def test_a_resolving_edge_is_ok(tmp_path):
 def test_a_path_into_a_directory_this_repo_lacks_is_external(tmp_path):
     """A neighbour repo. Not ours to check, and not a finding.
 
-    `wiki/bks-lab/standards/...` on a live instance points into a sibling
+    `wiki/your-org/standards/...` on a live instance points into a sibling
     checkout. Reporting it as broken would be reporting on someone else's tree,
     and after the third false alarm nobody reads the output.
     """
@@ -542,11 +542,10 @@ def test_a_hit_inside_a_cloned_workspace_is_not_a_move(tmp_path):
 # written reason, was rewritten as if it were.
 #
 # It happened. `infra/channels/voice-news.yaml :: pipeline.steps` carried the
-# reason "Laufzeitpfade der ausgerollten Pipeline auf macminim4, relativ zum
-# Arbeitsverzeichnis des Dienstes" — runtime paths of a deployed pipeline,
-# relative to the SERVICE's working directory. The tail match found the sources
-# under work/done/… and `--fix` rewrote `bin/generate_voice.py` into a repo path
-# the service cannot resolve. A working config, broken by its own guard.
+# reason "runtime paths of the deployed pipeline on homeserver, relative to the
+# SERVICE's working directory". The tail match found the sources under
+# work/done/… and `--fix` rewrote `bin/generate_voice.py` into a repo path the
+# service cannot resolve. A working config, broken by its own guard.
 #
 # Skipped LOUDLY, never silently: a fix run that declines to touch something has
 # to say so, or the next reader assumes it had nothing to decline.

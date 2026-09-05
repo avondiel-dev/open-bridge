@@ -324,8 +324,8 @@ def test_a_comment_rule_in_the_frontmatter_does_not_become_the_description(tmp_p
     """
     md = write_status(
         tmp_path,
-        "florian-sync",
-        "slug: florian-sync\n"
+        "partner-sync",
+        "slug: partner-sync\n"
         "type: ops\n"
         "status: doing\n"
         "\n"
@@ -335,10 +335,10 @@ def test_a_comment_rule_in_the_frontmatter_does_not_become_the_description(tmp_p
         "# ---------------------------------------------------------------\n"
         "sync:\n"
         "  bridge_only: true",
-        "\n# Florian Hegenbarth, coordination hub\n\nbody text\n",
+        "\n# Alice Example, coordination hub\n\nbody text\n",
     )
     row = gb.parse_status(md)
-    assert row["desc"] == "Florian Hegenbarth, coordination hub"
+    assert row["desc"] == "Alice Example, coordination hub"
     assert "Sync block" not in row["desc"]
     assert row["status"] == "doing"
 

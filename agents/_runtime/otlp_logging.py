@@ -10,9 +10,9 @@ naming all come from the environment. The OpenTelemetry SDK is an OPTIONAL
 dependency (``uv sync --extra otlp``); when it is missing, the agent keeps
 running and says so.
 
-Derived from skills/bks-logging (Florian Hegenbarth), adapted from Azure
-Functions to a long-running launchd/systemd process. Four constructions look
-like overkill and are not:
+Derived from an internal OTLP logging skill, adapted from Azure Functions to a
+long-running launchd/systemd process. Four constructions look like overkill
+and are not:
 
 * **Anchors, not the root logger.** A root handler ships every third-party line
   (HTTP clients whose URLs carry addresses, auth libraries, the web server). The
