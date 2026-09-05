@@ -74,8 +74,8 @@ def test_headers_from_standard_env(monkeypatch):
 def test_headers_from_keyvault_secret(monkeypatch):
     """The key is read at runtime via az — never from a file, never from the plist."""
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_HEADERS", raising=False)
-    monkeypatch.setenv("OTEL_AUTH_SECRET_VAULT", "bks-lab-secrets")
-    monkeypatch.setenv("OTEL_AUTH_SECRET_NAME", "BRIDGE-OTLP-INGEST-KEY")
+    monkeypatch.setenv("OTEL_AUTH_SECRET_VAULT", "example-secrets")
+    monkeypatch.setenv("OTEL_AUTH_SECRET_NAME", "OTLP-INGEST-KEY")
     calls: list[list[str]] = []
 
     class _Result:
@@ -89,14 +89,14 @@ def test_headers_from_keyvault_secret(monkeypatch):
 
     monkeypatch.setattr("_runtime.otlp_logging.subprocess.run", fake_run)
     assert resolve_headers() == {"Authorization": "ApiKey S3CR3T"}
-    assert "keyvault" in calls[0] and "BRIDGE-OTLP-INGEST-KEY" in calls[0]
+    assert "keyvault" in calls[0] and "OTLP-INGEST-KEY" in calls[0]
 
 
 def test_headers_empty_when_secret_unreadable(monkeypatch):
     """An unreadable vault degrades to console only, it does not crash the agent."""
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_HEADERS", raising=False)
-    monkeypatch.setenv("OTEL_AUTH_SECRET_VAULT", "bks-lab-secrets")
-    monkeypatch.setenv("OTEL_AUTH_SECRET_NAME", "BRIDGE-OTLP-INGEST-KEY")
+    monkeypatch.setenv("OTEL_AUTH_SECRET_VAULT", "example-secrets")
+    monkeypatch.setenv("OTEL_AUTH_SECRET_NAME", "OTLP-INGEST-KEY")
 
     class _Result:
         returncode = 1

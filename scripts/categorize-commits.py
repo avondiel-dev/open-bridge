@@ -96,9 +96,12 @@ USER_PATTERNS = [
     # public repo, and nothing would say so. `context-budget.user.yaml` is
     # gitignored by default and would have been missed the day an instance
     # tracks it — which a private instance using GitHub as offsite backup does.
+    # `reachability-scenarios.yaml` belongs here too: the CORE script that reads
+    # it, `scripts/check-reachability.py`, already declares it instance-owned.
     r"^edges\.yaml$",
     r"^context-budget\.user\.yaml$",
     r"^workspaces\.lock\.yaml$",                      # sibling of overlays.lock.yaml above
+    r"^reachability-scenarios\.yaml$",                 # instance's own machine/customer names (check-reachability.py)
     # Per-tier INVERTED: these exist on both sides and must never be copied either
     # way. .bridge-origin in particular tells the push guard whether the origin is
     # public — promoting ours would disarm the guard downstream.
@@ -348,6 +351,12 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     "scripts/tests/test_measure_context.py",
     "scripts/tests/test_standing_orders.py",
     "scripts/tests/test_worklog.py",
+    # Registered 2026-08-28: both are generic guards with no instance name in
+    # them, both are RUN by validate.yml, and that workflow promotes. A core CI
+    # job calling a file classified `user` is the same defect the `_tests`
+    # families had, one directory over.
+    "scripts/check-generated-output.py",
+    "scripts/tests/test_generated_output_escapes.py",
     # Registered 2026-08-30 with the context index. Same reason as the block
     # above: validate.yml runs the suite and the `--check` guard, so a
     # non-core classification would have upstream CI call files that never
@@ -383,7 +392,7 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
 # All nine verified byte-identical on 2026-08-01. This is NOT a README shape
 # rule — it is a nine-element literal list that happens to contain four READMEs,
 # each individually checked. identity/voiceprints/README.md and
-# infra/channels/bots/example-clinic/README.md are absent BY CONSTRUCTION.
+# infra/channels/bots/igor-zahnarzt/README.md are absent BY CONSTRUCTION.
 # Position (after PERSONAL/USER/ORG) means a careless addition here degrades to
 # a no-op instead of overriding a denylist.
 VERIFIED_CORE = frozenset({
@@ -595,11 +604,32 @@ def _declared_branding_scope(path: str) -> str | None:
     return None
 
 
+_SCOPE_READ_CAP = 1_048_576  # 1 MiB; the largest config in this tree is ~60 KB
+
+
+def _blank_code_fences(text: str) -> str:
+    """Replace ```...``` spans with blank lines, preserving line count/offsets."""
+    def blank(m: "re.Match[str]") -> str:
+        return "\n" * m.group(0).count("\n")
+    return re.sub(r"^```.*?^```[^\n]*$", blank, text, flags=re.S | re.M)
+
+
 def read_frontmatter_scope(path: str) -> str | None:
     if not os.path.exists(path):
         return None
-    with open(path, encoding="utf-8") as f:
-        head = f.read(2000)
+    # The whole file, not a 2000-byte peek. A top-level `scope:` is a top-level
+    # key wherever it stands, and a long comment header is normal in this tree:
+    # measured 2026-08-20, two `workflow/projects/*.yaml` on one instance carry
+    # `scope: org` at byte 2101 and byte 3127. Both read as
+    # `user` under the old window. The direction was fail-safe (nothing leaks
+    # upward), but overlay-export.py then classed them out of scope and a dry-run
+    # export scheduled their mirror copies for deletion as stale.
+    # Capped so a stray huge file cannot be slurped; config files are far below it.
+    try:
+        with open(path, encoding="utf-8") as f:
+            head = f.read(_SCOPE_READ_CAP)
+    except (OSError, UnicodeDecodeError):
+        return None
     m = re.search(r"^---\s*\n(.*?)\n---", head, re.DOTALL | re.MULTILINE)
     if m:
         fm = m.group(1)
@@ -623,7 +653,10 @@ def read_frontmatter_scope(path: str) -> str | None:
     # break yaml.safe_load, so the tier lives at column 0 directly. Read it there.
     # (A top-level key is at col 0; a `scope:` value deeper in a nested block is
     # indented and won't match.)
-    sm = re.search(r"^scope:\s*([a-z]+)", head, re.MULTILINE)
+    # Fenced code blocks are documentation, not frontmatter. Blanking them keeps a
+    # documented `scope: core` example from becoming the file's own tier now that
+    # the whole file is in scope of this search.
+    sm = re.search(r"^scope:\s*([a-z]+)", _blank_code_fences(head), re.MULTILINE)
     if sm:
         return sm.group(1)
     return None
