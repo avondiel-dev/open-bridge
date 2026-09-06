@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BKS open-bridge: context that compounds across AI sessions</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="assets/favicon.ico" sizes="16x16 32x32 48x48">
 <meta name="description" content="BKS open-bridge is a plain git repo of markdown and YAML your AI coding agent reads at the start of every session. No database, no SaaS, nothing to host. Public, MIT, built at BKS-Lab.">
 <!-- Social / Open Graph -->
 <meta property="og:type" content="website">
@@ -43,12 +45,14 @@
    Minimalism) via landing/tokens.css. AA-correct text tokens
    (--accent-text, --code-bg, --ok-text …) layered on top. These
    are NOT in tokens.css and must be preserved.
-   No external fonts, no CDN, no network calls.
+   No external fonts and no CDN: every font is a system stack and every
+   style and script below is inline. The page itself makes no network
+   call. The one exception is the ask-about-open-bridge widget loaded at
+   the end of the body, which talks to openbridge.bks-lab.com when a
+   reader opens it.
 
-   The ONLY hex outside the scoped visual blocks (#structure-viz +
-   #mechanic-viz) traces to a token. The #structure-viz group accents
-   are a documented, scoped palette confined to that figure, exactly
-   like macOS terminal traffic-light dots.
+   Every hex traces to a token. #structure-viz, which used to carry its
+   own scoped palette, no longer exists.
    ============================================================ */
 
 :root{
@@ -509,6 +513,8 @@ html.dark .path-prompts code{background:var(--code-bg)}
 </nav>
 </div><!-- /.topbar -->
 
+<main id="top">
+
 <!-- ======================= HERO (copy on top · constellation full-width below) ======================= -->
 <section class="hero">
   <div class="hero-grid container">
@@ -684,7 +690,7 @@ auf PR #214.</div>
 
         <div style="height:24px"></div>
 
-        <!-- Verbatim README log row (README line 92), the same row the hero canvas types -->
+        <!-- Verbatim README log row (README line 211), the same row the hero canvas types -->
         <div class="code-label"><span>work/log.md</span><span>$ cat work/log.md</span></div>
         <div class="artifact" aria-label="A work log row, diff-able plain text">
           <div class="row"><span class="gut"> </span><span class="ln"><span class="cmt">## Fri 20.06</span></span></div>
@@ -940,7 +946,7 @@ auf PR #214.</div>
 </section>
 
 <!-- ======================= WHAT PEOPLE RUN ON IT (tile strip → use-cases.html) ======================= -->
-<section id="what-runs" class="uc-strip">
+<section id="what-runs" class="uc-strip alt">
   <div class="container">
     <div class="sec-head reveal">
       <p class="eyebrow"><span data-lang="en">Jobs, not features</span><span data-lang="de">Aufgaben, keine Features</span></p>
@@ -1343,6 +1349,8 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 </section>
 
 <!-- ======================= FOOTER ======================= -->
+</main>
+
 <footer id="license">
   <div class="foot-grid">
     <div class="foot-blurb">
