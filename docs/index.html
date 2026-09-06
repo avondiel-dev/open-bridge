@@ -39,6 +39,7 @@
 </script>
 
 <link rel="stylesheet" href="assets/brand.css">
+<noscript><style>.reveal,.reset-line{opacity:1!important;transform:none!important}</style></noscript>
 <style>
 /* ============================================================
    BKS open-bridge marketing landing (single file, fully offline).
@@ -132,7 +133,7 @@ header.nav{
 .page-nav a[aria-current="true"]{color:var(--primary)}
 .page-nav a.active::after{
   content:"";position:absolute;left:12px;right:12px;bottom:0;height:2px;border-radius:2px;
-  background:linear-gradient(120deg,var(--accent-from),var(--accent-to));
+  background:var(--accent-text);
 }
 @media (max-width:560px){
   .page-nav a{padding:11px 10px;font-size:13px}
@@ -140,6 +141,9 @@ header.nav{
 
 /* ---- Sections ---- */
 section{padding-block:var(--section-y);scroll-margin-top:112px}
+/* #mechanic-viz is nested inside #substrate, so it inherited the section
+   padding a second time and stacked ~190px of dead ground against its parent. */
+#substrate section{padding-block:0}
 /* in-page anchors that target a figure/sub-block inside a section */
 [id="mechanic-viz"]{scroll-margin-top:112px}
 
@@ -174,10 +178,8 @@ section{padding-block:var(--section-y);scroll-margin-top:112px}
 #tagline .tl{display:block}
 /* Words start muted and come up in reading order. Timing is the DESIGN.md
    default (300ms, ease-out) rather than a signature of this section's own. */
-#tagline .tw{
-  opacity:.28;transition:opacity .3s ease-out;transition-delay:calc(var(--i,0) * 70ms);
-}
-#tagline .reveal.in .tw{opacity:1}
+/* The per-word rise was the fourth different entrance tempo on the page. The
+   block still arrives on the shared .reveal, which is now the only one. */
 @media (max-width:640px){ #tagline .tl{display:inline} }
 
 /* hero demo row: the code example and the CORE ⟷ USER brain, side by side */
@@ -187,15 +189,6 @@ section{padding-block:var(--section-y);scroll-margin-top:112px}
   align-items:start;gap:clamp(22px,3vw,40px);
 }
 .hero-visual{min-width:0;width:100%}
-.seam-cap{
-  margin-top:14px;font-size:13.5px;color:var(--secondary);line-height:1.5;text-align:center;
-}
-.seam-cap a{color:var(--accent-text);text-decoration:none;font-weight:500;white-space:nowrap}
-.seam-cap a:hover{text-decoration:underline}
-.seam-cap .tag{
-  font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--secondary);
-  border:1px solid var(--border);border-radius:var(--r-full);padding:1px 8px;margin-right:8px;
-}
 
 @media (max-width:920px){
   /* stack the code example + brain on tablet/mobile */
@@ -416,10 +409,11 @@ html.dark .tile .demo{background:var(--code-bg)}
 .dg-flow.user{stroke:var(--accent)}
 .dg-flow.core{stroke:var(--accent-secondary)}
 .dg-flow.promote{stroke:url(#dgGrad)}
-/* The refusal. The promote arc marches; this one is deliberately still, and
-   the contrast between moving and not moving carries the claim. */
+/* The refusal is carried by the muted stroke, the dashed boundary, the mark and
+   the "stays local" label, none of which depend on motion. */
 .dg-flow.blocked{stroke:var(--muted);opacity:.85}
 .dg-bound{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:4 6;opacity:.7}
+.dg-ghost{fill:none;stroke:var(--line);stroke-width:1;opacity:.6}
 .dg-x{fill:var(--attention-text);font:600 15px var(--font-mono)}
 .dg-box{fill:var(--surface-subtle);stroke:var(--line);stroke-width:1}
 .dg-merge{fill:var(--surface);stroke:var(--accent-text);stroke-width:1.4}
@@ -428,7 +422,12 @@ html.dark .tile .demo{background:var(--code-bg)}
 .dg-cap{fill:var(--muted);font:400 11px var(--font-sans)}
 .dg-mono{font:400 11px var(--font-mono)}
 @media (prefers-reduced-motion:no-preference){
-  .diagram-frame.in .dg-flow{animation:dg-flow-anim 1.4s linear infinite}
+  /* Three beats, 4.2s, under the WCAG 2.2.2 five second ceiling. The rest frame
+     is pixel identical to the start: -28 against a 6 8 dasharray is two whole
+     periods. One beat is too short for a slow scroller arriving after the
+     observer fired, and the arcs carry no arrowheads, so something has to mark
+     direction. */
+  .diagram-frame.in .dg-flow{animation:dg-flow-anim 1.4s linear 3 both}
   .diagram-frame.in .dg-flow.blocked{animation:none}
 }
 @keyframes dg-flow-anim{to{stroke-dashoffset:-28}}
@@ -496,13 +495,10 @@ html.dark .path-prompts code{background:var(--code-bg)}
 }
 @media (prefers-reduced-motion:reduce){
   .reveal,.reset-line{opacity:1;transform:none}
-  /* without this the section sits at 28% grey for good, which is an AA failure */
-  #tagline .tw{opacity:1;transition:none}
 }
 @media print{
   header.nav,.page-nav,.icon-btn,.seg,.copy-btn{display:none!important}
   .reveal,.reset-line{opacity:1!important;transform:none!important}
-  #tagline .tw{opacity:1!important}
 }
 </style>
 </head>
@@ -626,15 +622,15 @@ auf PR #214.</div>
             <div class="hn-stage" id="hn-stage">
               <canvas class="hn-canvas" id="hn-ring" aria-hidden="true"></canvas>
               <p class="hn-sr">
-                <span data-lang="en">The shipped demo workspace drawn as a containment ring: 27 files in six folders around a centre. identity holds who you are and who you send to, workflow holds what happens when, infra holds where things run, work holds the task board and the log, protocols holds the standing orders, and .claude holds the agents. At session start the agent reads outward from the centre through every ring, then writes one line back into work/log.md. Clone examples/agency and the same tree is on your disk.</span>
-                <span data-lang="de">Der mitgelieferte Demo-Workspace als Ring gezeichnet: 27 Dateien in sechs Ordnern um eine Mitte. identity hält, wer du bist und an wen du sendest, workflow, was wann passiert, infra, wo was läuft, work das Aufgabenbrett und das Protokoll, protocols die Standing Orders und .claude die Agenten. Zum Session-Start liest der Agent von der Mitte nach außen durch jeden Ring und schreibt danach eine Zeile zurück in work/log.md. Klone examples/agency, dann liegt derselbe Baum auf deiner Platte.</span>
+                <span data-lang="en">The shipped demo workspace drawn as a containment ring: 27 files in six folders around a centre, with one dot in the outer band for each of their 1162 lines, so a folder that holds more shows denser. identity holds who you are and who you send to, workflow holds what happens when, infra holds where things run, work holds the task board and the log, protocols holds the standing orders, and .claude holds the agents. At session start the agent reads outward from the centre through every ring, then writes one line back into work/log.md. Clone examples/agency and the same tree is on your disk.</span>
+                <span data-lang="de">Der mitgelieferte Demo-Workspace als Ring gezeichnet: 27 Dateien in sechs Ordnern um eine Mitte, im Außenband ein Punkt je Zeile ihrer 1162 Zeilen, ein Ordner mit mehr Inhalt ist also dichter. identity hält, wer du bist und an wen du sendest, workflow, was wann passiert, infra, wo was läuft, work das Aufgabenbrett und das Protokoll, protocols die Standing Orders und .claude die Agenten. Zum Session-Start liest der Agent von der Mitte nach außen durch jeden Ring und schreibt danach eine Zeile zurück in work/log.md. Klone examples/agency, dann liegt derselbe Baum auf deiner Platte.</span>
               </p>
             </div>
             <figcaption class="hn-cap" id="hn-cap-text">
               <span>
-                <span data-lang="en"><b>examples/agency</b>, 27 files. Your world, read at session start.</span>
+                <span data-lang="en"><b>examples/agency</b>: 27 files, 1162 lines, one dot each.</span>
 
-                <span data-lang="de"><b>examples/agency</b>, 27 Dateien. Deine Welt, gelesen zum Session-Start.</span>
+                <span data-lang="de"><b>examples/agency</b>: 27 Dateien, 1162 Zeilen, je Zeile ein Punkt.</span>
               </span>
               <a href="#substrate">
                 <span data-lang="en">Look inside it →</span>
@@ -672,13 +668,13 @@ auf PR #214.</div>
       <div class="doc-card card">
         <h4 class="h4"><span data-lang="en">Most AI work today</span><span data-lang="de">KI-Arbeit heute</span></h4>
         <div class="flat-dump" aria-hidden="true">
-<span class="f">📄 chat-export-final.txt</span>
-<span class="f">📄 notes (3).md</span>
-<span class="f">📄 prompt that worked.txt</span>
-<span class="f">📄 todo-maybe.md</span>
-<span class="f">📄 client stuff.docx</span>
-<span class="f">📄 chat-export-final-v2.txt</span>
-<span class="f">📄 untitled.md</span>
+<span class="f">chat-export-final.txt</span>
+<span class="f">notes (3).md</span>
+<span class="f">prompt that worked.txt</span>
+<span class="f">todo-maybe.md</span>
+<span class="f">client stuff.docx</span>
+<span class="f">chat-export-final-v2.txt</span>
+<span class="f">untitled.md</span>
         </div>
         <p class="cap"><span data-lang="en">A bare My-Documents folder: everyone piling up their own chaos, every conversation rebuilding context and structure from scratch.</span><span data-lang="de">Ein nackter My-Documents-Ordner. Jeder häuft sein eigenes Chaos an, jede Unterhaltung baut Kontext und Struktur von Grund auf neu.</span></p>
       </div>
@@ -883,12 +879,12 @@ auf PR #214.</div>
         <figure id="mv-lanes" aria-labelledby="mvl-cap">
           <canvas id="mvl-canvas" aria-hidden="true"></canvas>
           <p class="mvl-sr">
-            <span data-lang="en">Two sessions measured against the same clock. Without a written record a session re-reads the same four files on every run and finishes where it started. With one, it reads them once, writes what happened to work/log.md, and from the second run onward starts from that record instead. After three runs the second session has a stack of three entries and the first still has none.</span>
-            <span data-lang="de">Zwei Sitzungen an derselben Uhr gemessen. Ohne Protokoll liest eine Sitzung bei jedem Lauf dieselben vier Dateien neu und endet dort, wo sie angefangen hat. Mit Protokoll liest sie sie einmal, schreibt fest was passiert ist, und startet ab dem zweiten Lauf aus diesem Protokoll. Nach drei Läufen hat die zweite Sitzung einen Stapel von drei Einträgen, die erste keinen.</span>
+            <span data-lang="en">Two sessions, run for run. Without a written record a session re-reads the same four files on every run and finishes where it started. With one, it reads them once, writes what happened to work/log.md, and from the second run onward starts from that record instead. After three runs the second session has a stack of three entries and the first still has none.</span>
+            <span data-lang="de">Zwei Sitzungen, Lauf für Lauf. Ohne Protokoll liest eine Sitzung bei jedem Lauf dieselben vier Dateien neu und endet dort, wo sie angefangen hat. Mit Protokoll liest sie sie einmal, schreibt fest was passiert ist, und startet ab dem zweiten Lauf aus diesem Protokoll. Nach drei Läufen hat die zweite Sitzung einen Stapel von drei Einträgen, die erste keinen.</span>
           </p>
           <figcaption class="mvl-cap" id="mvl-cap">
-            <span data-lang="en">Same clock, two sessions. Only one of them keeps anything.</span>
-            <span data-lang="de">Dieselbe Uhr, zwei Sitzungen. Nur eine behält etwas.</span>
+            <span data-lang="en">The same three runs, two sessions. Only one of them keeps anything.</span>
+            <span data-lang="de">Dieselben drei Läufe, zwei Sitzungen. Nur eine behält etwas.</span>
           </figcaption>
         </figure>
 
@@ -1003,14 +999,14 @@ auf PR #214.</div>
   <div class="container">
     <div class="tagline-block reveal">
       <p class="tagline-line" data-lang="en">
-        <span class="tl"><span class="tw" style="--i:0">Say</span> <span class="tw" style="--i:1">it</span> <span class="tw" style="--i:2">once.</span></span>
-        <span class="tl"><span class="tw" style="--i:3">Six</span> <span class="tw" style="--i:4">months</span> <span class="tw" style="--i:5">later</span> <span class="tw" style="--i:6">the</span> <span class="tw" style="--i:7">decision</span> <span class="tw" style="--i:8">is</span> <span class="tw" style="--i:9">still</span> <span class="tw" style="--i:10">there,</span></span>
-        <span class="tl"><span class="tw" style="--i:11">and</span> <span class="tw" style="--i:12">so</span> <span class="tw" style="--i:13">is</span> <span class="tw" style="--i:14">the</span> <span class="tw" style="--i:15">reason</span> <span class="tw" style="--i:16">for</span> <span class="tw" style="--i:17">it.</span></span>
+        <span class="tl">Say it once.</span>
+        <span class="tl">Six months later the decision is still there,</span>
+        <span class="tl">and so is the reason for it.</span>
       </p>
       <p class="tagline-line" data-lang="de">
-        <span class="tl"><span class="tw" style="--i:0">Sag</span> <span class="tw" style="--i:1">es</span> <span class="tw" style="--i:2">einmal.</span></span>
-        <span class="tl"><span class="tw" style="--i:3">Sechs</span> <span class="tw" style="--i:4">Monate</span> <span class="tw" style="--i:5">später</span> <span class="tw" style="--i:6">steht</span> <span class="tw" style="--i:7">die</span> <span class="tw" style="--i:8">Entscheidung</span> <span class="tw" style="--i:9">noch</span> <span class="tw" style="--i:10">da,</span></span>
-        <span class="tl"><span class="tw" style="--i:11">und</span> <span class="tw" style="--i:12">der</span> <span class="tw" style="--i:13">Grund</span> <span class="tw" style="--i:14">dafür</span> <span class="tw" style="--i:15">auch.</span></span>
+        <span class="tl">Sag es einmal.</span>
+        <span class="tl">Sechs Monate später steht die Entscheidung noch da,</span>
+        <span class="tl">und der Grund dafür auch.</span>
       </p>
     </div>
   </div>
@@ -1202,7 +1198,7 @@ auf PR #214.</div>
       </div>
     </div>
 
-    <p class="cap-more reveal"><span data-lang="en">If this resonates: <a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">star the repo</a> and 👍 the <a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP</a> issues you want most. That's literally the signal priorities are decided by.</span><span data-lang="de">Wenn dich das anspricht: <a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">Stern aufs Repo</a> und 👍 auf die <a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP</a>-Issues, die du am dringendsten willst. Genau daraus entsteht die Priorisierung.</span></p>
+    <p class="cap-more reveal"><span data-lang="en">If this resonates: <a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">star the repo</a> and upvote the <a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP</a> issues you want most. That's literally the signal priorities are decided by.</span><span data-lang="de">Wenn dich das anspricht: <a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">Stern aufs Repo</a> und stimm für die <a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP</a>-Issues, die du am dringendsten willst. Genau daraus entsteht die Priorisierung.</span></p>
   </div>
 </section>
 
@@ -1226,12 +1222,17 @@ auf PR #214.</div>
           </linearGradient>
         </defs>
 
-        <!-- USER box -->
+        <!-- USER box. The two outlines behind it are the only drawing of "you can
+             run many", which the page states four times in prose and shows never.
+             CORE deliberately gets none: the asymmetry IS the claim. -->
+        <rect class="dg-ghost" x="4"  y="28" width="190" height="92" rx="10"/>
+        <rect class="dg-ghost" x="10" y="34" width="190" height="92" rx="10"/>
         <rect class="dg-box" x="16" y="40" width="190" height="92" rx="10"/>
         <text class="dg-mono" x="30" y="62" fill="var(--accent-text)">user/&lt;you&gt;</text>
         <text class="dg-lbl" x="30" y="82"><tspan data-lang="en">Your context (USER)</tspan><tspan data-lang="de">Dein Kontext (USER)</tspan></text>
         <text class="dg-sub" x="30" y="102">bridge-config · work/</text>
         <text class="dg-sub" x="30" y="118">personas · accounts</text>
+        <text class="dg-cap" x="30" y="146"><tspan data-lang="en">one per client</tspan><tspan data-lang="de">eine pro Kunde</tspan></text>
 
         <!-- CORE box -->
         <rect class="dg-box" x="16" y="160" width="190" height="92" rx="10"/>
@@ -1271,13 +1272,6 @@ auf PR #214.</div>
 
     <p class="cu-foot"><span data-lang="en">Improvements go upstream with <code>/promote</code>. And it's runtime-agnostic: one <code>skills/</code> tree symlinks into each tool. Tested on Claude Code, working via <code>AGENTS.md</code> elsewhere, honestly labelled.</span><span data-lang="de">Verbesserungen gehen mit <code>/promote</code> nach upstream. Und es ist runtime-unabhängig: ein <code>skills/</code>-Baum wird per Symlink in jedes Tool eingebunden. Getestet auf Claude Code, anderswo via <code>AGENTS.md</code>, ehrlich gekennzeichnet.</span></p>
 
-    <div class="reveal sub-cta" style="margin-top:36px;text-align:center">
-      <p style="font-size:16px;line-height:1.7;margin-bottom:18px"><span data-lang="en">The runtime matrix and the full CORE/USER routing live in the concept guide and the interactive map.</span><span data-lang="de">Die Runtime-Matrix und das vollständige CORE/USER-Routing stehen im Konzept-Leitfaden und in der interaktiven Karte.</span></p>
-      <div class="cta-row" style="justify-content:center">
-        <a class="btn btn-primary" href="concepts.html"><span data-lang="en">Read the concept guide</span><span data-lang="de">Konzept-Leitfaden lesen</span><span class="arrow">→</span></a>
-        <a class="btn btn-secondary" href="explore.html"><span data-lang="en">Explore the concepts</span><span data-lang="de">Konzepte erkunden</span><span class="arrow">→</span></a>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -2060,15 +2054,15 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 </script>
 
 <!-- ============================================================
-     #mv-lanes: two sessions, one visible clock. Self-contained.
+     #mv-lanes: two sessions, run for run. Self-contained.
      Rebuilt from bridge-deck's office view rather than imported: that repo is
      Pixi under Apache-2.0 and this page is MIT, dependency-free and has no
      build step. What is borrowed is the discipline, not the code: one integer
      tick drives every motion as f(tick), and per-item phase offsets are hashed
-     from the item's own name so nothing breathes in lockstep. The clock is the
-     one visual quotation: same construction as the wall clock in every deck
-     room (outer ring, inner face, twelve marks with the cardinals thicker, a
-     sweeping second hand), redrawn here in the page's own tokens.
+     from the item's own name so nothing breathes in lockstep. A wall clock stood
+     here and was removed: these lanes carry no time axis (SPEED is lane fraction
+     per tick, DWELL and GAP are ticks), so a real instrument beside them measured
+     nothing they show, and it froze wrong when the figure came to rest.
      ============================================================ -->
 <script data-lanes>
 (function(){
@@ -2107,7 +2101,7 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
     return ((h % 628) + 628) % 628 / 100;
   }
 
-  var W, H, DPR, C = {}, tick = 0, raf = null, running = false, userPaused = false;
+  var W, H, DPR, C = {}, tick = 0, raf = null, running = false, userPaused = false, onScreen = true;
   var lanes = null;
 
   function newLane(id, warm){
@@ -2120,12 +2114,10 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 
   function recolor(){
     C = {
-      line:  css("--line"),       muted: css("--muted"),
-      ink:   css("--ink"),        onSurface: css("--on-surface"),
-      accent:css("--accent"),     accent2: css("--accent-secondary"),
-      text:  css("--accent-text"),attention: css("--attention-text"),
-      from:  css("--accent-from"),to: css("--accent-to"),
-      surface: css("--surface")
+      line:   css("--line"),        muted:  css("--muted"),
+      accent: css("--accent"),      accent2:css("--accent-secondary"),
+      text:   css("--accent-text"), body:   css("--on-surface"),
+      from:   css("--accent-from"), to:     css("--accent-to")
     };
   }
 
@@ -2164,53 +2156,14 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
     if(lanes[0].done && lanes[1].done) running = false;
   }
 
-  /* ---- the wall clock, same construction as every deck room ---- */
-  function drawClock(cx, cy, R, now){
-    var i, a, rr, card;
-    ctx.beginPath(); ctx.arc(cx + 1, cy + 1, R, 0, 6.283);
-    ctx.fillStyle = rgba(C.ink, 0.10); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283);
-    ctx.fillStyle = rgba(C.surface, 1); ctx.fill();
-    ctx.lineWidth = 1.8; ctx.strokeStyle = rgba(C.muted, 0.75); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, cy, R * 0.81, 0, 6.283);
-    ctx.fillStyle = rgba(C.surface, 1); ctx.fill();
-    for(i = 0; i < 12; i++){
-      a = (i * Math.PI * 2) / 12 - Math.PI / 2;
-      rr = R * 0.65; card = (i % 3 === 0);
-      ctx.beginPath();
-      ctx.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, card ? R * 0.075 : R * 0.044, 0, 6.283);
-      ctx.fillStyle = rgba(C.onSurface, card ? 0.9 : 0.45); ctx.fill();
-    }
-    var ms = now.getMilliseconds() / 1000;
-    var sec = now.getSeconds() + ms;
-    var min = now.getMinutes() + sec / 60;
-    var hr  = (now.getHours() % 12) + min / 60;
-    function hand(frac, len, width, color, back){
-      var ang = frac * Math.PI * 2 - Math.PI / 2;
-      ctx.beginPath();
-      ctx.moveTo(cx - Math.cos(ang) * (back || 0), cy - Math.sin(ang) * (back || 0));
-      ctx.lineTo(cx + Math.cos(ang) * len, cy + Math.sin(ang) * len);
-      ctx.lineWidth = width; ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.stroke();
-    }
-    hand(hr / 12,  R * 0.44, 2.2, rgba(C.ink, 0.9));
-    hand(min / 60, R * 0.64, 1.5, rgba(C.onSurface, 0.85));
-    hand(sec / 60, R * 0.72, 0.9, rgba(C.attention, 0.95), R * 0.2);
-    ctx.beginPath(); ctx.arc(cx, cy, 2, 0, 6.283);
-    ctx.fillStyle = rgba(C.attention, 1); ctx.fill();
-  }
-
   function draw(){
     ctx.clearRect(0, 0, W, H);
     var small = W < 460;
-    var R   = small ? 18 : 26;
-    var cx  = small ? 34 : 62, cy = H / 2;
-    var x0  = cx + R + (small ? 18 : 34);
+    var x0  = small ? 22 : 34;
     var x1  = W - (small ? 62 : 104);
     var rowA = H * 0.34, rowB = H * 0.70;
     var monoS = (small ? 8.5 : 10) + "px " + css("--font-mono");
     var sansS = (small ? 9 : 10.5) + "px " + css("--font-sans");
-
-    drawClock(cx, cy, R, new Date());
 
     ctx.textBaseline = "middle";
     for(var i = 0; i < lanes.length; i++){
@@ -2236,7 +2189,7 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
         if(i === 0 && !small){
           ctx.save(); ctx.translate(sx, y + 12); ctx.rotate(-0.5);
           ctx.textAlign = "right"; ctx.font = "400 " + monoS;
-          ctx.fillStyle = rgba(C.muted, 0.85); ctx.fillText(STOPS[k], 0, 0);
+          ctx.fillStyle = rgba(C.muted, 1); ctx.fillText(STOPS[k], 0, 0);
           ctx.restore();
         }
       }
@@ -2244,9 +2197,7 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
       // the marker, with a hashed idle bob so the two never move in lockstep
       var mx = x0 + (x1 - x0) * L.t;
       var bob = reduceMQ.matches ? 0 : Math.sin(tick * 0.06 + L.phase) * 0.9;
-      var g = ctx.createLinearGradient(mx - 8, 0, mx + 8, 0);
-      g.addColorStop(0, rgba(C.from, 1)); g.addColorStop(1, rgba(C.to, 1));
-      ctx.fillStyle = L.warm ? g : rgba(C.muted, 0.95);
+      ctx.fillStyle = L.warm ? rgba(C.text, 1) : rgba(C.muted, 0.95);
       ctx.beginPath();
       if(ctx.roundRect) ctx.roundRect(mx - 5, y - 5 + bob, 10, 10, 2);
       else ctx.rect(mx - 5, y - 5 + bob, 10, 10);
@@ -2256,7 +2207,9 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
       var bx = x1 + (small ? 12 : 22);
       ctx.textAlign = "left"; ctx.font = "400 " + monoS;
       if(L.kept === 0){
-        ctx.fillStyle = rgba(C.muted, 0.55);
+        // this line carries the whole argument of the figure and was the least
+        // readable thing in it at 2.15:1
+        ctx.fillStyle = rgba(C.body, 1);
         ctx.fillText(small ? "0" : t("none"), bx, y);
       } else {
         for(var n = 0; n < L.kept; n++){
@@ -2274,7 +2227,7 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 
       // the run counter, the one integer everything is a function of
       ctx.textAlign = "right"; ctx.font = "400 " + monoS;
-      ctx.fillStyle = rgba(C.muted, 0.8);
+      ctx.fillStyle = rgba(C.muted, 1);
       ctx.fillText(t("run") + " " + Math.min(L.run + (L.done ? 0 : 1), MAX_RUNS) + "/" + MAX_RUNS,
                    x1, y - (small ? 15 : 20));
     }
@@ -2287,7 +2240,7 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   }
   function stop(){ running = false; if(raf) window.cancelAnimationFrame(raf); raf = null; }
   function play(){
-    if(running || userPaused || reduceMQ.matches) return;
+    if(running || userPaused || !onScreen || reduceMQ.matches) return;
     running = true; raf = window.requestAnimationFrame(frame);
   }
   function staticFrame(){
@@ -2316,7 +2269,7 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   }
   if("IntersectionObserver" in window){
     new IntersectionObserver(function(es){
-      es.forEach(function(e){ e.isIntersecting ? play() : stop(); });
+      es.forEach(function(e){ onScreen = e.isIntersecting; onScreen ? play() : stop(); });
     }, { threshold: 0.25 }).observe(cv);
   }
 
@@ -2363,13 +2316,16 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 
   // examples/agency, counted on disk. 27 files, six folders plus the root.
   var TREE = [
-    { key:'root',      label:'./',          kids:[ {n:'',           f:5} ] },
-    { key:'identity',  label:'identity/',   kids:[ {n:'accounts/',  f:1}, {n:'mandants/', f:1} ] },
-    { key:'workflow',  label:'workflow/',   kids:[ {n:'calendars/', f:1}, {n:'contexts/', f:1} ] },
-    { key:'infra',     label:'infra/',      kids:[ {n:'backups/',   f:1}, {n:'channels/', f:4}, {n:'remotes/', f:2} ] },
-    { key:'work',      label:'work/',       kids:[ {n:'',           f:2}, {n:'tasks/',    f:3}, {n:'streams/', f:1}, {n:'done/', f:1} ] },
-    { key:'protocols', label:'protocols/',  kids:[ {n:'standing-orders/', f:1} ] },
-    { key:'claude',    label:'.claude/',    kids:[ {n:'agents/',    f:3} ] }
+    // f = files, l = lines of content in them. Both counted on disk:
+    //   find . -type f -not -path './.git/*' | wc -l        -> 27
+    //   find . -type f -not -path './.git/*' -exec cat {} + | wc -l  -> 1162
+    { key:'root',      label:'./',          l:306, kids:[ {n:'',           f:5} ] },
+    { key:'identity',  label:'identity/',   l:113, kids:[ {n:'accounts/',  f:1}, {n:'mandants/', f:1} ] },
+    { key:'workflow',  label:'workflow/',   l:129, kids:[ {n:'calendars/', f:1}, {n:'contexts/', f:1} ] },
+    { key:'infra',     label:'infra/',      l:279, kids:[ {n:'backups/',   f:1}, {n:'channels/', f:4}, {n:'remotes/', f:2} ] },
+    { key:'work',      label:'work/',       l:222, kids:[ {n:'',           f:2}, {n:'tasks/',    f:3}, {n:'streams/', f:1}, {n:'done/', f:1} ] },
+    { key:'protocols', label:'protocols/',  l:37,  kids:[ {n:'standing-orders/', f:1} ] },
+    { key:'claude',    label:'.claude/',    l:76,  kids:[ {n:'agents/',    f:3} ] }
   ];
   var TOTAL = 0;
   TREE.forEach(function(t){ t.files = t.kids.reduce(function(a,k){ return a + k.f; }, 0); TOTAL += t.files; });
@@ -2386,8 +2342,25 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   function mix(h1,h2,t){ var a=hex(h1), b=hex(h2);
     return 'rgb('+Math.round(a[0]+(b[0]-a[0])*t)+','+Math.round(a[1]+(b[1]-a[1])*t)+','+Math.round(a[2]+(b[2]-a[2])*t)+')'; }
 
-  var W,H,DPR,C={},tick=0,raf=null,running=false;
+  var W,H,DPR,C={},tick=0,raf=null,running=false,dots=null;
   var TAU = Math.PI*2, GAP = 0.016;
+
+  /* The outer band is one dot per LINE of content, 1162 of them, not a decorative
+     scatter. Density is therefore the real weight of each folder, which is the
+     same truth claim the file counts make. Positions are built once per size from
+     a seeded generator so a resize or a theme flip never reshuffles the field,
+     and each frame fills two batched paths rather than 1162 separate arcs. */
+  function buildDots(cx,cy,r0,r1){
+    dots=[]; var seg=TAU/TREE.length, seed=1;
+    function rnd(){ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; }
+    for(var i=0;i<TREE.length;i++){
+      var a0=-Math.PI/2+i*seg+GAP, a1=-Math.PI/2+(i+1)*seg-GAP, n=TREE[i].l;
+      for(var k=0;k<n;k++){
+        var ang=a0+(a1-a0)*rnd(), rad=r0+(r1-r0)*Math.sqrt(rnd());
+        dots.push(Math.cos(ang)*rad+cx, Math.sin(ang)*rad+cy, i);
+      }
+    }
+  }
 
   function recolor(){
     C = { line:css('--line'), muted:css('--muted'), ink:css('--ink'), surface:css('--surface'),
@@ -2402,8 +2375,14 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   }
 
   // one pass: rings light from the centre outward, then one line goes back in
-  var T_RING1=70, T_RING2=150, T_RING3=240, T_WRITE=320, T_REST=430;
-  function phase(){ return reduceMQ.matches ? T_REST : tick; }
+  // Real milliseconds, not rAF ticks: the old 611 tick cycle ran 10.2s at 60Hz
+  // and 5.1s at 120Hz, so the first screen animated at a rate that depended on
+  // the reader's monitor. One pass, then it rests. A figure on the first screen
+  // that never stops is the loudest thing on the page, and it is the last thing
+  // that should be.
+  var T_RING1=650, T_RING2=1400, T_RING3=2250, T_WRITE=3000, T_REST=4100;
+  var settled=false, t0=0, elapsed=0, onScreen=true;
+  function phase(){ return reduceMQ.matches ? T_REST : elapsed; }
 
   function arc(cx,cy,r0,r1,a0,a1,fill){
     ctx.beginPath();
@@ -2414,8 +2393,9 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   function draw(){
     ctx.clearRect(0,0,W,H);
     var cx=W/2, cy=H*0.50, R=Math.min(W*0.40,H*0.455), t=phase();
-    var labRx=R*1.20, labRy=R*0.92;
-    var r0=R*0.185, r1a=R*0.24, r1b=R*0.47, r2a=R*0.50, r2b=R*0.68, r3a=R*0.71, r3b=R*0.80;
+    var labRx=R*1.22, labRy=R*0.99;
+    var r0=R*0.185, r1a=R*0.24, r1b=R*0.47, r2a=R*0.50, r2b=R*0.68, r3a=R*0.71, r3b=R*0.88;
+    if(!dots) buildDots(cx,cy,r3a,r3b);
     var lit1=Math.max(0,Math.min(1,(t-0)/T_RING1));
     var lit2=Math.max(0,Math.min(1,(t-T_RING1)/(T_RING2-T_RING1)));
     var lit3=Math.max(0,Math.min(1,(t-T_RING2)/(T_RING3-T_RING2)));
@@ -2435,13 +2415,7 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
         var b0=a0+j*ks+GAP*0.4, b1=a0+(j+1)*ks-GAP*0.4;
         var on2=((i*kn+j+1)/(TREE.length*kn))<=lit2;
         arc(cx,cy,r2a,r2b,b0,b1, on2 ? mix(C.line,C.accent2,0.34) : mix(C.surface,C.line,0.94));
-        // ring 3, one tick per file
-        var f=node.kids[j].f, fs=(b1-b0)/Math.max(f,1);
-        for(var k=0;k<f;k++){
-          var c0=b0+k*fs+fs*0.22, c1=b0+(k+1)*fs-fs*0.22;
-          var on3=((i*kn+j+1)/(TREE.length*kn))<=lit3;
-          arc(cx,cy,r3a,r3b,c0,c1, on3 ? rgba(C.text,0.95) : rgba(C.muted,0.28));
-        }
+        // ring 3 is the dot field, drawn once for all folders below
       }
       // the folder name, upright, outside the rings
       var mid=(a0+a1)/2, lx=cx+Math.cos(mid)*labRx, ly=cy+Math.sin(mid)*labRy;
@@ -2454,10 +2428,24 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
       ctx.fillText(node.label, lx, ly);
       if(W>=380){
         ctx.font='400 '+(W<460?8:9)+'px '+css('--font-sans');
-        ctx.fillStyle=rgba(C.muted,0.75);
+        ctx.fillStyle=rgba(C.muted,1);
         ctx.fillText(node.files+' '+(node.files===1?L.file:L.files), lx, ly+12);
       }
       a+=seg;
+    }
+
+    // the dot field, two batched fills instead of 1162 arcs
+    var dr=W<380?0.7:0.9;
+    for(var pass=0;pass<2;pass++){
+      ctx.beginPath();
+      for(var d=0;d<dots.length;d+=3){
+        var fi=dots[d+2], isOn=((fi+1)/TREE.length)<=lit3;
+        if((pass===0)!==isOn) continue;
+        ctx.moveTo(dots[d]+dr,dots[d+1]);
+        ctx.arc(dots[d],dots[d+1],dr,0,TAU);
+      }
+      ctx.fillStyle = pass===0 ? rgba(C.text,0.85) : rgba(C.muted,0.30);
+      ctx.fill();
     }
 
     // the write back: one line returns from work/ into the centre
@@ -2473,30 +2461,39 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
     }
 
     // the centre: what does the reading
-    var breathe = reduceMQ.matches ? 0 : Math.sin(tick*0.05)*0.06;
-    var cg=ctx.createLinearGradient(cx-r0,cy-r0,cx+r0,cy+r0);
-    cg.addColorStop(0,C.from); cg.addColorStop(1,C.to);
-    ctx.beginPath(); ctx.arc(cx,cy,r0*(1+breathe)+3,0,TAU);
-    ctx.fillStyle=rgba(C.from,0.16); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx,cy,r0*(1+breathe),0,TAU); ctx.fillStyle=cg; ctx.fill();
+    // solid, not a gradient: the label on it was failing at 3.66:1, and the disc
+    // was one of six gradient instances in a page that reserves them for headings
+    ctx.beginPath(); ctx.arc(cx,cy,r0+3,0,TAU);
+    ctx.fillStyle=rgba(C.text,0.16); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,r0,0,TAU); ctx.fillStyle=rgba(C.text,1); ctx.fill();
     ctx.font='600 '+(W<380?8:9.5)+'px '+css('--font-sans');
     ctx.fillStyle=rgba(C.surface,1);
     ctx.fillText(t<T_RING3 ? L.reads : L.writes, cx, cy);
   }
 
-  function frame(){
-    if(!running){ draw(); return; }
-    tick++;
-    if(tick>T_REST+180){ tick=0; }
+  function frame(now){
+    if(!running) return;
+    elapsed = now - t0;
+    if(elapsed >= T_REST){ elapsed = T_REST; settled = true; running = false; raf = null; draw(); return; }
     draw();
-    raf=requestAnimationFrame(frame);
+    raf = requestAnimationFrame(frame);
   }
   function stop(){ running=false; if(raf) cancelAnimationFrame(raf); raf=null; }
-  function play(){ if(running||reduceMQ.matches) return; running=true; raf=requestAnimationFrame(frame); }
+  // Every door into motion tests the same three gates. Scrolling away, hiding the
+  // tab and resizing are three separate callers, so the check belongs here rather
+  // than at each call site.
+  function play(){
+    if(running || settled || !onScreen || reduceMQ.matches) return;
+    running = true;
+    t0 = performance.now() - elapsed;   // resume where it paused, do not restart
+    raf = requestAnimationFrame(frame);
+  }
   function start(){
     stop(); if(!measure()){ requestAnimationFrame(start); return; }
-    recolor(); tick=0;
-    if(reduceMQ.matches){ draw(); return; }
+    recolor(); dots=null;
+    if(reduceMQ.matches){ elapsed=T_REST; settled=true; draw(); return; }
+    if(settled){ draw(); return; }   // a resize must not replay the sweep
+    elapsed=0; draw();               // paint the structure dim, then run
     play();
   }
 
@@ -2507,7 +2504,9 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   document.addEventListener('visibilitychange', function(){ document.hidden?stop():play(); });
   if(reduceMQ.addEventListener){ reduceMQ.addEventListener('change', start); }
   if('IntersectionObserver' in window){
-    new IntersectionObserver(function(es){ es.forEach(function(e){ e.isIntersecting?play():stop(); }); },{threshold:0.05}).observe(cv);
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){ onScreen = e.isIntersecting; onScreen ? play() : stop(); });
+    },{threshold:0.05}).observe(cv);
   }
   start();
 })();

@@ -106,7 +106,7 @@ a{color:var(--accent-text)}
 .site-nav a.active{position:relative}
 .site-nav a.active::after{
   content:"";position:absolute;left:12px;right:12px;bottom:1px;height:2px;border-radius:2px;
-  background:linear-gradient(120deg,var(--accent-from),var(--accent-to));
+  background:var(--accent-text);
 }
 
 @media (max-width:560px){
