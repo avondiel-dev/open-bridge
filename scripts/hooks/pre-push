@@ -120,7 +120,7 @@ ZERO="0000000000000000000000000000000000000000"
 # rule below is the primary guard; this content net is the backstop that catches
 # USER instance files smuggled onto ANY other branch name (main, feature/*, a
 # renamed user branch, …) — names are not trusted, content is.
-USER_PATHS='^(work/(log\.md|board\.md|tasks/|streams/|done/|archive/)|identity/agent/[^_]|identity/(personas|mandants|accounts|contracts)/[^_]|identity/voiceprints/|infra/(remotes|channels|backups|instances|utilities|transcriptions)/[^_]|workflow/(calendars|contexts|projects|checks|workspaces)/[^_]|agents/[^_]|ecosystem\.[a-z0-9-]+\.yaml$|(overlays|workspaces)\.lock\.yaml$|bridge-config\.yaml$)'
+USER_PATHS='^(work/(log\.md|board\.md|tasks/|streams/|done/|archive/)|identity/agent/[^_]|identity/(personas|mandants|accounts|contracts)/[^_]|identity/voiceprints/|infra/(remotes|channels|backups|instances|utilities|transcriptions)/[^_]|workflow/(calendars|contexts|projects|checks|workspaces|workloads)/[^_]|agents/[^_]|ecosystem\.[a-z0-9-]+\.yaml$|(overlays|workspaces)\.lock\.yaml$|bridge-config\.yaml$)'
 
 # CORE companions that live INSIDE the USER_PATHS prefixes and must keep flowing
 # upstream. Stripped before the match, so this list is the only thing standing
@@ -188,7 +188,12 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   changed=$(printf '%s\n' "$push_commits" | sed '/^$/d' \
             | git diff-tree -r --no-commit-id --name-only --root --stdin 2>/dev/null \
             | grep -Ev "$CORE_EXEMPT") || changed=""
-  if [ -n "$changed" ] && printf '%s\n' "$changed" | grep -Eq "$USER_PATHS"; then
+  # `grep -q` exits on the FIRST match and closes the pipe, so printf takes an
+  # EPIPE and dash (the /bin/sh of every Ubuntu runner) prints
+  # "printf: I/O error" to stderr on every single hit. The verdict was always
+  # right, the noise only made the guard look broken in CI logs (06.09.2026).
+  # Without -q, grep consumes all input and nothing gets a SIGPIPE.
+  if [ -n "$changed" ] && printf '%s\n' "$changed" | grep -E "$USER_PATHS" >/dev/null 2>&1; then
     blocked="$blocked ${dest}(USER-content)"
   fi
 done

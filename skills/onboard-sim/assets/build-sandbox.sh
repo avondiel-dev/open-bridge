@@ -31,7 +31,27 @@ git init -q --bare "$PUBLIC_BARE"
 
 # 2) newcomer working copy = the live CORE (tracked + new-untracked, minus ignored)
 mkdir -p "$NEWCOMER"
-( cd "$CORE_SRC" && git ls-files -co --exclude-standard ) > "$SANDBOX/.filelist"
+# A public open-bridge clone contains CORE ONLY. Taking the host tree verbatim is
+# correct upstream and wrong in every downstream instance, where `git ls-files`
+# also yields work/, identity/, bridge-config.yaml and the rest. The baseline
+# commit then carries USER content, the CORE-only `ci/probe` branch inherits it
+# through main, the guard blocks the probe exactly as designed, and
+# assert-no-leak.sh reports BROKEN SANDBOX without a single real leak having
+# happened. Observed in a downstream instance's CI, 06.09.2026.
+#
+# The USER definition is SOURCED from the guard itself rather than copied: the
+# regex already exists in four places and has drifted between them, and a fifth
+# copy in the very sandbox that is supposed to prove the guard would be the worst
+# of the five. A file is kept when it is a CORE companion, or when it is not USER.
+eval "$(grep -E '^(USER_PATHS|CORE_EXEMPT)=' "$CORE_SRC/scripts/hooks/pre-push")"
+if [ -z "${USER_PATHS:-}" ] || [ -z "${CORE_EXEMPT:-}" ]; then
+  echo "build-sandbox: cannot read USER_PATHS/CORE_EXEMPT from $CORE_SRC/scripts/hooks/pre-push" >&2
+  exit 1
+fi
+( cd "$CORE_SRC" && git ls-files -co --exclude-standard ) > "$SANDBOX/.filelist.all"
+{ grep -E  "$CORE_EXEMPT" "$SANDBOX/.filelist.all" || true
+  grep -Ev "$USER_PATHS"  "$SANDBOX/.filelist.all" || true
+} | sort -u > "$SANDBOX/.filelist"
 rsync -a --files-from="$SANDBOX/.filelist" "$CORE_SRC"/ "$NEWCOMER"/
 cd "$NEWCOMER"
 git init -q -b main
