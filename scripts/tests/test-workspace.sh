@@ -97,6 +97,21 @@ assert_notrace() {   # <desc> — current $OUT carries no python traceback (grac
     fail "$1 — python traceback in output (engine crashed)" "$OUT"
   else pass "$1"; fi
 }
+snapshot_file() {    # <path> <dest> — copy if present, else make sure <dest> is absent
+  if [ -e "$1" ]; then cp "$1" "$2"; else rm -f "$2"; fi
+}
+assert_unchanged() { # <desc> <path> <before> — byte-identical to its snapshot,
+  # including the case where the file legitimately exists on NEITHER side.
+  # Deliberately NOT assert_absent: an instance that actually uses workspaces
+  # TRACKS `workspaces.lock.yaml` at its repo root, and the fixture is built
+  # with `git archive HEAD`, so there every consumer starts with the file
+  # present and "absent" can never hold. Upstream, where no lock is tracked,
+  # the old assertion passed and hid that. The property under test is "the
+  # refused verb touched nothing", which is what this measures.
+  if [ ! -e "$2" ] && [ ! -e "$3" ]; then pass "$1"; return; fi
+  if [ ! -e "$2" ] || [ ! -e "$3" ]; then fail "$1 — appeared or vanished: $2"; return; fi
+  if cmp -s "$2" "$3"; then pass "$1"; else fail "$1 — content changed: $2"; fi
+}
 
 # run_workspace <consumer> <args...> — feeds `yes y` on stdin so any behavioural
 # [y] gate (incl. the delegated overlay.py prompts) is satisfied; captures $OUT + $RC.
@@ -118,7 +133,12 @@ trap cleanup EXIT
 
 # --- REAL registry snapshot (must be byte-identical before/after the whole run) --
 REAL_WS="${HOME}/.workspaces"
-real_snapshot() { ( ls -laR "$REAL_WS" 2>/dev/null; find "$REAL_WS" -type f -exec shasum {} + 2>/dev/null ) | shasum | awk '{print $1}'; }
+# `ls -laR` prints the `..` entry, i.e. $HOME's OWN mtime, size and link count.
+# Any file created or removed anywhere in the home dir during the suite flipped
+# this hash while ~/.workspaces/ stayed provably untouched — a false positive by
+# construction, measured 05.09.2026 (mkdir in $HOME flips it, rmdir restores it).
+# List the paths instead of the parent's stat line, and keep hashing contents.
+real_snapshot() { ( find "$REAL_WS" 2>/dev/null | sort; find "$REAL_WS" -type f -exec shasum {} + 2>/dev/null | sort ) | shasum | awk '{print $1}'; }
 REAL_BEFORE="$(real_snapshot)"
 
 # --- shared-registry (Option 3 write-through) readers -------------------------
@@ -145,7 +165,22 @@ PY
 # --- pristine consumer template (tracked tree only, no .git / .bridge) -------
 PRISTINE="$TMP/pristine"
 mkdir -p "$PRISTINE"
-git -C "$ROOT" archive --format=tar HEAD | ( cd "$PRISTINE" && tar -xf - )
+# The fixture is copied once PER CONSUMER, so its size multiplies by the number
+# of consumers in the suite. Upstream the tree is small and this is invisible;
+# on a downstream instance `work/` fills with deliverables and the copies stop
+# being free. Measured on one such instance: 334 of 356 MB were `work/`, one
+# finished consumer 728 MB, peak ~15.7 GB against the ~14 GB free on a GitHub
+# ubuntu-latest runner. The runner then dies mid-step, which surfaces as a
+# failed job with the step stuck `in_progress`, every later step `pending` and
+# NO logs uploaded (BlobNotFound) — never as a test failure, so it reads like a
+# broken assertion and is not one. No test or engine reads a byte of `work/`;
+# excluding it left 22 MB. Quoted array, not word splitting: agents whose shell
+# is zsh do not split an unquoted list at all.
+FIXTURE_PATHS=()
+while IFS= read -r _p; do FIXTURE_PATHS+=("$_p"); done \
+  < <(git -C "$ROOT" ls-tree --name-only HEAD | grep -vxE 'work|imports')
+[ "${#FIXTURE_PATHS[@]}" -gt 0 ] || { echo "fixture path list is empty — refusing to build an empty pristine tree" >&2; exit 1; }
+git -C "$ROOT" archive --format=tar HEAD -- "${FIXTURE_PATHS[@]}" | ( cd "$PRISTINE" && tar -xf - )
 
 mkcon() {  # echoes a fresh consumer dir on a user/test branch (mutating verbs allowed)
   local c; c="$(mktemp -d "$TMP/con.XXXXXX")"
@@ -532,6 +567,7 @@ CON12="$(mkcon)"
 DEF12="$CON12/workflow/workspaces/demo-workspace.yaml"
 run_workspace "$CON12" create demo-workspace ; assert_rc "create (for trust-guard case)" 0
 cp "$DEF12" "$TMP/def12.before"
+snapshot_file "$CON12/workspaces.lock.yaml" "$TMP/lock12.before"
 # ext:: is a remote-code-execution transport → must be refused before any clone
 run_workspace "$CON12" add-repo demo-workspace 'ext::sh -c id' --role code
 assert_rc "ext:: scheme refused (exit 1)" 1
@@ -544,7 +580,7 @@ assert_notrace "leading-dash refusal is a clean error, not a crash"
 assert_absent "trust guard cloned nothing" "$CON12/.bridge/workspaces/demo-workspace"
 assert_eq "trust guard left repos[] empty" "$(def_repos_count "$DEF12")" "0"
 if cmp -s "$DEF12" "$TMP/def12.before"; then pass "trust guard wrote nothing to the definition"; else fail "trust guard mutated the definition"; fi
-assert_absent "trust guard wrote no lock" "$CON12/workspaces.lock.yaml"
+assert_unchanged "trust guard did not touch the lock" "$CON12/workspaces.lock.yaml" "$TMP/lock12.before"
 # scheme allowlist: only https/ssh/file/scp are trusted → git:// and http:// (a
 # supply-chain hole if the allowlist is ever widened) must be REFUSED pre-clone.
 run_workspace "$CON12" add-repo demo-workspace 'git://evil.example/repo.git' --role code
@@ -646,13 +682,14 @@ YAML
 mkdir -p "$CORER/.bridge/workspaces/gated-ws/demo-code"
 printf 'print("member")\n' > "$CORER/.bridge/workspaces/gated-ws/demo-code/main.py"
 cp "$CORER/workflow/workspaces/gated-ws.yaml" "$TMP/gated.before"
+snapshot_file "$CORER/workspaces.lock.yaml" "$TMP/gatedlock.before"
 run_workspace "$CORER" remove-repo gated-ws demo-code
 assert_rc "remove-repo refused off a user/* branch" 1
 assert_out "remove-repo refusal names the user/* gate" "user/"
 assert_notrace "remove-repo refusal is a clean error, not a crash"
 assert_file "the member clone SURVIVED the refused remove-repo" "$CORER/.bridge/workspaces/gated-ws/demo-code/main.py"
 if cmp -s "$CORER/workflow/workspaces/gated-ws.yaml" "$TMP/gated.before"; then pass "remove-repo off-branch mutated no definition"; else fail "remove-repo off-branch mutated the definition"; fi
-assert_absent "remove-repo off-branch wrote no lock" "$CORER/workspaces.lock.yaml"
+assert_unchanged "remove-repo off-branch did not touch the lock" "$CORER/workspaces.lock.yaml" "$TMP/gatedlock.before"
 
 # ───────────────────────────────────────────────────────────────────
 echo
@@ -912,12 +949,13 @@ DEFF="$CONF/workflow/workspaces/demo-workspace.yaml"
 EXCLF="$CONF/.git/info/exclude"
 run_workspace "$CONF" create demo-workspace ; assert_rc "create (ordering case)" 0
 cp "$DEFF" "$TMP/deff.before"
+snapshot_file "$CONF/workspaces.lock.yaml" "$TMP/defflock.before"
 run_workspace "$CONF" add-repo demo-workspace "file://$TMP/does-not-exist-repo" --role code
 assert_rc_nonzero "add-repo with an unclonable URL fails"
 assert_notrace "the failed clone is a clean error, not a crash"
 assert_eq "definition has NO member after a failed clone (no partial write)" "$(def_repos_count "$DEFF")" "0"
 if cmp -s "$DEFF" "$TMP/deff.before"; then pass "failed clone wrote nothing to the definition"; else fail "failed clone mutated the definition"; fi
-assert_absent "no lock written after a failed clone" "$CONF/workspaces.lock.yaml"
+assert_unchanged "failed clone did not touch the lock" "$CONF/workspaces.lock.yaml" "$TMP/defflock.before"
 assert_nogrep "no exclude block after a failed clone" "$EXCLF" "workspace:demo-workspace"
 # and the mirror image: a SUCCESSFUL subscribe writes the member path into the
 # exclude block (the guard is armed as part of the ordered write path).
