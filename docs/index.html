@@ -818,25 +818,26 @@ auf PR #214.</div>
           </div>
         </div>
 
-        <!-- Day payoff -->
-        <div class="mv-days">
-          <div class="mv-day-chip">
-            <div class="num">1</div>
-            <p>
-              <span class="lab"><span data-lang="en">Day one</span><span data-lang="de">Tag eins</span></span>
-              <span data-lang="en">You explain the world once. The agent writes it down as it works.</span>
-              <span data-lang="de">Du erklärst die Welt einmal. Der Agent schreibt sie auf, während er arbeitet.</span>
-            </p>
-          </div>
-          <div class="mv-day-chip now">
-            <div class="num">2</div>
-            <p>
-              <span class="lab"><span data-lang="en">Day two</span><span data-lang="de">Tag zwei</span></span>
-              <span data-lang="en">It reads the record at session start and already knows your repos, clients and last decisions.</span>
-              <span data-lang="de">Er liest das Protokoll beim Start und kennt damit schon deine Repos, Kunden und letzten Entscheidungen.</span>
-            </p>
-          </div>
-        </div>
+        <!-- ===== TWO LANES, ONE CLOCK =====
+             The page claims context accumulation in prose eight times over and
+             never shows it. Two sessions run against one visible clock: the top
+             lane re-reads the same four files every run and ends where it began,
+             the bottom lane reads them once, writes to work/log.md, and passes
+             them from run two on. The stack under the lower lane is the whole
+             argument. Stops are the four filenames the panel above already
+             lists, not invented labels. Clock geometry and the one-integer-tick
+             discipline are rebuilt from bridge-deck, not imported. -->
+        <figure id="mv-lanes" aria-labelledby="mvl-cap">
+          <canvas id="mvl-canvas" aria-hidden="true"></canvas>
+          <p class="mvl-sr">
+            <span data-lang="en">Two sessions measured against the same clock. Without a written record a session re-reads the same four files on every run and finishes where it started. With one, it reads them once, writes what happened to work/log.md, and from the second run onward starts from that record instead. After three runs the second session has a stack of three entries and the first still has none.</span>
+            <span data-lang="de">Zwei Sitzungen an derselben Uhr gemessen. Ohne Protokoll liest eine Sitzung bei jedem Lauf dieselben vier Dateien neu und endet dort, wo sie angefangen hat. Mit Protokoll liest sie sie einmal, schreibt fest was passiert ist, und startet ab dem zweiten Lauf aus diesem Protokoll. Nach drei Läufen hat die zweite Sitzung einen Stapel von drei Einträgen, die erste keinen.</span>
+          </p>
+          <figcaption class="mvl-cap" id="mvl-cap">
+            <span data-lang="en">Same clock, two sessions. Only one of them keeps anything.</span>
+            <span data-lang="de">Dieselbe Uhr, zwei Sitzungen. Nur eine behält etwas.</span>
+          </figcaption>
+        </figure>
 
         <div class="mv-replay">
           <button type="button" id="mvPause">
@@ -1524,6 +1525,23 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 }
 #mechanic-viz .mv-compound-only{ opacity:0; transition:opacity .5s ease-out }
 #mechanic-viz.compounded .mv-compound-only{ opacity:1 }
+/* ---- two lanes on one clock ---- */
+#mv-lanes{ margin:34px 0 0; padding:0 }
+#mv-lanes canvas{
+  display:block; width:100%; max-width:760px; margin:0 auto;
+  aspect-ratio:760 / 250; border:1px solid var(--line); border-radius:var(--r-lg);
+  background:var(--surface-subtle);
+}
+#mv-lanes .mvl-cap{
+  margin:12px auto 0; max-width:760px; text-align:center;
+  font:400 13px/1.5 var(--font-sans); color:var(--muted);
+}
+/* the spoken equivalent of the canvas, per the #hero-net precedent */
+.mvl-sr{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+@media (max-width:520px){ #mv-lanes canvas{ aspect-ratio:380 / 210 } }
 #mechanic-viz .mv-replay{ display:flex; justify-content:center; gap:10px; margin-top:24px }
 #mechanic-viz .mv-replay button{
   font:500 14px/1.2 var(--font-sans); cursor:pointer;
@@ -1896,6 +1914,282 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   if(reduce.addEventListener){
     reduce.addEventListener("change", function(){ if(reduce.matches){ stop(); staticFinal(); } });
   }
+})();
+</script>
+
+<!-- ============================================================
+     #mv-lanes — two sessions, one visible clock. Self-contained.
+     Rebuilt from bridge-deck's office view rather than imported: that repo is
+     Pixi under Apache-2.0 and this page is MIT, dependency-free and has no
+     build step. What is borrowed is the discipline, not the code — one integer
+     tick drives every motion as f(tick), and per-item phase offsets are hashed
+     from the item's own name so nothing breathes in lockstep. The clock is the
+     one visual quotation: same construction as the wall clock in every deck
+     room (outer ring, inner face, twelve marks with the cardinals thicker, a
+     sweeping second hand), redrawn here in the page's own tokens.
+     ============================================================ -->
+<script data-lanes>
+(function(){
+  "use strict";
+  var fig = document.getElementById("mv-lanes");
+  var cv  = document.getElementById("mvl-canvas");
+  if(!fig || !cv || !cv.getContext) return;
+  var ctx = cv.getContext("2d");
+  var reduceMQ = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  var STOPS  = ["CLAUDE.md", "ecosystem.yaml", "work/board.md", "work/log.md"];
+  var STOP_T = [0.20, 0.40, 0.60, 0.80];
+  var SPEED  = 0.0042;   // lane fraction per tick
+  var DWELL  = 36;       // ticks held at a stop
+  var GAP    = 46;       // ticks between runs
+  var MAX_RUNS = 3;      // then the picture rests, made
+
+  var LANG = {
+    en: { cold:"no record", warm:"with work/log.md", run:"run", kept:"kept", none:"nothing kept" },
+    de: { cold:"ohne Protokoll", warm:"mit work/log.md", run:"Lauf", kept:"behalten", none:"nichts behalten" }
+  };
+  function lang(){ return document.documentElement.getAttribute("data-active-lang") === "de" ? "de" : "en"; }
+  function t(k){ return LANG[lang()][k]; }
+  function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function rgba(hex, a){
+    var h = (hex || "").replace("#", "");
+    if(h.length === 3) h = h.replace(/./g, "$&$&");
+    var n = parseInt(h || "888888", 16);
+    return "rgba(" + ((n>>16)&255) + "," + ((n>>8)&255) + "," + (n&255) + "," + a + ")";
+  }
+  /* bridge-deck hashes a sprite's phase from its own id so a rebuild does not
+     resynchronise the whole room. Same trick, two items. */
+  function hashPhase(str){
+    var h = 0, i;
+    for(i = 0; i < str.length; i++){ h = (h * 31 + str.charCodeAt(i)) | 0; }
+    return ((h % 628) + 628) % 628 / 100;
+  }
+
+  var W, H, DPR, C = {}, tick = 0, raf = null, running = false, userPaused = false;
+  var lanes = null;
+
+  function newLane(id, warm){
+    return { id:id, warm:warm, t:0, run:0, stop:-1, hold:0, wait:0, kept:0, phase:hashPhase(id), done:false };
+  }
+  function reset(){
+    lanes = [ newLane("cold-session", false), newLane("warm-session", true) ];
+    tick = 0;
+  }
+
+  function recolor(){
+    C = {
+      line:  css("--line"),       muted: css("--muted"),
+      ink:   css("--ink"),        onSurface: css("--on-surface"),
+      accent:css("--accent"),     accent2: css("--accent-secondary"),
+      text:  css("--accent-text"),attention: css("--attention-text"),
+      from:  css("--accent-from"),to: css("--accent-to"),
+      surface: css("--surface")
+    };
+  }
+
+  function measure(){
+    var r = cv.getBoundingClientRect();
+    if(!r.width || !r.height) return false;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = r.width; H = r.height;
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    return true;
+  }
+
+  /* ---- one step of the world, f(tick) ---- */
+  function step(){
+    tick++;
+    for(var i = 0; i < lanes.length; i++){
+      var L = lanes[i];
+      if(L.done) continue;
+      if(L.wait > 0){ L.wait--; continue; }
+      if(L.hold > 0){ L.hold--; continue; }
+      // a warm lane pays the stop cost only on its first run; after that it
+      // starts from the record instead of re-reading the world.
+      var paysStops = !L.warm || L.run === 0;
+      if(paysStops && L.stop + 1 < STOP_T.length && L.t >= STOP_T[L.stop + 1]){
+        L.stop++; L.hold = DWELL; continue;
+      }
+      L.t += SPEED;
+      if(L.t >= 1){
+        L.t = 1; L.run++;
+        if(L.warm) L.kept++;
+        if(L.run >= MAX_RUNS){ L.done = true; continue; }
+        L.wait = GAP; L.t = 0; L.stop = -1;
+      }
+    }
+    if(lanes[0].done && lanes[1].done) running = false;
+  }
+
+  /* ---- the wall clock, same construction as every deck room ---- */
+  function drawClock(cx, cy, R, now){
+    var i, a, rr, card;
+    ctx.beginPath(); ctx.arc(cx + 1, cy + 1, R, 0, 6.283);
+    ctx.fillStyle = rgba(C.ink, 0.10); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283);
+    ctx.fillStyle = rgba(C.surface, 1); ctx.fill();
+    ctx.lineWidth = 1.8; ctx.strokeStyle = rgba(C.muted, 0.75); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, R * 0.81, 0, 6.283);
+    ctx.fillStyle = rgba(C.surface, 1); ctx.fill();
+    for(i = 0; i < 12; i++){
+      a = (i * Math.PI * 2) / 12 - Math.PI / 2;
+      rr = R * 0.65; card = (i % 3 === 0);
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, card ? R * 0.075 : R * 0.044, 0, 6.283);
+      ctx.fillStyle = rgba(C.onSurface, card ? 0.9 : 0.45); ctx.fill();
+    }
+    var ms = now.getMilliseconds() / 1000;
+    var sec = now.getSeconds() + ms;
+    var min = now.getMinutes() + sec / 60;
+    var hr  = (now.getHours() % 12) + min / 60;
+    function hand(frac, len, width, color, back){
+      var ang = frac * Math.PI * 2 - Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx - Math.cos(ang) * (back || 0), cy - Math.sin(ang) * (back || 0));
+      ctx.lineTo(cx + Math.cos(ang) * len, cy + Math.sin(ang) * len);
+      ctx.lineWidth = width; ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.stroke();
+    }
+    hand(hr / 12,  R * 0.44, 2.2, rgba(C.ink, 0.9));
+    hand(min / 60, R * 0.64, 1.5, rgba(C.onSurface, 0.85));
+    hand(sec / 60, R * 0.72, 0.9, rgba(C.attention, 0.95), R * 0.2);
+    ctx.beginPath(); ctx.arc(cx, cy, 2, 0, 6.283);
+    ctx.fillStyle = rgba(C.attention, 1); ctx.fill();
+  }
+
+  function draw(){
+    ctx.clearRect(0, 0, W, H);
+    var small = W < 460;
+    var R   = small ? 18 : 26;
+    var cx  = small ? 34 : 62, cy = H / 2;
+    var x0  = cx + R + (small ? 18 : 34);
+    var x1  = W - (small ? 62 : 104);
+    var rowA = H * 0.34, rowB = H * 0.70;
+    var monoS = (small ? 8.5 : 10) + "px " + css("--font-mono");
+    var sansS = (small ? 9 : 10.5) + "px " + css("--font-sans");
+
+    drawClock(cx, cy, R, new Date());
+
+    ctx.textBaseline = "middle";
+    for(var i = 0; i < lanes.length; i++){
+      var L = lanes[i], y = i === 0 ? rowA : rowB;
+
+      // label above the lane
+      ctx.textAlign = "left"; ctx.font = "500 " + sansS;
+      ctx.fillStyle = rgba(L.warm ? C.text : C.muted, 1);
+      ctx.fillText(L.warm ? t("warm") : t("cold"), x0, y - (small ? 15 : 20));
+
+      // the track
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y);
+      ctx.lineWidth = 1; ctx.strokeStyle = rgba(C.line, 1); ctx.stroke();
+
+      // the four stops
+      for(var k = 0; k < STOP_T.length; k++){
+        var sx = x0 + (x1 - x0) * STOP_T[k];
+        var passed = L.t >= STOP_T[k];
+        var pays = !L.warm || L.run === 0;
+        ctx.beginPath(); ctx.arc(sx, y, 2.4, 0, 6.283);
+        ctx.fillStyle = rgba(pays ? (passed ? C.accent : C.muted) : C.line, pays ? 0.9 : 0.7);
+        ctx.fill();
+        if(i === 0 && !small){
+          ctx.save(); ctx.translate(sx, y + 12); ctx.rotate(-0.5);
+          ctx.textAlign = "right"; ctx.font = "400 " + monoS;
+          ctx.fillStyle = rgba(C.muted, 0.85); ctx.fillText(STOPS[k], 0, 0);
+          ctx.restore();
+        }
+      }
+
+      // the marker, with a hashed idle bob so the two never move in lockstep
+      var mx = x0 + (x1 - x0) * L.t;
+      var bob = reduceMQ.matches ? 0 : Math.sin(tick * 0.06 + L.phase) * 0.9;
+      var g = ctx.createLinearGradient(mx - 8, 0, mx + 8, 0);
+      g.addColorStop(0, rgba(C.from, 1)); g.addColorStop(1, rgba(C.to, 1));
+      ctx.fillStyle = L.warm ? g : rgba(C.muted, 0.95);
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(mx - 5, y - 5 + bob, 10, 10, 2);
+      else ctx.rect(mx - 5, y - 5 + bob, 10, 10);
+      ctx.fill();
+
+      // what the run left behind
+      var bx = x1 + (small ? 12 : 22);
+      ctx.textAlign = "left"; ctx.font = "400 " + monoS;
+      if(L.kept === 0){
+        ctx.fillStyle = rgba(C.muted, 0.55);
+        ctx.fillText(small ? "0" : t("none"), bx, y);
+      } else {
+        for(var n = 0; n < L.kept; n++){
+          ctx.beginPath();
+          var by = y + 8 - n * 8;
+          if(ctx.roundRect) ctx.roundRect(bx, by - 5, small ? 14 : 22, 6, 1.5);
+          else ctx.rect(bx, by - 5, small ? 14 : 22, 6);
+          ctx.fillStyle = rgba(C.accent2, 0.35 + n * 0.2); ctx.fill();
+        }
+        if(!small){
+          ctx.fillStyle = rgba(C.text, 1);
+          ctx.fillText(String(L.kept), bx + 27, y);
+        }
+      }
+
+      // the run counter, the one integer everything is a function of
+      ctx.textAlign = "right"; ctx.font = "400 " + monoS;
+      ctx.fillStyle = rgba(C.muted, 0.8);
+      ctx.fillText(t("run") + " " + Math.min(L.run + (L.done ? 0 : 1), MAX_RUNS) + "/" + MAX_RUNS,
+                   x1, y - (small ? 15 : 20));
+    }
+  }
+
+  function frame(){
+    if(!running){ draw(); return; }
+    step(); draw();
+    raf = window.requestAnimationFrame(frame);
+  }
+  function stop(){ running = false; if(raf) window.cancelAnimationFrame(raf); raf = null; }
+  function play(){
+    if(running || userPaused || reduceMQ.matches) return;
+    running = true; raf = window.requestAnimationFrame(frame);
+  }
+  function staticFrame(){
+    stop(); reset();
+    lanes[0].run = MAX_RUNS; lanes[0].t = 1; lanes[0].done = true;
+    lanes[1].run = MAX_RUNS; lanes[1].t = 1; lanes[1].kept = MAX_RUNS; lanes[1].done = true;
+    draw();
+  }
+
+  function start(){
+    stop();
+    if(!measure()){ window.requestAnimationFrame(start); return; }
+    recolor();
+    if(reduceMQ.matches){ staticFrame(); return; }
+    reset(); play();
+  }
+
+  var rt;
+  window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(start, 160); });
+  new MutationObserver(function(){
+    if(!W) return; recolor(); if(!running) draw();
+  }).observe(document.documentElement, { attributes:true, attributeFilter:["class","data-active-lang"] });
+  document.addEventListener("visibilitychange", function(){ document.hidden ? stop() : play(); });
+  if(reduceMQ.addEventListener){
+    reduceMQ.addEventListener("change", function(){ reduceMQ.matches ? staticFrame() : start(); });
+  }
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){ e.isIntersecting ? play() : stop(); });
+    }, { threshold: 0.25 }).observe(cv);
+  }
+
+  // the section's own pause control drives this too, so one button stops both
+  var pb = document.getElementById("mvPause");
+  if(pb){
+    pb.addEventListener("click", function(){
+      userPaused = !userPaused;
+      if(userPaused) stop(); else { userPaused = false; play(); }
+    });
+  }
+  var rp = document.getElementById("mvReplay");
+  if(rp){ rp.addEventListener("click", function(){ userPaused = false; start(); }); }
+
+  start();
 })();
 </script>
 
