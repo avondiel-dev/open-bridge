@@ -222,7 +222,7 @@ html.dark #hero-net .hn-frame{box-shadow:0 6px 18px -8px rgba(0,0,0,.5)}
 #hero-net .hn-stage{position:relative;width:100%}
 /* the brain canvas fills the stage at the old net's 5:4 aspect, transparent
    over the frame surface so it reads on both themes. */
-#hero-net .hn-canvas{display:block;width:100%;aspect-ratio:3/2;border-radius:10px}
+#hero-net .hn-canvas{display:block;width:100%;aspect-ratio:1/0.86;border-radius:10px}
 
 #hero-net .hn-cap{
   display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;justify-content:space-between;
@@ -624,20 +624,21 @@ auf PR #214.</div>
         <figure id="hero-net" aria-labelledby="hn-cap-text">
           <div class="hn-frame">
             <div class="hn-stage" id="hn-stage">
-              <canvas class="hn-canvas" id="hn-brain" aria-hidden="true"></canvas>
+              <canvas class="hn-canvas" id="hn-ring" aria-hidden="true"></canvas>
               <p class="hn-sr">
-                <span data-lang="en">open-bridge is one shared CORE framework (skills, agents, protocols, schemas) bridged to your private USER instance, which holds your projects, clients, conventions and work log. CORE ships down; your knowledge promotes up. The full detailed view is below.</span>
-                <span data-lang="de">open-bridge ist ein gemeinsames CORE-Framework aus Skills, Agenten, Protokollen und Schemas, verbunden mit deiner privaten USER-Instanz, die deine Projekte, Kunden, Konventionen und dein Arbeitslog hält. CORE kommt runter, dein Wissen wandert hoch. Die ausführliche Ansicht steht weiter unten.</span>
+                <span data-lang="en">The shipped demo workspace drawn as a containment ring: 27 files in six folders around a centre. identity holds who you are and who you send to, workflow holds what happens when, infra holds where things run, work holds the task board and the log, protocols holds the standing orders, and .claude holds the agents. At session start the agent reads outward from the centre through every ring, then writes one line back into work/log.md. Clone examples/agency and the same tree is on your disk.</span>
+                <span data-lang="de">Der mitgelieferte Demo-Workspace als Ring gezeichnet: 27 Dateien in sechs Ordnern um eine Mitte. identity hält, wer du bist und an wen du sendest, workflow, was wann passiert, infra, wo was läuft, work das Aufgabenbrett und das Protokoll, protocols die Standing Orders und .claude die Agenten. Zum Session-Start liest der Agent von der Mitte nach außen durch jeden Ring und schreibt danach eine Zeile zurück in work/log.md. Klone examples/agency, dann liegt derselbe Baum auf deiner Platte.</span>
               </p>
             </div>
             <figcaption class="hn-cap" id="hn-cap-text">
               <span>
-                <span data-lang="en"><b>CORE ⟷ USER</b>, one framework bridged to your world.</span>
-                <span data-lang="de"><b>CORE ⟷ USER</b>. Ein Framework, verbunden mit deiner Welt.</span>
+                <span data-lang="en"><b>examples/agency</b>, 27 files. Your world, read at session start.</span>
+
+                <span data-lang="de"><b>examples/agency</b>, 27 Dateien. Deine Welt, gelesen zum Session-Start.</span>
               </span>
               <a href="#substrate">
-                <span data-lang="en">See the full picture →</span>
-                <span data-lang="de">Ganzes Bild →</span>
+                <span data-lang="en">Look inside it →</span>
+                <span data-lang="de">Reinschauen →</span>
               </a>
             </figcaption>
           </div>
@@ -2334,132 +2335,185 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 })();
 </script>
 
-<!-- #hero-net (simple "your world, connected"), optional hover highlight.
-     The graph is fully drawn in static SVG; this only adds dim-the-rest focus
-     on hover/focus. Reduced-motion is handled in CSS (transitions disabled);
-     the highlight stays since it's an instantaneous state, not motion. -->
+<!-- ============================================================
+     #hero-ring: the shipped demo workspace as a containment ring.
+     Replaces the two-hub node graph that used to sit here. That graph said
+     CORE and USER, which is vocabulary a first-time reader does not have yet;
+     this says "a real world of files, in an order, that something reads",
+     which needs none. The form is lifted from the Structure view of the
+     Control Center (a containment sunburst, coloured by depth), the motion
+     from its Particle Brain (a live centre with signal travelling out and
+     back). Neither is imported: that bundle is private and Apache-2.0, this
+     page is MIT, offline and has no build step.
+
+     The tree is REAL. It is examples/agency in this repo, which the page tells
+     you to clone, so the picture and the claim are the same object. To refresh
+     the numbers after changing that directory:
+         cd examples/agency && find . -type f -not -path './.git/*' | wc -l
+     Angles are equal per folder so every label stays readable; the file COUNT
+     is carried by the ticks in the outer ring, which is the honest place for it.
+     ============================================================ -->
 <script>
 (function(){
   "use strict";
-  var cv = document.getElementById('hn-brain');
+  var cv = document.getElementById('hn-ring');
   if(!cv || !cv.getContext) return;
   var ctx = cv.getContext('2d');
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
 
-  // The model as a few legible nodes. CORE ships these; USER holds these; the
-  // bridge carries both ways. Labels track the page language toggle.
-  var LAB = {
-    core: { en:['Skills','Agents','Protocols','Schemas'], de:['Skills','Agenten','Protokolle','Schemas'] },
-    user: { en:['Projects','Clients','Conventions','Work log'], de:['Projekte','Kunden','Konventionen','Arbeitslog'] }
+  // examples/agency, counted on disk. 27 files, six folders plus the root.
+  var TREE = [
+    { key:'root',      label:'./',          kids:[ {n:'',           f:5} ] },
+    { key:'identity',  label:'identity/',   kids:[ {n:'accounts/',  f:1}, {n:'mandants/', f:1} ] },
+    { key:'workflow',  label:'workflow/',   kids:[ {n:'calendars/', f:1}, {n:'contexts/', f:1} ] },
+    { key:'infra',     label:'infra/',      kids:[ {n:'backups/',   f:1}, {n:'channels/', f:4}, {n:'remotes/', f:2} ] },
+    { key:'work',      label:'work/',       kids:[ {n:'',           f:2}, {n:'tasks/',    f:3}, {n:'streams/', f:1}, {n:'done/', f:1} ] },
+    { key:'protocols', label:'protocols/',  kids:[ {n:'standing-orders/', f:1} ] },
+    { key:'claude',    label:'.claude/',    kids:[ {n:'agents/',    f:3} ] }
+  ];
+  var TOTAL = 0;
+  TREE.forEach(function(t){ t.files = t.kids.reduce(function(a,k){ return a + k.f; }, 0); TOTAL += t.files; });
+
+  var CAP = {
+    en:{ reads:'session start', writes:'work/log.md', file:'file', files:'files' },
+    de:{ reads:'Session-Start', writes:'work/log.md', file:'Datei',  files:'Dateien' }
   };
   function lang(){ return document.documentElement.getAttribute('data-active-lang') === 'de' ? 'de' : 'en'; }
   function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
-  function hexA(h,a){ h=(h||'').replace('#',''); if(h.length===3) h=h.replace(/./g,'$&$&');
-    var n=parseInt(h||'888888',16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
+  function hex(h){ h=(h||'').replace('#',''); if(h.length===3) h=h.replace(/./g,'$&$&');
+    var n=parseInt(h||'888888',16); return [ (n>>16)&255, (n>>8)&255, n&255 ]; }
+  function rgba(h,a){ var c=hex(h); return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'; }
+  function mix(h1,h2,t){ var a=hex(h1), b=hex(h2);
+    return 'rgb('+Math.round(a[0]+(b[0]-a[0])*t)+','+Math.round(a[1]+(b[1]-a[1])*t)+','+Math.round(a[2]+(b[2]-a[2])*t)+')'; }
 
-  var W,H,DPR,COL={},nodes=[],edges=[],sig=[],coreA,userA,raf,running=false;
-  function recolor(){ COL={ core:css('--accent'), user:css('--accent-secondary'), spark:css('--accent-text'),
-    from:css('--accent-from'), to:css('--accent-to'), muted:css('--muted'), ink:css('--ink') }; }
-  function rnd(a,b){ return a+Math.random()*(b-a); }
+  var W,H,DPR,C={},tick=0,raf=null,running=false;
+  var TAU = Math.PI*2, GAP = 0.016;
 
-  function build(){
+  function recolor(){
+    C = { line:css('--line'), muted:css('--muted'), ink:css('--ink'), surface:css('--surface'),
+          accent:css('--accent'), accent2:css('--accent-secondary'), text:css('--accent-text'),
+          from:css('--accent-from'), to:css('--accent-to') };
+  }
+  function measure(){
     var r=cv.getBoundingClientRect(); if(!r.width||!r.height) return false;
     DPR=Math.min(devicePixelRatio||1,2); W=r.width; H=r.height;
     cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
-    recolor();
-    // two hubs mid-height; each lobe is a tall, narrow ellipse fanning nearly
-    // vertically so it fills the box height while labels stay inside the width.
-    var cy=H*0.50, lx=W*0.32, rx=W*0.68;
-    var radX=Math.min(W*0.15,92), radY=H*0.38;
-    nodes=[]; edges=[]; sig=[];
-    coreA={x:lx,y:cy,hub:true,side:'core',r:8,cap:'CORE'};
-    userA={x:rx,y:cy,hub:true,side:'user',r:8,cap:'USER'};
-    nodes.push(coreA,userA);
-    function lobe(anchor,dir){
-      var lbl=LAB[anchor.side][lang()], n=lbl.length;
-      for(var i=0;i<n;i++){
-        var ang=(-1.12+(i/(n-1))*2.24);                 // vertical-ish fan hugging the hub
-        var ax=anchor.x+Math.cos(ang)*dir*radX*rnd(.92,1.04);
-        var ay=cy+Math.sin(ang)*radY*rnd(.94,1.02);
-        var nd={x:ax,y:ay,x0:ax,y0:ay,side:anchor.side,r:rnd(3.6,5),li:i,ph:rnd(0,6),amp:rnd(1.5,3.4),fire:0};
-        nodes.push(nd); edges.push({a:anchor,b:nd});
-      }
-      for(var f=0;f<5;f++){ var fa=rnd(.34,1.1)*(f%2?-1:1);   // off-midline, inside the lobe
-        var fx=anchor.x+Math.cos(fa)*dir*radX*rnd(.4,.82), fy=cy+Math.sin(fa)*radY*rnd(.42,.82);
-        var fn={x:fx,y:fy,x0:fx,y0:fy,side:anchor.side,r:rnd(1.5,2.3),ph:rnd(0,6),amp:rnd(2,4.5),fire:0};
-        nodes.push(fn); edges.push({a:anchor,b:fn}); }
-    }
-    lobe(coreA,-1); lobe(userA,1);
-    edges.push({a:coreA,b:userA,bridge:true});
     return true;
   }
-  function labelFor(m){ return m.hub ? '' : (m.li!=null ? LAB[m.side][lang()][m.li] : ''); }
-  function sideCol(m){ return m.side==='core'?COL.core:COL.user; }
-  function spawnBridge(toUser){ sig.push({a:toUser?coreA:userA,b:toUser?userA:coreA,t:0,sp:rnd(.008,.013),cross:true}); }
-  function spawnSpoke(){ var sp=edges.filter(function(e){return !e.bridge;}); var e=sp[(Math.random()*sp.length)|0];
-    if(e) sig.push({a:Math.random()<.5?e.a:e.b, b:Math.random()<.5?e.b:e.a, t:0, sp:rnd(.012,.02), cross:false}); }
 
-  function draw(now){
-    ctx.clearRect(0,0,W,H);
-    var midx=(coreA.x+userA.x)/2, pulse=reduce?.6:(0.5+0.28*Math.sin(now/850));
-    var grd=ctx.createRadialGradient(midx,coreA.y,0,midx,coreA.y,Math.max(W*0.34,150));
-    grd.addColorStop(0,hexA(COL.from,.14*pulse)); grd.addColorStop(.55,hexA(COL.to,.06*pulse)); grd.addColorStop(1,'transparent');
-    ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
-    if(!reduce) for(var i=0;i<nodes.length;i++){ var n=nodes[i]; if(n.hub||n.x0==null) continue;
-      n.ph+=0.02; n.x=n.x0+Math.cos(n.ph)*(n.amp||4)*.5; n.y=n.y0+Math.sin(n.ph*1.2)*(n.amp||4)*.4; }
-    for(var q=0;q<nodes.length;q++) if(nodes[q].fire>0) nodes[q].fire-=reduce?1:.03;
-    ctx.strokeStyle=hexA(COL.muted,.22); ctx.lineWidth=1; ctx.beginPath();
-    for(var e=0;e<edges.length;e++){ if(edges[e].bridge) continue; ctx.moveTo(edges[e].a.x,edges[e].a.y); ctx.lineTo(edges[e].b.x,edges[e].b.y); }
-    ctx.stroke();
-    var bg=ctx.createLinearGradient(coreA.x,0,userA.x,0);
-    bg.addColorStop(0,hexA(COL.core,.5)); bg.addColorStop(.5,hexA(COL.spark,.6*pulse+.25)); bg.addColorStop(1,hexA(COL.user,.5));
-    ctx.strokeStyle=bg; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(coreA.x,coreA.y); ctx.lineTo(userA.x,userA.y); ctx.stroke(); ctx.lineWidth=1;
-    if(!reduce) for(var s=sig.length-1;s>=0;s--){ var g=sig[s]; g.t+=g.sp;
-      var x=g.a.x+(g.b.x-g.a.x)*g.t, y=g.a.y+(g.b.y-g.a.y)*g.t;
-      var col=g.cross?COL.spark:(g.a.side==='core'?COL.core:COL.user);
-      var tx=g.a.x+(g.b.x-g.a.x)*Math.max(0,g.t-.18), ty=g.a.y+(g.b.y-g.a.y)*Math.max(0,g.t-.18);
-      var lg=ctx.createLinearGradient(tx,ty,x,y); lg.addColorStop(0,'transparent'); lg.addColorStop(1,hexA(col,g.cross?.95:.7));
-      ctx.strokeStyle=lg; ctx.lineWidth=g.cross?2.4:1.4; ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(x,y); ctx.stroke();
-      ctx.fillStyle=hexA(col,1); ctx.beginPath(); ctx.arc(x,y,g.cross?3:1.9,0,6.283); ctx.fill();
-      if(g.t>=1){ g.b.fire=1; sig.splice(s,1); } }
-    ctx.lineWidth=1; ctx.textAlign='center'; ctx.textBaseline='middle';
-    for(var k=0;k<nodes.length;k++){ var m=nodes[k], base=m.hub?COL.spark:sideCol(m);
-      if(m.fire>0){ ctx.fillStyle=hexA(COL.spark,.5*m.fire); ctx.beginPath(); ctx.arc(m.x,m.y,m.r+6*m.fire,0,6.283); ctx.fill(); }
-      if(m.hub){ ctx.fillStyle=hexA(sideCol(m),.18); ctx.beginPath(); ctx.arc(m.x,m.y,m.r+7,0,6.283); ctx.fill(); }
-      ctx.fillStyle=hexA(base,m.hub?1:.92); ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,6.283); ctx.fill();
-      var lb=labelFor(m);
-      if(lb){ ctx.fillStyle=hexA(COL.muted,1); ctx.font='500 11px '+css('--font-sans'); ctx.fillText(lb,m.x,m.y-m.r-8); }
-    }
-    ctx.font='600 12px '+css('--font-sans');
-    ctx.fillStyle=hexA(COL.core,.95); ctx.fillText('CORE',coreA.x,coreA.y+24);
-    ctx.fillStyle=hexA(COL.user,.95); ctx.fillText('USER',userA.x,userA.y+24);
+  // one pass: rings light from the centre outward, then one line goes back in
+  var T_RING1=70, T_RING2=150, T_RING3=240, T_WRITE=320, T_REST=430;
+  function phase(){ return reduceMQ.matches ? T_REST : tick; }
+
+  function arc(cx,cy,r0,r1,a0,a1,fill){
+    ctx.beginPath();
+    ctx.arc(cx,cy,r1,a0,a1); ctx.arc(cx,cy,r0,a1,a0,true); ctx.closePath();
+    ctx.fillStyle=fill; ctx.fill();
   }
 
-  function loop(now){ draw(now||0); if(!reduce && running) raf=requestAnimationFrame(loop);
-    if(!reduce && running){ var xc=0; for(var i=0;i<sig.length;i++) if(sig[i].cross) xc++;
-      if(xc<2 && Math.random()<.03) spawnBridge(Math.random()<.5);
-      if(Math.random()<(sig.length<5?.26:.05)) spawnSpoke(); } }
-  function stop(){ running=false; cancelAnimationFrame(raf); }
-  function play(){ if(reduce||running) return; running=true; raf=requestAnimationFrame(loop); }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    var cx=W/2, cy=H*0.50, R=Math.min(W*0.40,H*0.455), t=phase();
+    var labRx=R*1.20, labRy=R*0.92;
+    var r0=R*0.185, r1a=R*0.24, r1b=R*0.47, r2a=R*0.50, r2b=R*0.68, r3a=R*0.71, r3b=R*0.80;
+    var lit1=Math.max(0,Math.min(1,(t-0)/T_RING1));
+    var lit2=Math.max(0,Math.min(1,(t-T_RING1)/(T_RING2-T_RING1)));
+    var lit3=Math.max(0,Math.min(1,(t-T_RING2)/(T_RING3-T_RING2)));
+    var wr =Math.max(0,Math.min(1,(t-T_RING3)/(T_WRITE-T_RING3)));
 
-  function start(){ stop(); if(!build()){ requestAnimationFrame(start); return; }
-    if(reduce){ for(var i=0;i<5;i++) nodes[(Math.random()*nodes.length)|0].fire=1; draw(0); }
-    else { spawnBridge(true); for(var j=0;j<3;j++) spawnSpoke(); play(); } }
+    var seg=TAU/TREE.length, a=-Math.PI/2;
+    var L=CAP[lang()];
+    ctx.textAlign='center'; ctx.textBaseline='middle';
 
-  var rt; addEventListener('resize',function(){ clearTimeout(rt); rt=setTimeout(start,160); });
-  // theme + language toggle → recolour, relabel, redraw (loop picks colours up live)
-  new MutationObserver(function(){ if(!W) return; recolor(); if(reduce||!running) draw(0); })
+    for(var i=0;i<TREE.length;i++){
+      var node=TREE[i], a0=a+GAP, a1=a+seg-GAP, on=(i+1)/TREE.length<=lit1;
+      // ring 1, the folder
+      arc(cx,cy,r1a,r1b,a0,a1, on ? mix(C.line,C.accent,0.75) : mix(C.surface,C.line,0.9));
+      // ring 2, what is inside it
+      var kn=node.kids.length, ks=(a1-a0)/kn;
+      for(var j=0;j<kn;j++){
+        var b0=a0+j*ks+GAP*0.4, b1=a0+(j+1)*ks-GAP*0.4;
+        var on2=((i*kn+j+1)/(TREE.length*kn))<=lit2;
+        arc(cx,cy,r2a,r2b,b0,b1, on2 ? mix(C.line,C.accent2,0.34) : mix(C.surface,C.line,0.94));
+        // ring 3, one tick per file
+        var f=node.kids[j].f, fs=(b1-b0)/Math.max(f,1);
+        for(var k=0;k<f;k++){
+          var c0=b0+k*fs+fs*0.22, c1=b0+(k+1)*fs-fs*0.22;
+          var on3=((i*kn+j+1)/(TREE.length*kn))<=lit3;
+          arc(cx,cy,r3a,r3b,c0,c1, on3 ? rgba(C.text,0.95) : rgba(C.muted,0.28));
+        }
+      }
+      // the folder name, upright, outside the rings
+      var mid=(a0+a1)/2, lx=cx+Math.cos(mid)*labRx, ly=cy+Math.sin(mid)*labRy;
+      ctx.font='500 '+(W<380?9:11)+'px '+css('--font-mono');
+      // the leftmost and rightmost labels sit past the frame on a plain ellipse,
+      // so measure and pull them back inside instead of guessing a radius
+      var tw=ctx.measureText(node.label).width;
+      lx=Math.max(tw/2+5, Math.min(W-tw/2-5, lx));
+      ctx.fillStyle=rgba(on?C.ink:C.muted, on?0.95:0.6);
+      ctx.fillText(node.label, lx, ly);
+      if(W>=380){
+        ctx.font='400 '+(W<460?8:9)+'px '+css('--font-sans');
+        ctx.fillStyle=rgba(C.muted,0.75);
+        ctx.fillText(node.files+' '+(node.files===1?L.file:L.files), lx, ly+12);
+      }
+      a+=seg;
+    }
+
+    // the write back: one line returns from work/ into the centre
+    if(wr>0){
+      var wi=4, wmid=-Math.PI/2+(wi+0.5)*seg;
+      var rr=r3a-(r3a-r0)*wr;
+      var gx=cx+Math.cos(wmid)*rr, gy=cy+Math.sin(wmid)*rr;
+      var g2=ctx.createLinearGradient(cx,cy,gx,gy);
+      g2.addColorStop(0,rgba(C.to,0)); g2.addColorStop(1,rgba(C.to,0.9));
+      ctx.strokeStyle=g2; ctx.lineWidth=2; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(gx,gy); ctx.stroke();
+      ctx.beginPath(); ctx.arc(gx,gy,2.6,0,TAU); ctx.fillStyle=rgba(C.to,1); ctx.fill();
+    }
+
+    // the centre: what does the reading
+    var breathe = reduceMQ.matches ? 0 : Math.sin(tick*0.05)*0.06;
+    var cg=ctx.createLinearGradient(cx-r0,cy-r0,cx+r0,cy+r0);
+    cg.addColorStop(0,C.from); cg.addColorStop(1,C.to);
+    ctx.beginPath(); ctx.arc(cx,cy,r0*(1+breathe)+3,0,TAU);
+    ctx.fillStyle=rgba(C.from,0.16); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,r0*(1+breathe),0,TAU); ctx.fillStyle=cg; ctx.fill();
+    ctx.font='600 '+(W<380?8:9.5)+'px '+css('--font-sans');
+    ctx.fillStyle=rgba(C.surface,1);
+    ctx.fillText(t<T_RING3 ? L.reads : L.writes, cx, cy);
+  }
+
+  function frame(){
+    if(!running){ draw(); return; }
+    tick++;
+    if(tick>T_REST+180){ tick=0; }
+    draw();
+    raf=requestAnimationFrame(frame);
+  }
+  function stop(){ running=false; if(raf) cancelAnimationFrame(raf); raf=null; }
+  function play(){ if(running||reduceMQ.matches) return; running=true; raf=requestAnimationFrame(frame); }
+  function start(){
+    stop(); if(!measure()){ requestAnimationFrame(start); return; }
+    recolor(); tick=0;
+    if(reduceMQ.matches){ draw(); return; }
+    play();
+  }
+
+  var rt;
+  addEventListener('resize', function(){ clearTimeout(rt); rt=setTimeout(start,160); });
+  new MutationObserver(function(){ if(!W) return; recolor(); if(!running) draw(); })
     .observe(document.documentElement,{attributes:true,attributeFilter:['class','data-active-lang']});
-  document.addEventListener('visibilitychange',function(){ document.hidden?stop():play(); });
+  document.addEventListener('visibilitychange', function(){ document.hidden?stop():play(); });
+  if(reduceMQ.addEventListener){ reduceMQ.addEventListener('change', start); }
   if('IntersectionObserver' in window){
-    new IntersectionObserver(function(es){ es.forEach(function(en){ en.isIntersecting?play():stop(); }); },{threshold:0.05}).observe(cv);
+    new IntersectionObserver(function(es){ es.forEach(function(e){ e.isIntersecting?play():stop(); }); },{threshold:0.05}).observe(cv);
   }
   start();
 })();
 </script>
 
-
-  <script defer src="assets/agent-config.js"></script>
+<script defer src="assets/agent-config.js"></script>
   <script defer src="assets/agent-widget.js"></script>
 </body>
 </html>
