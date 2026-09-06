@@ -164,6 +164,21 @@ section{padding-block:var(--section-y);scroll-margin-top:112px}
 .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
 .beta-line{margin-top:18px;font-size:14px;color:var(--secondary);max-width:48rem}
 
+/* ---- the large-type moment ---- */
+#tagline .tagline-block{max-width:var(--prose-w);margin-inline:auto;text-align:center}
+#tagline .tagline-line{
+  margin:0;font-size:clamp(30px,4vw,48px);font-weight:300;line-height:1.22;
+  letter-spacing:-0.02em;color:var(--ink);text-wrap:balance;
+}
+#tagline .tl{display:block}
+/* Words start muted and come up in reading order. Timing is the DESIGN.md
+   default (300ms, ease-out) rather than a signature of this section's own. */
+#tagline .tw{
+  opacity:.28;transition:opacity .3s ease-out;transition-delay:calc(var(--i,0) * 70ms);
+}
+#tagline .reveal.in .tw{opacity:1}
+@media (max-width:640px){ #tagline .tl{display:inline} }
+
 /* hero demo row: the code example and the CORE ⟷ USER brain, side by side */
 .hero-demo{
   margin-top:clamp(28px,4.5vw,48px);
@@ -454,10 +469,13 @@ html.dark .path-prompts code{background:var(--code-bg)}
 }
 @media (prefers-reduced-motion:reduce){
   .reveal,.reset-line{opacity:1;transform:none}
+  /* without this the section sits at 28% grey for good, which is an AA failure */
+  #tagline .tw{opacity:1;transition:none}
 }
 @media print{
   header.nav,.page-nav,.icon-btn,.seg,.copy-btn{display:none!important}
   .reveal,.reset-line{opacity:1!important;transform:none!important}
+  #tagline .tw{opacity:1!important}
 }
 </style>
 </head>
@@ -945,8 +963,32 @@ auf PR #214.</div>
   </div>
 </section>
 
+<!-- ======================= THE ONE LARGE-TYPE MOMENT =======================
+     Twelve sections all ran the same shape: centred eyebrow, heading, lead,
+     then a grid. Nothing on 1900 lines stood on its own at size. This sits
+     between the two tile grids, which is both where the wall was longest and
+     where the surface alternation had a gap. The words come up from a muted
+     tone in reading order, staggered off --i, using the existing .reveal
+     observer rather than a third one of its own. -->
+<section class="alt" id="tagline">
+  <div class="container">
+    <div class="tagline-block reveal">
+      <p class="tagline-line" data-lang="en">
+        <span class="tl"><span class="tw" style="--i:0">Say</span> <span class="tw" style="--i:1">it</span> <span class="tw" style="--i:2">once.</span></span>
+        <span class="tl"><span class="tw" style="--i:3">Six</span> <span class="tw" style="--i:4">months</span> <span class="tw" style="--i:5">later</span> <span class="tw" style="--i:6">the</span> <span class="tw" style="--i:7">decision</span> <span class="tw" style="--i:8">is</span> <span class="tw" style="--i:9">still</span> <span class="tw" style="--i:10">there,</span></span>
+        <span class="tl"><span class="tw" style="--i:11">and</span> <span class="tw" style="--i:12">so</span> <span class="tw" style="--i:13">is</span> <span class="tw" style="--i:14">the</span> <span class="tw" style="--i:15">reason</span> <span class="tw" style="--i:16">for</span> <span class="tw" style="--i:17">it.</span></span>
+      </p>
+      <p class="tagline-line" data-lang="de">
+        <span class="tl"><span class="tw" style="--i:0">Sag</span> <span class="tw" style="--i:1">es</span> <span class="tw" style="--i:2">einmal.</span></span>
+        <span class="tl"><span class="tw" style="--i:3">Sechs</span> <span class="tw" style="--i:4">Monate</span> <span class="tw" style="--i:5">später</span> <span class="tw" style="--i:6">steht</span> <span class="tw" style="--i:7">die</span> <span class="tw" style="--i:8">Entscheidung</span> <span class="tw" style="--i:9">noch</span> <span class="tw" style="--i:10">da,</span></span>
+        <span class="tl"><span class="tw" style="--i:11">und</span> <span class="tw" style="--i:12">der</span> <span class="tw" style="--i:13">Grund</span> <span class="tw" style="--i:14">dafür</span> <span class="tw" style="--i:15">auch.</span></span>
+      </p>
+    </div>
+  </div>
+</section>
+
 <!-- ======================= WHAT PEOPLE RUN ON IT (tile strip → use-cases.html) ======================= -->
-<section id="what-runs" class="uc-strip alt">
+<section id="what-runs" class="uc-strip">
   <div class="container">
     <div class="sec-head reveal">
       <p class="eyebrow"><span data-lang="en">Jobs, not features</span><span data-lang="de">Aufgaben, keine Features</span></p>
@@ -1926,10 +1968,10 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 </script>
 
 <!-- ============================================================
-     #mv-lanes — two sessions, one visible clock. Self-contained.
+     #mv-lanes: two sessions, one visible clock. Self-contained.
      Rebuilt from bridge-deck's office view rather than imported: that repo is
      Pixi under Apache-2.0 and this page is MIT, dependency-free and has no
-     build step. What is borrowed is the discipline, not the code — one integer
+     build step. What is borrowed is the discipline, not the code: one integer
      tick drives every motion as f(tick), and per-item phase offsets are hashed
      from the item's own name so nothing breathes in lockstep. The clock is the
      one visual quotation: same construction as the wall clock in every deck
