@@ -135,9 +135,16 @@ a.chip:hover{color:var(--primary)}
 }
 .icon-btn:hover{color:var(--primary)}
 .icon-btn svg{width:16px;height:16px}
-.sun{display:none}
-html.dark .sun{display:block}
-html.dark .moon{display:none}
+/* The theme control has three states, so its icon shows which one is active
+   rather than which one a click produces: a half filled disc for "follows your
+   system", a sun for light, a moon for dark. The tooltip carries the action. */
+.icon-btn .auto,.icon-btn .sun,.icon-btn .moon{display:none}
+html[data-theme-pref="system"] .icon-btn .auto{display:block}
+html[data-theme-pref="light"]  .icon-btn .sun{display:block}
+html[data-theme-pref="dark"]   .icon-btn .moon{display:block}
+/* No stamped preference means the script never ran; show something rather than
+   an empty button. */
+html:not([data-theme-pref]) .icon-btn .auto{display:block}
 /* ---- Buttons ---- */
 .btn{
   display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;

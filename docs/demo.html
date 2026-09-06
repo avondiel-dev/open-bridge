@@ -32,10 +32,20 @@
 <script>
 (function(){
   try {
-    var t = localStorage.getItem('html-canvas-theme');
-    if (t === 'dark' || (t == null && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) {
+    /* Same key as the rest of the site. This page used to keep its own
+       'html-canvas-theme', so a choice made on the other pages did not carry
+       here; the old value is migrated once and then dropped. */
+    var t = localStorage.getItem('ob-theme');
+    if (t !== 'light' && t !== 'dark') {
+      var legacy = localStorage.getItem('html-canvas-theme');
+      if (legacy === 'light' || legacy === 'dark') { t = legacy; localStorage.setItem('ob-theme', legacy); }
+      localStorage.removeItem('html-canvas-theme');
+    }
+    var pref = (t === 'light' || t === 'dark') ? t : 'system';
+    if (pref === 'dark' || (pref === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
     }
+    document.documentElement.setAttribute('data-theme-pref', pref);
     var r = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     if(!r) document.documentElement.classList.add('anim');
     /* Honour the site-wide language choice (set on the other pages) for the bilingual CTA. */
@@ -203,7 +213,7 @@ footer.foot code{font-family:var(--font-mono)}
     <a class="lnk" href="changelog.html">Changelog</a>
     <a class="lnk" href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">GitHub</a>
   </nav>
-  <button id="themeToggle" title="Light/Dark (T)">&#9680; Dark</button>
+  <button id="themeToggle" title="Theme follows your system. Click for light. (T)">◐ System</button>
 </div>
 
 <main class="wrap">
@@ -428,20 +438,32 @@ footer.foot code{font-family:var(--font-mono)}
 <!-- ─── Theme controller ─── -->
 <script>
 (function(){
-  var root=document.documentElement, KEY='html-canvas-theme', btn=document.getElementById('themeToggle');
-  function dark(){return root.classList.contains('dark');}
-  function render(){ if(btn){btn.innerHTML=dark()?'&#9728; Light':'&#9680; Dark';
-    btn.setAttribute('aria-label',dark()?'Switch to light theme':'Switch to dark theme');} }
-  function apply(d){ root.classList.toggle('dark',d); try{localStorage.setItem(KEY,d?'dark':'light');}catch(e){} render(); }
+  var root=document.documentElement, KEY='ob-theme', btn=document.getElementById('themeToggle');
+  var LBL={system:'◐ System',light:'☀ Light',dark:'◑ Dark'};
+  var HINT={system:'Theme follows your system. Click for light.',
+            light:'Theme is light. Click for dark.',
+            dark:'Theme is dark. Click to follow your system again.'};
+  function systemDark(){ try{ return !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches); }catch(e){ return false; } }
+  function pref(){ var p=root.getAttribute('data-theme-pref'); return (p==='light'||p==='dark')?p:'system'; }
+  function render(){ if(btn){ btn.textContent=LBL[pref()]; btn.setAttribute('aria-label',HINT[pref()]); btn.setAttribute('title',HINT[pref()]+' (T)'); } }
+  function apply(p){
+    root.classList.toggle('dark', p==='dark' || (p==='system' && systemDark()));
+    root.setAttribute('data-theme-pref', p);
+    try{ if(p==='system'){ localStorage.removeItem(KEY); } else { localStorage.setItem(KEY,p); } }catch(e){}
+    render();
+  }
+  function cycle(){ var p=pref(); apply(p==='system'?'light':(p==='light'?'dark':'system')); }
   render();
-  if(btn) btn.addEventListener('click',function(){apply(!dark());});
+  if(btn) btn.addEventListener('click',cycle);
   document.addEventListener('keydown',function(e){
     if(e.metaKey||e.ctrlKey||e.altKey) return; if(e.key!=='t'&&e.key!=='T') return;
     var t=e.target||{}; if(t.isContentEditable||/^(input|textarea|select)$/i.test(t.tagName||'')) return;
-    apply(!dark());
+    cycle();
   });
-  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(e){
-    try{ if(localStorage.getItem(KEY)) return; }catch(_){} apply(e.matches); }); }catch(e){}
+  try{ var mq=matchMedia('(prefers-color-scheme: dark)');
+    var onSys=function(){ if(pref()==='system') apply('system'); };
+    if(mq.addEventListener){ mq.addEventListener('change',onSys); } else if(mq.addListener){ mq.addListener(onSys); }
+  }catch(e){}
 })();
 </script>
 

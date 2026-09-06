@@ -139,6 +139,12 @@ jobs:
       - name: Hold the CORE/USER figure to the tree
         run: python3 scripts/check-figure-counts.py
 
+      # A broken inline script never runs and the page still renders, still
+      # parses as HTML and still screenshots correctly. Nothing else here looks
+      # at the JavaScript in docs/.
+      - name: Every inline script in docs/ parses
+        run: python3 scripts/check-inline-scripts.py
+
       # Refuses an order that defers without a trigger or without a summary.
       # Such a file reads as enforced in the tree and loads in no session, which
       # is a worse failure than the cost the contract removes.
