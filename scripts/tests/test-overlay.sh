@@ -111,7 +111,22 @@ trap cleanup EXIT
 # instance's actual upstreams or subscriptions into an "isolated" test fixture.
 PRISTINE="$TMP/pristine"
 mkdir -p "$PRISTINE"
-git -C "$ROOT" archive --format=tar HEAD | ( cd "$PRISTINE" && tar -xf - )
+# The fixture is copied once PER CONSUMER, so its size multiplies by the number
+# of consumers in the suite. Upstream the tree is small and this is invisible;
+# on a downstream instance `work/` fills with deliverables and the copies stop
+# being free. Measured on one such instance: 334 of 356 MB were `work/`, one
+# finished consumer 728 MB, peak ~15.7 GB against the ~14 GB free on a GitHub
+# ubuntu-latest runner. The runner then dies mid-step, which surfaces as a
+# failed job with the step stuck `in_progress`, every later step `pending` and
+# NO logs uploaded (BlobNotFound) — never as a test failure, so it reads like a
+# broken assertion and is not one. No test or engine reads a byte of `work/`;
+# excluding it left 22 MB. Quoted array, not word splitting: agents whose shell
+# is zsh do not split an unquoted list at all.
+FIXTURE_PATHS=()
+while IFS= read -r _p; do FIXTURE_PATHS+=("$_p"); done \
+  < <(git -C "$ROOT" ls-tree --name-only HEAD | grep -vxE 'work|imports')
+[ "${#FIXTURE_PATHS[@]}" -gt 0 ] || { echo "fixture path list is empty — refusing to build an empty pristine tree" >&2; exit 1; }
+git -C "$ROOT" archive --format=tar HEAD -- "${FIXTURE_PATHS[@]}" | ( cd "$PRISTINE" && tar -xf - )
 rm -f "$PRISTINE/bridge-config.yaml" "$PRISTINE/overlays.lock.yaml"
 
 mkcon() {  # echoes a fresh consumer dir on a user/test branch
