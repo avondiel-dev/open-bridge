@@ -387,22 +387,6 @@ html.dark .tile .demo{background:var(--code-bg)}
 }
 @keyframes dg-flow-anim{to{stroke-dashoffset:-28}}
 
-/* ---- Runtime fan-out (animated SVG) ---- */
-.rt-foot{margin-top:30px;text-align:center;font-size:15px;color:var(--on-surface)}
-.rt-pill{fill:var(--surface-subtle);stroke:var(--line);stroke-width:1}
-.rt-name{fill:var(--on-surface);font:500 13px var(--font-sans)}
-.rt-state{font:400 11px var(--font-mono)}
-.rt-state.tested{fill:var(--ok-text);font-weight:600}
-.rt-state.untested{fill:var(--muted)}
-.rt-state.via{fill:var(--muted)}
-.rt-edge{stroke:var(--accent);stroke-width:1.6;fill:none;stroke-dasharray:5 7}
-.rt-hub{fill:var(--accent-soft);stroke:var(--accent-text);stroke-width:1.4}
-.rt-hublbl{fill:var(--accent-text);font:600 13px var(--font-mono)}
-.rt-symlbl{fill:var(--muted);font:400 10.5px var(--font-mono)}
-.rt-edgelbl{paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round}
-@media (prefers-reduced-motion:no-preference){
-  .diagram-frame.in .rt-edge{animation:dg-flow-anim 1.4s linear infinite}
-}
 
 /* ---- Get started ---- */
 .steps .code{max-width:42rem;margin:0 auto;position:relative}
@@ -1408,7 +1392,6 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 <style>
 /* ---- #mechanic-viz (compounding micro-diagram) — scoped ---- */
 #mechanic-viz{
-  --mv-day:0;
   max-width:980px; margin:0 auto;
   font-family:var(--font-sans); color:var(--on-surface);
 }
