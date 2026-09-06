@@ -236,6 +236,51 @@ html.dark .stage{
 .viz-hint{position:absolute;right:14px;top:14px;z-index:3;font-size:11px;color:var(--viz-fg-muted);
   background:var(--viz-panel);border:1px solid var(--viz-panel-border);border-radius:var(--r-full);padding:5px 11px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .viz-hint kbd{font-family:var(--font-mono);font-size:10px;background:rgba(148,163,184,.18);border-radius:3px;padding:1px 5px;color:var(--viz-fg-dim)}
+
+/* ---- View switch + CORE/USER anatomy ------------------------------------
+   A second view on the same stage: the concept constellation answers "what are
+   the pieces", the anatomy answers "what is actually in each half, and how much".
+   Both hues come from the palette declared above, no new colours: --g-foundation
+   is CORE, which is what it is, and --g-hub is USER. ---- */
+.viz-tabs{
+  position:absolute;left:14px;top:14px;z-index:4;display:flex;gap:2px;
+  background:var(--viz-panel);border:1px solid var(--viz-panel-border);
+  border-radius:9px;padding:3px;backdrop-filter:blur(6px);
+}
+.viz-tabs button{
+  appearance:none;border:0;background:transparent;color:var(--viz-fg-dim);
+  font:500 11.5px var(--font-sans);letter-spacing:.02em;padding:5px 11px;
+  border-radius:6px;cursor:pointer;transition:background .18s ease,color .18s ease;
+}
+.viz-tabs button:hover{color:var(--viz-fg)}
+.viz-tabs button[aria-selected="true"]{background:rgba(148,163,184,.16);color:var(--viz-fg)}
+.viz-tabs button:focus-visible{outline:2px solid var(--g-hub);outline-offset:1px}
+
+.brain-wrap{display:none;position:relative;width:100%;min-height:520px}
+.graph-col.anatomy > .graph-svg{display:none}
+.graph-col.anatomy > .viz-legend,
+.graph-col.anatomy > .viz-hint{display:none}
+.graph-col.anatomy > .brain-wrap{display:block}
+#brain{display:block;width:100%;height:100%;min-height:520px}
+.brain-foot{
+  position:absolute;left:16px;right:16px;bottom:12px;z-index:2;text-align:center;
+  font:400 11.5px var(--font-mono);color:var(--viz-fg-muted);line-height:1.7;
+  pointer-events:none;
+}
+.brain-foot b{color:var(--viz-fg-dim);font-weight:400}
+.brain-replay{
+  position:absolute;right:14px;top:14px;z-index:4;appearance:none;
+  background:var(--viz-panel);border:1px solid var(--viz-panel-border);
+  color:var(--viz-fg-dim);font:500 11px var(--font-sans);
+  padding:5px 10px;border-radius:7px;cursor:pointer;
+}
+.brain-replay:hover{color:var(--viz-fg)}
+.brain-replay:focus-visible{outline:2px solid var(--g-hub);outline-offset:1px}
+.brain-sr{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+@media (max-width:560px){ .brain-foot{font-size:10px} }
 @media (max-width:560px){.viz-legend,.viz-hint{display:none}}
 
 /* ---- Detail side panel (the payoff: click → learn) ---- */
@@ -357,7 +402,15 @@ html.dark .stage{
   <div class="container stage-wrap">
     <div class="stage" id="stage">
       <div class="stage-grid">
-        <div class="graph-col">
+        <div class="graph-col" id="graph-col">
+          <div class="viz-tabs" role="tablist" aria-label="Stage view">
+            <button type="button" id="tab-concepts" role="tab" aria-selected="true" aria-controls="graph">
+              <span data-lang="en">Concepts</span><span data-lang="de">Konzepte</span>
+            </button>
+            <button type="button" id="tab-anatomy" role="tab" aria-selected="false" aria-controls="brain-wrap">
+              <span data-lang="en">CORE / USER</span><span data-lang="de">CORE / USER</span>
+            </button>
+          </div>
           <svg class="graph-svg" id="graph" viewBox="-70 0 900 620" preserveAspectRatio="xMidYMid meet"
                role="application"
                aria-label="Interactive concept constellation. Use Tab to move between concepts, Enter to open a concept's summary.">
@@ -371,6 +424,25 @@ html.dark .stage{
           <div class="viz-hint" aria-hidden="true">
             <span data-lang="en">Click a node · <kbd>Tab</kbd>+<kbd>↵</kbd></span>
             <span data-lang="de">Knoten klicken · <kbd>Tab</kbd>+<kbd>↵</kbd></span>
+          </div>
+
+          <!-- CORE/USER anatomy: two halves of one bridge, one dot per tracked file.
+               Counted with git, never estimated:
+                 git ls-files | grep -v '^examples/' | wc -l   ->  791
+                 git ls-files examples/agency | wc -l          ->   27 -->
+          <div class="brain-wrap" id="brain-wrap">
+            <canvas id="brain" aria-hidden="true"></canvas>
+            <button type="button" class="brain-replay" id="brain-replay">
+              <span data-lang="en">Replay</span><span data-lang="de">Nochmal</span>
+            </button>
+            <p class="brain-foot">
+              <span data-lang="en"><b>791 files ship. 27 are yours.</b> One dot per tracked file. Click a folder.</span>
+              <span data-lang="de"><b>791 Dateien kommen mit, 27 sind deine.</b> Ein Punkt für jede versionierte Datei. Klick einen Ordner an.</span>
+            </p>
+            <p class="brain-sr">
+              <span data-lang="en">Two halves of one bridge, side by side. The left half is CORE, everything open-bridge ships: 791 tracked files, one dot each, grouped by top level folder, with skills at 345 files and scripts at 110 the largest by far. The right half is USER, one instance of your own, here the shipped example in examples/agency: 27 files, one dot each. Six folder names appear in both halves and are joined across the middle: the repository root, identity, infra, workflow, protocols and work. On the CORE side each holds a template and a schema. On the USER side each holds files you name yourself, for example infra/channels/email.yaml. Use the folder list in the panel beside the figure to read each pair.</span>
+              <span data-lang="de">Zwei Hälften einer Bridge, nebeneinander. Die linke Hälfte ist CORE, alles was open-bridge mitliefert: 791 versionierte Dateien, je Datei ein Punkt, nach Ordner der obersten Ebene gruppiert, mit skills bei 345 Dateien und scripts bei 110 als mit Abstand größten. Die rechte Hälfte ist USER, eine eigene Instanz, hier das mitgelieferte Beispiel in examples/agency: 27 Dateien, je Datei ein Punkt. Sechs Ordnernamen kommen in beiden Hälften vor und sind über die Mitte verbunden: die Repo-Wurzel, identity, infra, workflow, protocols und work. Auf der CORE-Seite hält jeder eine Vorlage und ein Schema. Auf der USER-Seite hält jeder Dateien, die du selbst benennst, etwa infra/channels/email.yaml. Die Ordnerliste im Panel neben der Grafik führt jedes Paar auf.</span>
+            </p>
           </div>
         </div>
 
@@ -955,6 +1027,392 @@ html.dark .stage{
   // (no focus steal — focusEl stays false; deep links via hash win above)
   if(!selected){ selectNode("bridge", false); }
   window.addEventListener("hashchange", fromHash);
+})();
+</script>
+
+<script>
+/* ===================== CORE / USER anatomy =====================
+   A second view on the same stage. The constellation says what the pieces are;
+   this says what is actually in each half and how much of it there is.
+
+   Every mark is one tracked file. Counted with git, never estimated:
+     git ls-files | grep -v '^examples/' | wc -l   ->  791   CORE, the left half
+     git ls-files examples/agency | wc -l          ->   27   USER, the right half
+
+   The six folder names in the middle exist on BOTH sides. On CORE they hold a
+   _template.yaml and a _schema.yaml, on USER a file you name yourself. That is
+   the whole CORE/USER model, and it is bilateral the way a brain is.
+
+   Note on .claude/ : the three sub-agent definitions in the example instance are
+   counted under the root rather than given a folder of their own. Sub-agents are
+   the ONE Claude Code specific piece in the system; everything else runs from
+   AGENTS.md, which any tool reads. A .claude/ label on the USER half would tell
+   the opposite story on a page that insists it is runtime agnostic. */
+(function(){
+  "use strict";
+  var cv = document.getElementById("brain");
+  if(!cv || !cv.getContext) return;
+  var wrap   = document.getElementById("brain-wrap");
+  var col    = document.getElementById("graph-col");
+  var tabC   = document.getElementById("tab-concepts");
+  var tabA   = document.getElementById("tab-anatomy");
+  var replay = document.getElementById("brain-replay");
+  var detail = document.getElementById("detail");
+  if(!wrap || !col || !tabC || !tabA || !detail) return;
+  var ctx = cv.getContext("2d");
+  var root = document.documentElement;
+  var reduceMQ = matchMedia("(prefers-reduced-motion: reduce)");
+  function L(){ return root.getAttribute("data-active-lang") === "de" ? "de" : "en"; }
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  /* The six folders that exist on both sides. USER counts sum to 27, CORE to 166. */
+  var PAIRS = [
+    { id:"root", n:"./", core:22, user:8, y:-0.62,
+      t_en:"The root", t_de:"Die Wurzel",
+      c_en:"22 files: AGENTS.md, CLAUDE.md, GEMINI.md, README.md, DESIGN.md, the licence, bridge-config.yaml.template and ecosystem.example.yaml. The manual and the two blank forms.",
+      c_de:"22 Dateien: AGENTS.md, CLAUDE.md, GEMINI.md, README.md, DESIGN.md, die Lizenz, bridge-config.yaml.template und ecosystem.example.yaml. Das Handbuch und die zwei leeren Formulare.",
+      u_en:"8 files: bridge-config.yaml and ecosystem.yaml, the two that describe your world, plus this instance's own AGENTS.md, CLAUDE.md and README.md. The three sub-agent definitions under .claude/agents/ are counted here too. Sub-agents are the one Claude Code specific piece in the whole system; everything else runs from AGENTS.md, which any tool reads.",
+      u_de:"8 Dateien: bridge-config.yaml und ecosystem.yaml, die beiden, die deine Welt beschreiben, dazu die eigene AGENTS.md, CLAUDE.md und README.md dieser Instanz. Die drei Sub-Agenten unter .claude/agents/ zählen hier mit. Sub-Agenten sind das einzige Claude-Code-spezifische Stück im ganzen System, alles andere läuft über AGENTS.md, die jedes Werkzeug liest." },
+    { id:"identity", n:"identity/", core:14, user:2, y:-0.40,
+      t_en:"identity/", t_de:"identity/",
+      c_en:"14 files, all templates and schemas: accounts, mandants, personas, contracts and the orchestrator's own identity. Blank forms, no data.",
+      c_de:"14 Dateien, ausschließlich Vorlagen und Schemata: accounts, mandants, personas, contracts und die Identität des Orchestrators selbst. Leere Formulare, keine Daten.",
+      u_en:"2 files, both filled in: identity/accounts/cloud-provider.yaml and identity/mandants/team.yaml. Who you are and who you send to.",
+      u_de:"2 Dateien, beide ausgefüllt: identity/accounts/cloud-provider.yaml und identity/mandants/team.yaml. Wer du bist und an wen du sendest." },
+    { id:"infra", n:"infra/", core:23, user:7, y:-0.16,
+      t_en:"infra/", t_de:"infra/",
+      c_en:"23 files: templates and schemas for remotes, channels, backups and instances, plus the remote inventory contract tests that prove each rule still bites.",
+      c_de:"23 Dateien: Vorlagen und Schemata für remotes, channels, backups und instances, dazu die Vertragstests der Remote-Inventur, die belegen, dass jede Regel noch greift.",
+      u_en:"7 files: infra/channels/email.yaml and slack-bot.yaml, infra/remotes/prod-server.yaml with its setup note, infra/backups/topology.yaml and one scheduled check. Where things run and how to reach them.",
+      u_de:"7 Dateien: infra/channels/email.yaml und slack-bot.yaml, infra/remotes/prod-server.yaml mit Setup-Notiz, infra/backups/topology.yaml und eine geplante Prüfung. Wo was läuft und wie man es erreicht." },
+    { id:"workflow", n:"workflow/", core:82, user:2, y:0.10,
+      t_en:"workflow/", t_de:"workflow/",
+      c_en:"82 files, the largest of the six: templates and schemas for calendars, contexts, projects and workloads, and the workload contract fixtures, one per rule that must keep failing.",
+      c_de:"82 Dateien, die größte der sechs: Vorlagen und Schemata für calendars, contexts, projects und workloads, dazu die Vertragsproben der Workloads, je eine pro Regel, die weiterhin scheitern muss.",
+      u_en:"2 files: workflow/calendars/entries.yaml and workflow/contexts/webapp/context.yaml. What happens when, and where a piece of work gets documented.",
+      u_de:"2 Dateien: workflow/calendars/entries.yaml und workflow/contexts/webapp/context.yaml. Was wann passiert und wo eine Arbeit dokumentiert wird." },
+    { id:"protocols", n:"protocols/", core:10, user:1, y:0.42,
+      t_en:"protocols/", t_de:"protocols/",
+      c_en:"10 files: the standing orders a session loads every time. Task sync, board criteria, drift advisory, document work, code standards, security baseline.",
+      c_de:"10 Dateien: die Standing Orders, die jede Sitzung lädt. Task-Sync, Board-Kriterien, Drift-Hinweis, Dokumentationspflicht, Code-Standards, Sicherheits-Basis.",
+      u_en:"1 file: this instance's own document-work order. One rule the team decided on, in the same plain markdown as the shipped ones.",
+      u_de:"1 Datei: die eigene document-work-Order dieser Instanz. Eine Regel, die das Team beschlossen hat, im selben schlichten Markdown wie die mitgelieferten." },
+    { id:"work", n:"work/", core:15, user:7, y:0.70,
+      t_en:"work/", t_de:"work/",
+      c_en:"15 files, all blank forms: the STATUS template, the board template, the day and week skeletons, and the learning folder the system files its own postmortems into.",
+      c_de:"15 Dateien, alles leere Formulare: die STATUS-Vorlage, die Board-Vorlage, Tages- und Wochengerüst und der Lern-Ordner, in den das System seine eigenen Nachbetrachtungen ablegt.",
+      u_en:"7 files, and this is the half that grows: work/board.md, work/log.md, three tasks in flight, one long runner, one closed. Everything the next session needs to pick up where this one stopped.",
+      u_de:"7 Dateien, und das ist die Hälfte, die wächst: work/board.md, work/log.md, drei laufende Aufgaben, ein Dauerläufer, eine abgeschlossene. Alles, was die nächste Sitzung braucht, um dort weiterzumachen, wo diese aufgehört hat." }
+  ];
+  /* CORE only, 625 files. 625 + 166 in PAIRS = 791. */
+  var CORE_ONLY = [
+    { id:"skills",   n:"skills/",   c:345, x:-0.55, y:-0.02, key:1,
+      d_en:"345 files. The largest thing open-bridge ships, and the one you extend most: each skill is a SKILL.md plus the reference files it loads only when triggered.",
+      d_de:"345 Dateien. Das Größte, was open-bridge mitliefert, und das, was du am meisten erweiterst: jeder Skill ist eine SKILL.md plus die Referenzdateien, die er nur bei Bedarf lädt." },
+    { id:"scripts",  n:"scripts/",  c:110, x:-0.50, y:0.48, key:1,
+      d_en:"110 files. The validators and generators. They are what makes a claim in this repo checkable rather than asserted.",
+      d_de:"110 Dateien. Die Prüfer und Generatoren. Sie sind der Grund, warum eine Behauptung in diesem Repo nachprüfbar ist statt behauptet." },
+    { id:"docs",     n:"docs/",     c:69,  x:-0.62, y:-0.42, key:1,
+      d_en:"69 files. The guides for humans, plus this site.",
+      d_de:"69 Dateien. Die Anleitungen für Menschen, dazu diese Website." },
+    { id:"agents",   n:"agents/",   c:45,  x:-0.34, y:-0.66, key:1,
+      d_en:"45 files. The Bridge-Agent runtime: persistent endpoints that front a persona to peer bridges, always behind a human gate.",
+      d_de:"45 Dateien. Die Laufzeit der Bridge-Agents: dauerhafte Endpunkte, die eine Persona nach außen vertreten, immer hinter einem menschlichen Gate." },
+    { id:"rules",    n:"rules/",    c:23,  x:-0.84, y:0.20, key:1,
+      d_en:"23 files. The behavioural rules: the session start gate, the push guard, promote safety, CI discipline.",
+      d_de:"23 Dateien. Die Verhaltensregeln: das Sitzungsstart-Tor, der Push-Schutz, die Promote-Sicherheit, die CI-Disziplin." },
+    { id:"github",   n:".github/",  c:15,  x:-0.38, y:0.70 },
+    { id:"claudecore", n:".claude/", c:7,  x:-0.72, y:-0.30 },
+    { id:"themes",   n:"themes/",   c:4,   x:-0.80, y:-0.20 },
+    { id:"trackers", n:"trackers/", c:3,   x:-0.74, y:0.46 },
+    { id:"bin",      n:"bin/",      c:2,   x:-0.20, y:-0.80 },
+    { id:"agentsdir",n:".agents/",  c:1,   x:-0.88, y:0.08 },
+    { id:"imports",  n:"imports/",  c:1,   x:-0.56, y:0.66 }
+  ];
+  var PX = 0.36;
+
+  function lobe(sign, cx, cy, s){
+    var p = new Path2D();
+    function B(a,b,c,d,e,f){ p.bezierCurveTo(cx+a*sign*s, cy+b*s, cx+c*sign*s, cy+d*s, cx+e*sign*s, cy+f*s); }
+    p.moveTo(cx + 0.055*sign*s, cy - 0.88*s);
+    B(0.42,-0.92, 0.80,-0.60, 0.88,-0.14);
+    B(0.95, 0.26, 0.70, 0.68, 0.38, 0.86);
+    B(0.24, 0.93, 0.10, 0.94, 0.055, 0.88);
+    p.closePath(); return p;
+  }
+
+  var W=0, H=0, DPR=1, S=0, CX=0, CY=0, L1=null, R1=null;
+  var core=null, user=null, hits=[];
+  var T_LOBE=520, T_CORE=1650, T_ARC=2200, T_USER=2850, T_REST=3050;
+  var t0=0, elapsed=0, raf=null, running=false, settled=false, active=false, onScreen=true;
+  var picked=null;
+
+  function P(x,y){ return [CX + x*S, CY + y*S]; }
+  function vz(v){ return getComputedStyle(cv).getPropertyValue(v).trim(); }
+
+  function measure(){
+    var r = wrap.getBoundingClientRect();
+    if(!r.width || !r.height) return false;
+    W=r.width; H=r.height; DPR=Math.min(devicePixelRatio||1,2);
+    cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+    S=Math.min(W/3.6, H/2.48); CX=W/2; CY=H*0.455;
+    L1=lobe(-1,CX,CY,S); R1=lobe(1,CX,CY,S);
+    return true;
+  }
+
+  /* Rejection sampling with an exact count: a point outside the lobe is pulled
+     back toward its folder centre instead of discarded, so every file keeps its
+     dot. Discarding lost 98 of 791 in an earlier draft, which would have made the
+     caption a lie. Seeded, so a resize or a theme flip never reshuffles the field. */
+  function place(blobs, path, seed){
+    var st=seed>>>0, out=[];
+    function rnd(){ st=(st*1103515245+12345)&0x7fffffff; return st/0x7fffffff; }
+    ctx.setTransform(1,0,0,1,0,0);
+    for(var i=0;i<blobs.length;i++){
+      var b=blobs[i], sigma=0.038+Math.min(0.175,b.c/1500), got=0, att=0;
+      while(got<b.c && att<b.c*500){
+        att++;
+        var u1=rnd()||1e-6, u2=rnd(), g=Math.sqrt(-2*Math.log(u1));
+        var px=b.x+g*Math.cos(6.283185307*u2)*sigma;
+        var py=b.y+g*Math.sin(6.283185307*u2)*sigma*1.25;
+        var q=P(px,py);
+        if(!ctx.isPointInPath(path,q[0],q[1])){
+          var t=0.8, ok=false;
+          for(var k=0;k<7;k++){
+            var r2=P(b.x+(px-b.x)*t, b.y+(py-b.y)*t);
+            if(ctx.isPointInPath(path,r2[0],r2[1])){ q=r2; ok=true; break; }
+            t*=0.72;
+          }
+          if(!ok) continue;
+        }
+        out.push(q[0], q[1], Math.min(1, Math.abs(px)/0.92), b.id||"");
+        got++;
+      }
+    }
+    return out;
+  }
+
+  function build(){
+    var cb=[], i;
+    for(i=0;i<CORE_ONLY.length;i++) cb.push(CORE_ONLY[i]);
+    for(i=0;i<PAIRS.length;i++) cb.push({ id:PAIRS[i].id, c:PAIRS[i].core, x:-PX, y:PAIRS[i].y });
+    var ub=[];
+    for(i=0;i<PAIRS.length;i++) ub.push({ id:PAIRS[i].id, c:PAIRS[i].user, x:PX, y:PAIRS[i].y });
+    core=place(cb,L1,20260906);
+    user=place(ub,R1,7771);
+  }
+
+  function ease(x){ return x<0?0:x>1?1:1-Math.pow(1-x,3); }
+
+  function draw(){
+    if(!core) build();
+    var t = reduceMQ.matches ? T_REST : elapsed;
+    var FG=vz("--viz-fg"), DIM=vz("--viz-fg-dim"), MUT=vz("--viz-fg-muted"),
+        CORECOL=vz("--g-foundation"), USERCOL=vz("--g-hub"), LINE=vz("--viz-line");
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.clearRect(0,0,W,H);
+    var small = W < 620;
+    var fs = small ? 10 : 11.5;
+
+    // 1. the two outlines draw themselves in
+    var lp = ease(t/T_LOBE), per = 6.2*S;
+    ctx.save();
+    ctx.strokeStyle = DIM; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.2;
+    ctx.setLineDash([per, per]); ctx.lineDashOffset = per*(1-lp);
+    ctx.stroke(L1); ctx.stroke(R1);
+    ctx.restore();
+
+    // 2. CORE fills outward from the seam
+    var cp = ease((t-260)/(T_CORE-260));
+    ctx.globalAlpha = 0.52; ctx.fillStyle = CORECOL; ctx.beginPath();
+    var rc = small ? 1.0 : 1.2, i;
+    for(i=0;i<core.length;i+=4){
+      if(core[i+2] > cp) continue;
+      ctx.moveTo(core[i]+rc, core[i+1]); ctx.arc(core[i], core[i+1], rc, 0, 6.283185307);
+    }
+    ctx.fill();
+
+    // 3. the six shared folder names, joined across the middle
+    ctx.strokeStyle = CORECOL; ctx.lineWidth = 1;
+    for(i=0;i<PAIRS.length;i++){
+      var ap = ease((t - T_CORE + 260 - i*70)/(T_ARC - T_CORE + 260));
+      if(ap <= 0) continue;
+      var a = P(-PX*0.84, PAIRS[i].y), b2 = P(PX*0.84, PAIRS[i].y);
+      ctx.globalAlpha = 0.30*ap;
+      ctx.beginPath(); ctx.moveTo(a[0],a[1]);
+      ctx.quadraticCurveTo(CX, CY + (a[1]-CY)*0.52, b2[0], b2[1]); ctx.stroke();
+    }
+
+    // 4. USER lands, one file at a time
+    var up = ease((t-T_ARC)/(T_USER-T_ARC));
+    var n = user.length/4, ru = small ? 2.0 : 2.4;
+    ctx.globalAlpha = 1; ctx.fillStyle = USERCOL; ctx.beginPath();
+    for(i=0;i<user.length;i+=4){
+      var k = (i/4)/n;
+      if(k > up) continue;
+      var pop = Math.min(1, (up-k)*6);
+      var r = ru*(0.4 + 0.6*pop);
+      ctx.moveTo(user[i]+r, user[i+1]); ctx.arc(user[i], user[i+1], r, 0, 6.283185307);
+    }
+    ctx.fill();
+
+    // 5. labels on the flanks, with a leader to the folder they name
+    var lab = ease((t-T_ARC)/(T_REST-T_ARC));
+    if(lab <= 0) return;
+    hits = [];
+    ctx.globalAlpha = lab;
+    ctx.font = fs + "px " + vz("--font-mono");
+    ctx.textBaseline = "alphabetic";
+    var LEAD = small ? 6 : 10, ex = CX + S*0.99, lx = CX - S*0.99 - LEAD;
+
+    ctx.textAlign = "left";
+    for(i=0;i<PAIRS.length;i++){
+      var q = P(PX, PAIRS[i].y), ly = q[1] + fs*0.34, on = picked === PAIRS[i].id;
+      ctx.globalAlpha = lab*0.34; ctx.strokeStyle = USERCOL; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(q[0]+8, q[1]); ctx.lineTo(ex+LEAD-3, q[1]); ctx.stroke();
+      ctx.globalAlpha = lab; ctx.fillStyle = on ? FG : DIM;
+      ctx.fillText(PAIRS[i].n, ex+LEAD, ly);
+      hits.push({ id:PAIRS[i].id, x:ex+LEAD-4, y:ly-fs, w:ctx.measureText(PAIRS[i].n).width+10, h:fs*1.7 });
+    }
+    ctx.textAlign = "right";
+    for(i=0;i<CORE_ONLY.length;i++){
+      var b3 = CORE_ONLY[i];
+      if(!b3.key || (small && i>2)) continue;
+      var q3 = P(b3.x,b3.y), ly3 = q3[1] + fs*0.34, on3 = picked === b3.id;
+      var txt = b3.n + " " + b3.c;
+      ctx.globalAlpha = lab*0.30; ctx.strokeStyle = CORECOL; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(lx+3, q3[1]); ctx.lineTo(q3[0], q3[1]); ctx.stroke();
+      ctx.globalAlpha = lab; ctx.fillStyle = on3 ? FG : MUT;
+      ctx.fillText(txt, lx, ly3);
+      var tw = ctx.measureText(txt).width;
+      hits.push({ id:b3.id, x:lx-tw-6, y:ly3-fs, w:tw+12, h:fs*1.7 });
+    }
+
+    /* 6. the two headers, in the bottom corners: the top of the stage belongs to
+       the view tabs, and a header hidden behind them is a header nobody reads. */
+    var hy = H - fs*2 - 26;
+    ctx.globalAlpha = lab;
+    ctx.textAlign = "left"; ctx.fillStyle = CORECOL;
+    ctx.fillText("main (CORE)", 14, hy);
+    ctx.fillStyle = MUT; ctx.fillText(L()==="de" ? "791 Dateien, alle mitgeliefert" : "791 files, all shipped", 14, hy+fs+4);
+    ctx.textAlign = "right"; ctx.fillStyle = USERCOL;
+    ctx.fillText("user/<you>", W-14, hy);
+    ctx.fillStyle = MUT; ctx.fillText(L()==="de" ? "27 Dateien, alle deine" : "27 files, all yours", W-14, hy+fs+4);
+    ctx.globalAlpha = 1;
+  }
+
+  function frame(now){
+    elapsed = now - t0;
+    if(elapsed >= T_REST){ elapsed = T_REST; settled = true; running = false; raf = null; draw(); return; }
+    draw(); raf = requestAnimationFrame(frame);
+  }
+  function stop(){ if(raf) cancelAnimationFrame(raf); raf=null; running=false; }
+  function play(){
+    if(running || settled || !active || !onScreen || reduceMQ.matches) return;
+    running = true; t0 = performance.now() - elapsed; raf = requestAnimationFrame(frame);
+  }
+  function start(replayIt){
+    stop();
+    if(!measure()){ requestAnimationFrame(function(){ start(replayIt); }); return; }
+    core = null;
+    if(reduceMQ.matches){ elapsed = T_REST; settled = true; draw(); return; }
+    if(replayIt){ settled = false; elapsed = 0; }
+    if(settled){ elapsed = T_REST; draw(); return; }
+    elapsed = 0; draw(); play();
+  }
+
+  /* ---- detail panel ---- */
+  var parked = null;
+  function emptyPanel(){
+    var de = L()==="de";
+    detail.innerHTML =
+      '<div class="empty">' +
+      '<span class="big">' + (de ? "Wähle einen Ordner" : "Pick a folder") + '</span>' +
+      '<span>' + (de
+        ? "Links liegt CORE, alles was mitgeliefert wird. Rechts liegt USER, eine eigene Instanz. Sechs Ordnernamen kommen in beiden vor: links die leere Vorlage, rechts die ausgefüllte Datei. Klick einen an."
+        : "The left half is CORE, everything that ships. The right half is USER, one instance of your own. Six folder names appear in both: the blank form on the left, the filled in file on the right. Click one.") + '</span>' +
+      '</div>';
+  }
+  function show(id){
+    var de = L()==="de", i, p2 = null, c2 = null;
+    for(i=0;i<PAIRS.length;i++) if(PAIRS[i].id===id) p2=PAIRS[i];
+    for(i=0;i<CORE_ONLY.length;i++) if(CORE_ONLY[i].id===id) c2=CORE_ONLY[i];
+    picked = id;
+    if(p2){
+      detail.innerHTML =
+        '<span class="d-group"><span class="sw" style="background:var(--g-hub)"></span>' +
+          (de ? "Auf beiden Seiten" : "On both sides") + '</span>' +
+        '<h2>' + esc(de ? p2.t_de : p2.t_en) + '</h2>' +
+        '<p class="d-short"><b style="color:var(--g-foundation)">CORE ' + p2.core + '</b><br>' +
+          esc(de ? p2.c_de : p2.c_en) + '</p>' +
+        '<p class="d-short"><b style="color:var(--g-hub)">USER ' + p2.user + '</b><br>' +
+          esc(de ? p2.u_de : p2.u_en) + '</p>';
+    } else if(c2){
+      detail.innerHTML =
+        '<span class="d-group"><span class="sw" style="background:var(--g-foundation)"></span>' +
+          (de ? "Nur CORE" : "CORE only") + '</span>' +
+        '<h2>' + esc(c2.n) + '</h2>' +
+        '<p class="d-short">' + esc(de ? c2.d_de : c2.d_en) + '</p>';
+    } else { return; }
+    draw();
+  }
+
+  /* ---- interaction ---- */
+  function at(ev){
+    var r = cv.getBoundingClientRect(), x = ev.clientX-r.left, y = ev.clientY-r.top, i;
+    for(i=0;i<hits.length;i++){
+      var h = hits[i];
+      if(x>=h.x && x<=h.x+h.w && y>=h.y && y<=h.y+h.h) return h.id;
+    }
+    return null;
+  }
+  cv.addEventListener("click", function(ev){
+    var id = at(ev);
+    if(id) show(id); else { picked = null; emptyPanel(); draw(); }
+  });
+  cv.addEventListener("mousemove", function(ev){ cv.style.cursor = at(ev) ? "pointer" : "default"; });
+
+  function setView(anatomy){
+    active = anatomy;
+    col.classList.toggle("anatomy", anatomy);
+    tabA.setAttribute("aria-selected", anatomy ? "true" : "false");
+    tabC.setAttribute("aria-selected", anatomy ? "false" : "true");
+    if(anatomy){
+      /* Park the constellation's own panel as NODES, not as markup: the concept
+         script wires click handlers onto its related-chips, and restoring an
+         innerHTML string would hand back dead chips. Detached nodes keep their
+         listeners. Holding a reference to #detail-empty instead does not work:
+         once the concept script has rendered a concept, that node is detached
+         and getElementById no longer finds it. */
+      if(parked === null) parked = Array.prototype.slice.call(detail.childNodes);
+      picked = null; emptyPanel(); start(false);
+    } else {
+      stop();
+      detail.innerHTML = "";
+      if(parked){ for(var i=0;i<parked.length;i++) detail.appendChild(parked[i]); parked = null; }
+    }
+  }
+  tabA.addEventListener("click", function(){ setView(true); if(history.replaceState) history.replaceState(null,"","#core-user"); });
+  tabC.addEventListener("click", function(){ setView(false); if(history.replaceState) history.replaceState(null,"",location.pathname); });
+  // deep link: explore.html#core-user opens straight into the anatomy view
+  if(location.hash === "#core-user") setView(true);
+  if(replay) replay.addEventListener("click", function(){ start(true); });
+
+  var rt;
+  addEventListener("resize", function(){
+    clearTimeout(rt); rt = setTimeout(function(){ if(active) start(false); }, 160);
+  });
+  new MutationObserver(function(){
+    if(!active || !W) return;
+    if(picked) show(picked); else emptyPanel();
+    draw();
+  }).observe(root, {attributes:true, attributeFilter:["class","data-active-lang"]});
+  if(reduceMQ.addEventListener){ reduceMQ.addEventListener("change", function(){ if(active) start(false); }); }
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){ onScreen = e.isIntersecting; onScreen ? play() : stop(); });
+    },{threshold:0.05}).observe(cv);
+  }
 })();
 </script>
 
