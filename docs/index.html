@@ -4,11 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BKS open-bridge: context that compounds across AI sessions</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="assets/favicon.ico" sizes="16x16 32x32 48x48">
 <meta name="description" content="BKS open-bridge is a plain git repo of markdown and YAML your AI coding agent reads at the start of every session. No database, no SaaS, nothing to host. Public, MIT, built at BKS-Lab.">
 <!-- Social / Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="BKS open-bridge: context that compounds across AI sessions">
 <meta property="og:description" content="Plain markdown + YAML in git your AI coding agent reads at session start, so context compounds instead of resetting. No database, no SaaS. MIT.">
+<link rel="canonical" href="https://bks-lab.github.io/open-bridge/">
 <meta property="og:url" content="https://bks-lab.github.io/open-bridge/">
 <meta property="og:image" content="https://bks-lab.github.io/open-bridge/social-preview.png">
 <meta property="og:image:width" content="1280">
@@ -36,6 +39,7 @@
 </script>
 
 <link rel="stylesheet" href="assets/brand.css">
+<noscript><style>.reveal,.reset-line{opacity:1!important;transform:none!important}</style></noscript>
 <style>
 /* ============================================================
    BKS open-bridge marketing landing (single file, fully offline).
@@ -43,12 +47,14 @@
    Minimalism) via landing/tokens.css. AA-correct text tokens
    (--accent-text, --code-bg, --ok-text …) layered on top. These
    are NOT in tokens.css and must be preserved.
-   No external fonts, no CDN, no network calls.
+   No external fonts and no CDN: every font is a system stack and every
+   style and script below is inline. The page itself makes no network
+   call. The one exception is the ask-about-open-bridge widget loaded at
+   the end of the body, which talks to openbridge.bks-lab.com when a
+   reader opens it.
 
-   The ONLY hex outside the scoped visual blocks (#structure-viz +
-   #mechanic-viz) traces to a token. The #structure-viz group accents
-   are a documented, scoped palette confined to that figure, exactly
-   like macOS terminal traffic-light dots.
+   Every hex traces to a token. #structure-viz, which used to carry its
+   own scoped palette, no longer exists.
    ============================================================ */
 
 :root{
@@ -127,7 +133,7 @@ header.nav{
 .page-nav a[aria-current="true"]{color:var(--primary)}
 .page-nav a.active::after{
   content:"";position:absolute;left:12px;right:12px;bottom:0;height:2px;border-radius:2px;
-  background:linear-gradient(120deg,var(--accent-from),var(--accent-to));
+  background:var(--accent-text);
 }
 @media (max-width:560px){
   .page-nav a{padding:11px 10px;font-size:13px}
@@ -135,6 +141,9 @@ header.nav{
 
 /* ---- Sections ---- */
 section{padding-block:var(--section-y);scroll-margin-top:112px}
+/* #mechanic-viz is nested inside #substrate, so it inherited the section
+   padding a second time and stacked ~190px of dead ground against its parent. */
+#substrate section{padding-block:0}
 /* in-page anchors that target a figure/sub-block inside a section */
 [id="mechanic-viz"]{scroll-margin-top:112px}
 
@@ -160,6 +169,19 @@ section{padding-block:var(--section-y);scroll-margin-top:112px}
 .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
 .beta-line{margin-top:18px;font-size:14px;color:var(--secondary);max-width:48rem}
 
+/* ---- the large-type moment ---- */
+#tagline .tagline-block{max-width:var(--prose-w);margin-inline:auto;text-align:center}
+#tagline .tagline-line{
+  margin:0;font-size:clamp(30px,4vw,48px);font-weight:300;line-height:1.22;
+  letter-spacing:-0.02em;color:var(--ink);text-wrap:balance;
+}
+#tagline .tl{display:block}
+/* Words start muted and come up in reading order. Timing is the DESIGN.md
+   default (300ms, ease-out) rather than a signature of this section's own. */
+/* The per-word rise was the fourth different entrance tempo on the page. The
+   block still arrives on the shared .reveal, which is now the only one. */
+@media (max-width:640px){ #tagline .tl{display:inline} }
+
 /* hero demo row: the code example and the CORE ⟷ USER brain, side by side */
 .hero-demo{
   margin-top:clamp(28px,4.5vw,48px);
@@ -167,15 +189,6 @@ section{padding-block:var(--section-y);scroll-margin-top:112px}
   align-items:start;gap:clamp(22px,3vw,40px);
 }
 .hero-visual{min-width:0;width:100%}
-.seam-cap{
-  margin-top:14px;font-size:13.5px;color:var(--secondary);line-height:1.5;text-align:center;
-}
-.seam-cap a{color:var(--accent-text);text-decoration:none;font-weight:500;white-space:nowrap}
-.seam-cap a:hover{text-decoration:underline}
-.seam-cap .tag{
-  font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--secondary);
-  border:1px solid var(--border);border-radius:var(--r-full);padding:1px 8px;margin-right:8px;
-}
 
 @media (max-width:920px){
   /* stack the code example + brain on tablet/mobile */
@@ -202,7 +215,7 @@ html.dark #hero-net .hn-frame{box-shadow:0 6px 18px -8px rgba(0,0,0,.5)}
 #hero-net .hn-stage{position:relative;width:100%}
 /* the brain canvas fills the stage at the old net's 5:4 aspect, transparent
    over the frame surface so it reads on both themes. */
-#hero-net .hn-canvas{display:block;width:100%;aspect-ratio:3/2;border-radius:10px}
+#hero-net .hn-canvas{display:block;width:100%;aspect-ratio:1/0.86;border-radius:10px}
 
 #hero-net .hn-cap{
   display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;justify-content:space-between;
@@ -327,6 +340,32 @@ html.dark .tile .demo{background:var(--code-bg)}
 .cap-grouphead{font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--secondary);margin:0 0 20px}
 .cap-group + .cap-group{margin-top:48px}
 .cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+/* ---- objections, answered ---- */
+.faq-list{max-width:var(--prose-w);margin-inline:auto;display:grid;gap:34px}
+.faq-q{font-size:19px;font-weight:500;line-height:1.35;color:var(--ink);margin:0 0 8px}
+.faq-a{font-size:16px;line-height:1.65;color:var(--on-surface);margin:0}
+.faq-a code{font-family:var(--font-mono);font-size:14px}
+@media (min-width:820px){ .faq-list{grid-template-columns:1fr 1fr;gap:38px 40px} }
+/* the optional list, folded. No <details> existed on the site before this. */
+.cap-fold > summary{
+  cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--secondary);margin:0 0 20px;padding:6px 2px;border-radius:var(--r-sm);
+}
+.cap-fold > summary::-webkit-details-marker{display:none}
+.cap-fold > summary:hover{color:var(--accent-text)}
+.cap-fold-mark{
+  width:9px;height:9px;flex:0 0 auto;border-right:1.6px solid currentColor;
+  border-bottom:1.6px solid currentColor;transform:rotate(-45deg) translate(-1px,-1px);
+  transition:transform .3s ease-out;
+}
+.cap-fold[open] .cap-fold-mark{transform:rotate(45deg) translate(-2px,-2px)}
+.cap-fold-n{
+  font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:0;
+  color:var(--muted);border:1px solid var(--line);border-radius:var(--r-full);
+  padding:1px 8px;
+}
+@media (prefers-reduced-motion:reduce){ .cap-fold-mark{transition:none} }
 .cap-item{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--r-lg);padding:24px 26px;box-shadow:var(--shadow-soft);
@@ -370,10 +409,11 @@ html.dark .tile .demo{background:var(--code-bg)}
 .dg-flow.user{stroke:var(--accent)}
 .dg-flow.core{stroke:var(--accent-secondary)}
 .dg-flow.promote{stroke:url(#dgGrad)}
-/* The refusal. The promote arc marches; this one is deliberately still, and
-   the contrast between moving and not moving carries the claim. */
+/* The refusal is carried by the muted stroke, the dashed boundary, the mark and
+   the "stays local" label, none of which depend on motion. */
 .dg-flow.blocked{stroke:var(--muted);opacity:.85}
 .dg-bound{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:4 6;opacity:.7}
+.dg-ghost{fill:none;stroke:var(--line);stroke-width:1;opacity:.6}
 .dg-x{fill:var(--attention-text);font:600 15px var(--font-mono)}
 .dg-box{fill:var(--surface-subtle);stroke:var(--line);stroke-width:1}
 .dg-merge{fill:var(--surface);stroke:var(--accent-text);stroke-width:1.4}
@@ -382,7 +422,12 @@ html.dark .tile .demo{background:var(--code-bg)}
 .dg-cap{fill:var(--muted);font:400 11px var(--font-sans)}
 .dg-mono{font:400 11px var(--font-mono)}
 @media (prefers-reduced-motion:no-preference){
-  .diagram-frame.in .dg-flow{animation:dg-flow-anim 1.4s linear infinite}
+  /* Three beats, 4.2s, under the WCAG 2.2.2 five second ceiling. The rest frame
+     is pixel identical to the start: -28 against a 6 8 dasharray is two whole
+     periods. One beat is too short for a slow scroller arriving after the
+     observer fired, and the arcs carry no arrowheads, so something has to mark
+     direction. */
+  .diagram-frame.in .dg-flow{animation:dg-flow-anim 1.4s linear 3 both}
   .diagram-frame.in .dg-flow.blocked{animation:none}
 }
 @keyframes dg-flow-anim{to{stroke-dashoffset:-28}}
@@ -504,10 +549,13 @@ html.dark .path-prompts code{background:var(--code-bg)}
     <a href="#usecases"><span data-lang="en">Use cases</span><span data-lang="de">Anwendungsfälle</span></a>
     <a href="#honesty"><span data-lang="en">Status</span><span data-lang="de">Status</span></a>
     <a href="#concept"><span data-lang="en">Concept</span><span data-lang="de">Konzept</span></a>
+    <a href="#faq"><span data-lang="en">FAQ</span><span data-lang="de">FAQ</span></a>
     <a href="#start"><span data-lang="en">Get started</span><span data-lang="de">Loslegen</span></a>
   </div>
 </nav>
 </div><!-- /.topbar -->
+
+<main id="top">
 
 <!-- ======================= HERO (copy on top · constellation full-width below) ======================= -->
 <section class="hero">
@@ -526,7 +574,7 @@ html.dark .path-prompts code{background:var(--code-bg)}
       </p>
 
       <div class="cta-row">
-        <button class="btn btn-primary" id="hero-setup" type="button">
+        <button class="btn btn-primary js-setup-cta" id="hero-setup" type="button">
           <span data-lang="en">Set it up: copy the prompt</span><span data-lang="de">Einrichten: Prompt kopieren</span>
           <span class="arrow">→</span>
         </button>
@@ -572,20 +620,21 @@ auf PR #214.</div>
         <figure id="hero-net" aria-labelledby="hn-cap-text">
           <div class="hn-frame">
             <div class="hn-stage" id="hn-stage">
-              <canvas class="hn-canvas" id="hn-brain" aria-hidden="true"></canvas>
+              <canvas class="hn-canvas" id="hn-ring" aria-hidden="true"></canvas>
               <p class="hn-sr">
-                <span data-lang="en">open-bridge is one shared CORE framework (skills, agents, protocols, schemas) bridged to your private USER instance, which holds your projects, clients, conventions and work log. CORE ships down; your knowledge promotes up. The full detailed view is below.</span>
-                <span data-lang="de">open-bridge ist ein gemeinsames CORE-Framework aus Skills, Agenten, Protokollen und Schemas, verbunden mit deiner privaten USER-Instanz, die deine Projekte, Kunden, Konventionen und dein Arbeitslog hält. CORE kommt runter, dein Wissen wandert hoch. Die ausführliche Ansicht steht weiter unten.</span>
+                <span data-lang="en">The shipped demo workspace drawn as a containment ring: 27 files in six folders around a centre, with one dot in the outer band for each of their 1162 lines, so a folder that holds more shows denser. identity holds who you are and who you send to, workflow holds what happens when, infra holds where things run, work holds the task board and the log, protocols holds the standing orders, and .claude holds the agents. At session start the agent reads outward from the centre through every ring, then writes one line back into work/log.md. Clone examples/agency and the same tree is on your disk.</span>
+                <span data-lang="de">Der mitgelieferte Demo-Workspace als Ring gezeichnet: 27 Dateien in sechs Ordnern um eine Mitte, im Außenband ein Punkt je Zeile ihrer 1162 Zeilen, ein Ordner mit mehr Inhalt ist also dichter. identity hält, wer du bist und an wen du sendest, workflow, was wann passiert, infra, wo was läuft, work das Aufgabenbrett und das Protokoll, protocols die Standing Orders und .claude die Agenten. Zum Session-Start liest der Agent von der Mitte nach außen durch jeden Ring und schreibt danach eine Zeile zurück in work/log.md. Klone examples/agency, dann liegt derselbe Baum auf deiner Platte.</span>
               </p>
             </div>
             <figcaption class="hn-cap" id="hn-cap-text">
               <span>
-                <span data-lang="en"><b>CORE ⟷ USER</b>, one framework bridged to your world.</span>
-                <span data-lang="de"><b>CORE ⟷ USER</b>. Ein Framework, verbunden mit deiner Welt.</span>
+                <span data-lang="en"><b>examples/agency</b>: 27 files, 1162 lines, one dot each.</span>
+
+                <span data-lang="de"><b>examples/agency</b>: 27 Dateien, 1162 Zeilen, je Zeile ein Punkt.</span>
               </span>
               <a href="#substrate">
-                <span data-lang="en">See the full picture →</span>
-                <span data-lang="de">Ganzes Bild →</span>
+                <span data-lang="en">Look inside it →</span>
+                <span data-lang="de">Reinschauen →</span>
               </a>
             </figcaption>
           </div>
@@ -619,13 +668,13 @@ auf PR #214.</div>
       <div class="doc-card card">
         <h4 class="h4"><span data-lang="en">Most AI work today</span><span data-lang="de">KI-Arbeit heute</span></h4>
         <div class="flat-dump" aria-hidden="true">
-<span class="f">📄 chat-export-final.txt</span>
-<span class="f">📄 notes (3).md</span>
-<span class="f">📄 prompt that worked.txt</span>
-<span class="f">📄 todo-maybe.md</span>
-<span class="f">📄 client stuff.docx</span>
-<span class="f">📄 chat-export-final-v2.txt</span>
-<span class="f">📄 untitled.md</span>
+<span class="f">chat-export-final.txt</span>
+<span class="f">notes (3).md</span>
+<span class="f">prompt that worked.txt</span>
+<span class="f">todo-maybe.md</span>
+<span class="f">client stuff.docx</span>
+<span class="f">chat-export-final-v2.txt</span>
+<span class="f">untitled.md</span>
         </div>
         <p class="cap"><span data-lang="en">A bare My-Documents folder: everyone piling up their own chaos, every conversation rebuilding context and structure from scratch.</span><span data-lang="de">Ein nackter My-Documents-Ordner. Jeder häuft sein eigenes Chaos an, jede Unterhaltung baut Kontext und Struktur von Grund auf neu.</span></p>
       </div>
@@ -684,7 +733,7 @@ auf PR #214.</div>
 
         <div style="height:24px"></div>
 
-        <!-- Verbatim README log row (README line 92), the same row the hero canvas types -->
+        <!-- Verbatim README log row (README line 211), the same row the hero canvas types -->
         <div class="code-label"><span>work/log.md</span><span>$ cat work/log.md</span></div>
         <div class="artifact" aria-label="A work log row, diff-able plain text">
           <div class="row"><span class="gut"> </span><span class="ln"><span class="cmt">## Fri 20.06</span></span></div>
@@ -818,25 +867,26 @@ auf PR #214.</div>
           </div>
         </div>
 
-        <!-- Day payoff -->
-        <div class="mv-days">
-          <div class="mv-day-chip">
-            <div class="num">1</div>
-            <p>
-              <span class="lab"><span data-lang="en">Day one</span><span data-lang="de">Tag eins</span></span>
-              <span data-lang="en">You explain the world once. The agent writes it down as it works.</span>
-              <span data-lang="de">Du erklärst die Welt einmal. Der Agent schreibt sie auf, während er arbeitet.</span>
-            </p>
-          </div>
-          <div class="mv-day-chip now">
-            <div class="num">2</div>
-            <p>
-              <span class="lab"><span data-lang="en">Day two</span><span data-lang="de">Tag zwei</span></span>
-              <span data-lang="en">It reads the record at session start and already knows your repos, clients and last decisions.</span>
-              <span data-lang="de">Er liest das Protokoll beim Start und kennt damit schon deine Repos, Kunden und letzten Entscheidungen.</span>
-            </p>
-          </div>
-        </div>
+        <!-- ===== TWO LANES, ONE CLOCK =====
+             The page claims context accumulation in prose eight times over and
+             never shows it. Two sessions run against one visible clock: the top
+             lane re-reads the same four files every run and ends where it began,
+             the bottom lane reads them once, writes to work/log.md, and passes
+             them from run two on. The stack under the lower lane is the whole
+             argument. Stops are the four filenames the panel above already
+             lists, not invented labels. Clock geometry and the one-integer-tick
+             discipline are rebuilt from bridge-deck, not imported. -->
+        <figure id="mv-lanes" aria-labelledby="mvl-cap">
+          <canvas id="mvl-canvas" aria-hidden="true"></canvas>
+          <p class="mvl-sr">
+            <span data-lang="en">Two sessions, run for run. Without a written record a session re-reads the same four files on every run and finishes where it started. With one, it reads them once, writes what happened to work/log.md, and from the second run onward starts from that record instead. After three runs the second session has a stack of three entries and the first still has none.</span>
+            <span data-lang="de">Zwei Sitzungen, Lauf für Lauf. Ohne Protokoll liest eine Sitzung bei jedem Lauf dieselben vier Dateien neu und endet dort, wo sie angefangen hat. Mit Protokoll liest sie sie einmal, schreibt fest was passiert ist, und startet ab dem zweiten Lauf aus diesem Protokoll. Nach drei Läufen hat die zweite Sitzung einen Stapel von drei Einträgen, die erste keinen.</span>
+          </p>
+          <figcaption class="mvl-cap" id="mvl-cap">
+            <span data-lang="en">The same three runs, two sessions. Only one of them keeps anything.</span>
+            <span data-lang="de">Dieselben drei Läufe, zwei Sitzungen. Nur eine behält etwas.</span>
+          </figcaption>
+        </figure>
 
         <div class="mv-replay">
           <button type="button" id="mvPause">
@@ -938,6 +988,30 @@ auf PR #214.</div>
   </div>
 </section>
 
+<!-- ======================= THE ONE LARGE-TYPE MOMENT =======================
+     Twelve sections all ran the same shape: centred eyebrow, heading, lead,
+     then a grid. Nothing on 1900 lines stood on its own at size. This sits
+     between the two tile grids, which is both where the wall was longest and
+     where the surface alternation had a gap. The words come up from a muted
+     tone in reading order, staggered off --i, using the existing .reveal
+     observer rather than a third one of its own. -->
+<section class="alt" id="tagline">
+  <div class="container">
+    <div class="tagline-block reveal">
+      <p class="tagline-line" data-lang="en">
+        <span class="tl">Say it once.</span>
+        <span class="tl">Six months later the decision is still there,</span>
+        <span class="tl">and so is the reason for it.</span>
+      </p>
+      <p class="tagline-line" data-lang="de">
+        <span class="tl">Sag es einmal.</span>
+        <span class="tl">Sechs Monate später steht die Entscheidung noch da,</span>
+        <span class="tl">und der Grund dafür auch.</span>
+      </p>
+    </div>
+  </div>
+</section>
+
 <!-- ======================= WHAT PEOPLE RUN ON IT (tile strip → use-cases.html) ======================= -->
 <section id="what-runs" class="uc-strip">
   <div class="container">
@@ -992,7 +1066,19 @@ auf PR #214.</div>
     <p class="cap-intro reveal" style="margin-bottom:28px"><span data-lang="en">The four core pieces (<strong>context registry</strong>, <strong>task management</strong>, <strong>skills &amp; commands</strong>, <strong>standing orders</strong>) run from a fresh clone; they're what powered the day above. Everything below is optional, USER-scope, off until you turn it on.</span><span data-lang="de">Die vier Kernteile: <strong>Kontext-Registry</strong>, <strong>Task-Management</strong>, <strong>Skills &amp; Befehle</strong>, <strong>Standing Orders</strong>. Sie laufen direkt aus einem frischen Clone heraus (du hast sie oben im Tagesablauf gesehen). Alles darunter ist optional, USER-scope, und bleibt aus, bis du es einschaltest.</span></p>
 
     <div class="cap-group reveal">
-      <p class="cap-grouphead"><span data-lang="en">Optional: turn on when you want it</span><span data-lang="de">Optional: einschalten, wenn du es brauchst</span></p>
+      <!-- The heading two lines up calls this list optional, so the page now
+           treats it as optional instead of stacking nine more cards on the
+           reader. One <summary> with inner spans, never two with data-lang:
+           [data-lang]{display:none} would hide the first, and <details> takes
+           its FIRST summary child as the control, so the German one would
+           never become clickable. .cap-group keeps .reveal and stays outside,
+           or the IntersectionObserver has nothing left to see. -->
+      <details class="cap-fold">
+        <summary class="cap-grouphead">
+          <span class="cap-fold-mark" aria-hidden="true"></span>
+          <span data-lang="en">Optional: turn on when you want it</span><span data-lang="de">Optional: einschalten, wenn du es brauchst</span>
+          <span class="cap-fold-n">9</span>
+        </summary>
       <div class="cap-grid">
         <div class="cap-item">
           <div class="cap-label"><span data-lang="en">Channels</span><span data-lang="de">Channels</span><a class="cap-docs" href="https://github.com/bks-lab/open-bridge/blob/main/docs/channels.md" target="_blank" rel="noopener">docs →</a></div>
@@ -1031,6 +1117,7 @@ auf PR #214.</div>
           <p class="cap-benefit"><span data-lang="en">Bridge-Agents are persistent, addressable A2A endpoints that front one persona to the outside world; the MCP→A2A gateway makes them reachable from MCP-only frontends too, always under a human gate.</span><span data-lang="de">Bridge-Agents sind persistente, adressierbare A2A-Endpunkte, die eine Persona nach außen vertreten; das MCP→A2A-Gateway macht sie auch aus reinen MCP-Frontends erreichbar. Das läuft immer unter menschlicher Freigabe.</span></p>
         </div>
       </div>
+      </details>
     </div>
 
     <p class="cap-more reveal"><a href="https://github.com/bks-lab/open-bridge/tree/main/docs" target="_blank" rel="noopener"><span data-lang="en">And the full layout (every path, the CORE/USER split, the rest) is in the docs →</span><span data-lang="de">Und das ganze Layout (jeder Pfad, der CORE/USER-Split, der Rest) steht in den Docs →</span></a></p>
@@ -1111,7 +1198,7 @@ auf PR #214.</div>
       </div>
     </div>
 
-    <p class="cap-more reveal"><span data-lang="en">If this resonates: <a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">star the repo</a> and 👍 the <a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP</a> issues you want most. That's literally the signal priorities are decided by.</span><span data-lang="de">Wenn dich das anspricht: <a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">Stern aufs Repo</a> und 👍 auf die <a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP</a>-Issues, die du am dringendsten willst. Genau daraus entsteht die Priorisierung.</span></p>
+    <p class="cap-more reveal"><span data-lang="en">If this resonates: <a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">star the repo</a> and upvote the <a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP</a> issues you want most. That's literally the signal priorities are decided by.</span><span data-lang="de">Wenn dich das anspricht: <a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">Stern aufs Repo</a> und stimm für die <a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP</a>-Issues, die du am dringendsten willst. Genau daraus entsteht die Priorisierung.</span></p>
   </div>
 </section>
 
@@ -1135,12 +1222,17 @@ auf PR #214.</div>
           </linearGradient>
         </defs>
 
-        <!-- USER box -->
+        <!-- USER box. The two outlines behind it are the only drawing of "you can
+             run many", which the page states four times in prose and shows never.
+             CORE deliberately gets none: the asymmetry IS the claim. -->
+        <rect class="dg-ghost" x="4"  y="28" width="190" height="92" rx="10"/>
+        <rect class="dg-ghost" x="10" y="34" width="190" height="92" rx="10"/>
         <rect class="dg-box" x="16" y="40" width="190" height="92" rx="10"/>
         <text class="dg-mono" x="30" y="62" fill="var(--accent-text)">user/&lt;you&gt;</text>
         <text class="dg-lbl" x="30" y="82"><tspan data-lang="en">Your context (USER)</tspan><tspan data-lang="de">Dein Kontext (USER)</tspan></text>
         <text class="dg-sub" x="30" y="102">bridge-config · work/</text>
         <text class="dg-sub" x="30" y="118">personas · accounts</text>
+        <text class="dg-cap" x="30" y="146"><tspan data-lang="en">one per client</tspan><tspan data-lang="de">eine pro Kunde</tspan></text>
 
         <!-- CORE box -->
         <rect class="dg-box" x="16" y="160" width="190" height="92" rx="10"/>
@@ -1180,11 +1272,45 @@ auf PR #214.</div>
 
     <p class="cu-foot"><span data-lang="en">Improvements go upstream with <code>/promote</code>. And it's runtime-agnostic: one <code>skills/</code> tree symlinks into each tool. Tested on Claude Code, working via <code>AGENTS.md</code> elsewhere, honestly labelled.</span><span data-lang="de">Verbesserungen gehen mit <code>/promote</code> nach upstream. Und es ist runtime-unabhängig: ein <code>skills/</code>-Baum wird per Symlink in jedes Tool eingebunden. Getestet auf Claude Code, anderswo via <code>AGENTS.md</code>, ehrlich gekennzeichnet.</span></p>
 
-    <div class="reveal sub-cta" style="margin-top:36px;text-align:center">
-      <p style="font-size:16px;line-height:1.7;margin-bottom:18px"><span data-lang="en">The runtime matrix and the full CORE/USER routing live in the concept guide and the interactive map.</span><span data-lang="de">Die Runtime-Matrix und das vollständige CORE/USER-Routing stehen im Konzept-Leitfaden und in der interaktiven Karte.</span></p>
-      <div class="cta-row" style="justify-content:center">
-        <a class="btn btn-primary" href="concepts.html"><span data-lang="en">Read the concept guide</span><span data-lang="de">Konzept-Leitfaden lesen</span><span class="arrow">→</span></a>
-        <a class="btn btn-secondary" href="explore.html"><span data-lang="en">Explore the concepts</span><span data-lang="de">Konzepte erkunden</span><span class="arrow">→</span></a>
+  </div>
+</section>
+
+<!-- ======================= OBJECTIONS, ANSWERED =======================
+     Open question and answer, not a row of <details>. An objection section
+     that shows a skimmer six questions with the answers folded away works
+     against itself. Sits directly before the final CTA, which is where A2
+     puts objection handling. Every answer rests on something the page already
+     states above it. -->
+<section class="alt" id="faq">
+  <div class="container">
+    <div class="sec-head reveal">
+      <p class="eyebrow"><span data-lang="en">Before you clone it</span><span data-lang="de">Bevor du es klonst</span></p>
+      <h2 class="h1"><span data-lang="en">The six questions people actually ask.</span><span data-lang="de">Die sechs Fragen, die wirklich kommen.</span></h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">Does it work outside Claude Code?</span><span data-lang="de">Läuft es außerhalb von Claude Code?</span></h3>
+        <p class="faq-a"><span data-lang="en">One <code>skills/</code> tree symlinks into each tool. It is tested on Claude Code and works elsewhere through <code>AGENTS.md</code>, which Codex, Cursor, Copilot CLI and Gemini read natively. Sub-agents are the one Claude Code specific piece; everywhere else that logic runs inline.</span><span data-lang="de">Ein <code>skills/</code>-Baum wird per Symlink in jedes Tool eingebunden. Getestet ist es auf Claude Code, anderswo läuft es über <code>AGENTS.md</code>, das Codex, Cursor, Copilot CLI und Gemini nativ lesen. Sub-Agenten sind das einzige Claude-Code-spezifische Stück, überall sonst läuft dieselbe Logik inline.</span></p>
+      </div>
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">What happens to my files when CORE updates?</span><span data-lang="de">Was passiert mit meinen Dateien, wenn CORE sich aktualisiert?</span></h3>
+        <p class="faq-a"><span data-lang="en">Nothing. Your files and the shipped templates sit on paths that never overlap, so the two merge without conflict by construction. Your config, your <code>work/</code> directory and every instance file live on your own branch; the templates live on the default branch.</span><span data-lang="de">Nichts. Deine Dateien und die mitgelieferten Templates liegen auf Pfaden, die sich nie überschneiden, also mergen die beiden konfliktfrei, schon vom Aufbau her. Deine Config, dein <code>work/</code>-Verzeichnis und jede Instanzdatei leben auf deinem eigenen Branch, die Templates auf dem Default-Branch.</span></p>
+      </div>
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">What does it cost?</span><span data-lang="de">Was kostet es?</span></h3>
+        <p class="faq-a"><span data-lang="en">The repo is MIT and there is nothing to host, no account and no waitlist. What you do pay for is the coding agent you already run: this is a layer of plain files beside it, not a replacement for it.</span><span data-lang="de">Das Repo ist MIT, es gibt nichts zu hosten, kein Konto und keine Warteliste. Was du zahlst, ist der Coding-Agent, den du ohnehin fährst: das hier ist eine Schicht aus Plain-Text daneben, kein Ersatz dafür.</span></p>
+      </div>
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">How does a public repo keep my work private?</span><span data-lang="de">Wie hält ein öffentliches Repo meine Arbeit privat?</span></h3>
+        <p class="faq-a"><span data-lang="en">Your copy has a private origin from the first command, and the public repo is only a read-only upstream. A push guard refuses to send a user branch anywhere public, and the same split is drawn in the diagram above: <code>scope:core</code> travels upstream, <code>scope:user</code> stops at the edge.</span><span data-lang="de">Deine Kopie hat vom ersten Befehl an ein privates Origin, und das öffentliche Repo ist nur ein Upstream zum Lesen. Ein Push-Guard weigert sich, einen User-Branch irgendwohin öffentlich zu schicken, und dieselbe Trennung ist oben gezeichnet: <code>scope:core</code> geht nach upstream, <code>scope:user</code> bleibt an der Kante stehen.</span></p>
+      </div>
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">How many bridges can I run?</span><span data-lang="de">Wie viele Bridges kann ich betreiben?</span></h3>
+        <p class="faq-a"><span data-lang="en">As many as you have worlds to keep apart, typically one per client or context. They share one CORE and keep separate private rooms, so data from one never bleeds into another.</span><span data-lang="de">So viele, wie du Welten auseinanderhalten musst, üblicherweise eine pro Kunde oder Kontext. Sie teilen sich ein CORE und behalten getrennte private Räume, damit Daten der einen nie in die andere laufen.</span></p>
+      </div>
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">How early is this, really?</span><span data-lang="de">Wie früh ist das wirklich?</span></h3>
+        <p class="faq-a"><span data-lang="en">Early. It is newly public with no external users yet, and it runs the company that builds it every working day. That is the honest pair: proven in daily use by three people, unproven by anyone else. The status board above labels each piece as shipped, a bet, or open.</span><span data-lang="de">Früh. Es ist frisch öffentlich, bisher ohne externe Nutzer, und es betreibt die Firma, die es baut, an jedem Arbeitstag. Das ist das ehrliche Paar: im täglichen Gebrauch von drei Leuten bewährt, von sonst niemandem. Die Statustafel oben kennzeichnet jedes Stück als ausgeliefert, als Wette oder als offen.</span></p>
       </div>
     </div>
   </div>
@@ -1342,6 +1468,8 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 </section>
 
 <!-- ======================= FOOTER ======================= -->
+</main>
+
 <footer id="license">
   <div class="foot-grid">
     <div class="foot-blurb">
@@ -1379,6 +1507,10 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   <div class="foot-bottom">
     <span data-lang="en">Public · MIT · no waitlist · newly released</span>
     <span data-lang="de">Public · MIT · keine Warteliste · frisch veröffentlicht</span>
+    <button class="btn btn-primary js-setup-cta" type="button" style="padding:10px 20px;font-size:14px">
+      <span data-lang="en">Set it up: copy the prompt</span><span data-lang="de">Einrichten: Prompt kopieren</span>
+      <span class="arrow">→</span>
+    </button>
     <a class="btn btn-secondary" style="padding:10px 20px;font-size:14px" href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">
       <span data-lang="en">Read the code on GitHub</span><span data-lang="de">Lies den Code auf GitHub</span>
       <span class="arrow">→</span>
@@ -1524,6 +1656,23 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 }
 #mechanic-viz .mv-compound-only{ opacity:0; transition:opacity .5s ease-out }
 #mechanic-viz.compounded .mv-compound-only{ opacity:1 }
+/* ---- two lanes on one clock ---- */
+#mv-lanes{ margin:34px 0 0; padding:0 }
+#mv-lanes canvas{
+  display:block; width:100%; max-width:760px; margin:0 auto;
+  aspect-ratio:760 / 250; border:1px solid var(--line); border-radius:var(--r-lg);
+  background:var(--surface-subtle);
+}
+#mv-lanes .mvl-cap{
+  margin:12px auto 0; max-width:760px; text-align:center;
+  font:400 13px/1.5 var(--font-sans); color:var(--muted);
+}
+/* the spoken equivalent of the canvas, per the #hero-net precedent */
+.mvl-sr{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+@media (max-width:520px){ #mv-lanes canvas{ aspect-ratio:380 / 210 } }
 #mechanic-viz .mv-replay{ display:flex; justify-content:center; gap:10px; margin-top:24px }
 #mechanic-viz .mv-replay button{
   font:500 14px/1.2 var(--font-sans); cursor:pointer;
@@ -1673,8 +1822,12 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   // block so the reader can see what landed on their clipboard. Reads the same DOM
   // node the copy button reads, so there is exactly one copy of that text on the page.
   (function(){
-    var hero = document.getElementById("hero-setup");
-    if(!hero){ return; }
+    // Both the hero button and the footer repeat carry .js-setup-cta. The jump to
+    // #get-started is right from either position: the footer sits BELOW that
+    // section, so the reader is taken back up to the block that was just copied.
+    var buttons = document.querySelectorAll(".js-setup-cta");
+    if(!buttons.length){ return; }
+    buttons.forEach(function(hero){
     hero.addEventListener("click", function(){
       var lang = root.getAttribute("data-active-lang") === "de" ? "de" : "en";
       var block = document.getElementById("agent-prompt-" + lang);
@@ -1705,6 +1858,7 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
         } catch(e){ fail(); }
       }
       location.hash = "get-started";
+    });
     });
   })();
 
@@ -1899,132 +2053,466 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
 })();
 </script>
 
-<!-- #hero-net (simple "your world, connected"), optional hover highlight.
-     The graph is fully drawn in static SVG; this only adds dim-the-rest focus
-     on hover/focus. Reduced-motion is handled in CSS (transitions disabled);
-     the highlight stays since it's an instantaneous state, not motion. -->
+<!-- ============================================================
+     #mv-lanes: two sessions, run for run. Self-contained.
+     Rebuilt from bridge-deck's office view rather than imported: that repo is
+     Pixi under Apache-2.0 and this page is MIT, dependency-free and has no
+     build step. What is borrowed is the discipline, not the code: one integer
+     tick drives every motion as f(tick), and per-item phase offsets are hashed
+     from the item's own name so nothing breathes in lockstep. A wall clock stood
+     here and was removed: these lanes carry no time axis (SPEED is lane fraction
+     per tick, DWELL and GAP are ticks), so a real instrument beside them measured
+     nothing they show, and it froze wrong when the figure came to rest.
+     ============================================================ -->
+<script data-lanes>
+(function(){
+  "use strict";
+  var fig = document.getElementById("mv-lanes");
+  var cv  = document.getElementById("mvl-canvas");
+  if(!fig || !cv || !cv.getContext) return;
+  var ctx = cv.getContext("2d");
+  var reduceMQ = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  var STOPS  = ["CLAUDE.md", "ecosystem.yaml", "work/board.md", "work/log.md"];
+  var STOP_T = [0.20, 0.40, 0.60, 0.80];
+  var SPEED  = 0.0042;   // lane fraction per tick
+  var DWELL  = 36;       // ticks held at a stop
+  var GAP    = 46;       // ticks between runs
+  var MAX_RUNS = 3;      // then the picture rests, made
+
+  var LANG = {
+    en: { cold:"no record", warm:"with work/log.md", run:"run", kept:"kept", none:"nothing kept" },
+    de: { cold:"ohne Protokoll", warm:"mit work/log.md", run:"Lauf", kept:"behalten", none:"nichts behalten" }
+  };
+  function lang(){ return document.documentElement.getAttribute("data-active-lang") === "de" ? "de" : "en"; }
+  function t(k){ return LANG[lang()][k]; }
+  function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function rgba(hex, a){
+    var h = (hex || "").replace("#", "");
+    if(h.length === 3) h = h.replace(/./g, "$&$&");
+    var n = parseInt(h || "888888", 16);
+    return "rgba(" + ((n>>16)&255) + "," + ((n>>8)&255) + "," + (n&255) + "," + a + ")";
+  }
+  /* bridge-deck hashes a sprite's phase from its own id so a rebuild does not
+     resynchronise the whole room. Same trick, two items. */
+  function hashPhase(str){
+    var h = 0, i;
+    for(i = 0; i < str.length; i++){ h = (h * 31 + str.charCodeAt(i)) | 0; }
+    return ((h % 628) + 628) % 628 / 100;
+  }
+
+  var W, H, DPR, C = {}, tick = 0, raf = null, running = false, userPaused = false, onScreen = true;
+  var lanes = null;
+
+  function newLane(id, warm){
+    return { id:id, warm:warm, t:0, run:0, stop:-1, hold:0, wait:0, kept:0, phase:hashPhase(id), done:false };
+  }
+  function reset(){
+    lanes = [ newLane("cold-session", false), newLane("warm-session", true) ];
+    tick = 0;
+  }
+
+  function recolor(){
+    C = {
+      line:   css("--line"),        muted:  css("--muted"),
+      accent: css("--accent"),      accent2:css("--accent-secondary"),
+      text:   css("--accent-text"), body:   css("--on-surface"),
+      from:   css("--accent-from"), to:     css("--accent-to")
+    };
+  }
+
+  function measure(){
+    var r = cv.getBoundingClientRect();
+    if(!r.width || !r.height) return false;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = r.width; H = r.height;
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    return true;
+  }
+
+  /* ---- one step of the world, f(tick) ---- */
+  function step(){
+    tick++;
+    for(var i = 0; i < lanes.length; i++){
+      var L = lanes[i];
+      if(L.done) continue;
+      if(L.wait > 0){ L.wait--; continue; }
+      if(L.hold > 0){ L.hold--; continue; }
+      // a warm lane pays the stop cost only on its first run; after that it
+      // starts from the record instead of re-reading the world.
+      var paysStops = !L.warm || L.run === 0;
+      if(paysStops && L.stop + 1 < STOP_T.length && L.t >= STOP_T[L.stop + 1]){
+        L.stop++; L.hold = DWELL; continue;
+      }
+      L.t += SPEED;
+      if(L.t >= 1){
+        L.t = 1; L.run++;
+        if(L.warm) L.kept++;
+        if(L.run >= MAX_RUNS){ L.done = true; continue; }
+        L.wait = GAP; L.t = 0; L.stop = -1;
+      }
+    }
+    if(lanes[0].done && lanes[1].done) running = false;
+  }
+
+  function draw(){
+    ctx.clearRect(0, 0, W, H);
+    var small = W < 460;
+    var x0  = small ? 22 : 34;
+    var x1  = W - (small ? 62 : 104);
+    var rowA = H * 0.34, rowB = H * 0.70;
+    var monoS = (small ? 8.5 : 10) + "px " + css("--font-mono");
+    var sansS = (small ? 9 : 10.5) + "px " + css("--font-sans");
+
+    ctx.textBaseline = "middle";
+    for(var i = 0; i < lanes.length; i++){
+      var L = lanes[i], y = i === 0 ? rowA : rowB;
+
+      // label above the lane
+      ctx.textAlign = "left"; ctx.font = "500 " + sansS;
+      ctx.fillStyle = rgba(L.warm ? C.text : C.muted, 1);
+      ctx.fillText(L.warm ? t("warm") : t("cold"), x0, y - (small ? 15 : 20));
+
+      // the track
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y);
+      ctx.lineWidth = 1; ctx.strokeStyle = rgba(C.line, 1); ctx.stroke();
+
+      // the four stops
+      for(var k = 0; k < STOP_T.length; k++){
+        var sx = x0 + (x1 - x0) * STOP_T[k];
+        var passed = L.t >= STOP_T[k];
+        var pays = !L.warm || L.run === 0;
+        ctx.beginPath(); ctx.arc(sx, y, 2.4, 0, 6.283);
+        ctx.fillStyle = rgba(pays ? (passed ? C.accent : C.muted) : C.line, pays ? 0.9 : 0.7);
+        ctx.fill();
+        if(i === 0 && !small){
+          ctx.save(); ctx.translate(sx, y + 12); ctx.rotate(-0.5);
+          ctx.textAlign = "right"; ctx.font = "400 " + monoS;
+          ctx.fillStyle = rgba(C.muted, 1); ctx.fillText(STOPS[k], 0, 0);
+          ctx.restore();
+        }
+      }
+
+      // the marker, with a hashed idle bob so the two never move in lockstep
+      var mx = x0 + (x1 - x0) * L.t;
+      var bob = reduceMQ.matches ? 0 : Math.sin(tick * 0.06 + L.phase) * 0.9;
+      ctx.fillStyle = L.warm ? rgba(C.text, 1) : rgba(C.muted, 0.95);
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(mx - 5, y - 5 + bob, 10, 10, 2);
+      else ctx.rect(mx - 5, y - 5 + bob, 10, 10);
+      ctx.fill();
+
+      // what the run left behind
+      var bx = x1 + (small ? 12 : 22);
+      ctx.textAlign = "left"; ctx.font = "400 " + monoS;
+      if(L.kept === 0){
+        // this line carries the whole argument of the figure and was the least
+        // readable thing in it at 2.15:1
+        ctx.fillStyle = rgba(C.body, 1);
+        ctx.fillText(small ? "0" : t("none"), bx, y);
+      } else {
+        for(var n = 0; n < L.kept; n++){
+          ctx.beginPath();
+          var by = y + 8 - n * 8;
+          if(ctx.roundRect) ctx.roundRect(bx, by - 5, small ? 14 : 22, 6, 1.5);
+          else ctx.rect(bx, by - 5, small ? 14 : 22, 6);
+          ctx.fillStyle = rgba(C.accent2, 0.35 + n * 0.2); ctx.fill();
+        }
+        if(!small){
+          ctx.fillStyle = rgba(C.text, 1);
+          ctx.fillText(String(L.kept), bx + 27, y);
+        }
+      }
+
+      // the run counter, the one integer everything is a function of
+      ctx.textAlign = "right"; ctx.font = "400 " + monoS;
+      ctx.fillStyle = rgba(C.muted, 1);
+      ctx.fillText(t("run") + " " + Math.min(L.run + (L.done ? 0 : 1), MAX_RUNS) + "/" + MAX_RUNS,
+                   x1, y - (small ? 15 : 20));
+    }
+  }
+
+  function frame(){
+    if(!running){ draw(); return; }
+    step(); draw();
+    raf = window.requestAnimationFrame(frame);
+  }
+  function stop(){ running = false; if(raf) window.cancelAnimationFrame(raf); raf = null; }
+  function play(){
+    if(running || userPaused || !onScreen || reduceMQ.matches) return;
+    running = true; raf = window.requestAnimationFrame(frame);
+  }
+  function staticFrame(){
+    stop(); reset();
+    lanes[0].run = MAX_RUNS; lanes[0].t = 1; lanes[0].done = true;
+    lanes[1].run = MAX_RUNS; lanes[1].t = 1; lanes[1].kept = MAX_RUNS; lanes[1].done = true;
+    draw();
+  }
+
+  function start(){
+    stop();
+    if(!measure()){ window.requestAnimationFrame(start); return; }
+    recolor();
+    if(reduceMQ.matches){ staticFrame(); return; }
+    reset(); play();
+  }
+
+  var rt;
+  window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(start, 160); });
+  new MutationObserver(function(){
+    if(!W) return; recolor(); if(!running) draw();
+  }).observe(document.documentElement, { attributes:true, attributeFilter:["class","data-active-lang"] });
+  document.addEventListener("visibilitychange", function(){ document.hidden ? stop() : play(); });
+  if(reduceMQ.addEventListener){
+    reduceMQ.addEventListener("change", function(){ reduceMQ.matches ? staticFrame() : start(); });
+  }
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){ onScreen = e.isIntersecting; onScreen ? play() : stop(); });
+    }, { threshold: 0.25 }).observe(cv);
+  }
+
+  // the section's own pause control drives this too, so one button stops both
+  var pb = document.getElementById("mvPause");
+  if(pb){
+    pb.addEventListener("click", function(){
+      userPaused = !userPaused;
+      if(userPaused) stop(); else { userPaused = false; play(); }
+    });
+  }
+  var rp = document.getElementById("mvReplay");
+  if(rp){ rp.addEventListener("click", function(){ userPaused = false; start(); }); }
+
+  start();
+})();
+</script>
+
+<!-- ============================================================
+     #hero-ring: the shipped demo workspace as a containment ring.
+     Replaces the two-hub node graph that used to sit here. That graph said
+     CORE and USER, which is vocabulary a first-time reader does not have yet;
+     this says "a real world of files, in an order, that something reads",
+     which needs none. The form is lifted from the Structure view of the
+     Control Center (a containment sunburst, coloured by depth), the motion
+     from its Particle Brain (a live centre with signal travelling out and
+     back). Neither is imported: that bundle is private and Apache-2.0, this
+     page is MIT, offline and has no build step.
+
+     The tree is REAL. It is examples/agency in this repo, which the page tells
+     you to clone, so the picture and the claim are the same object. To refresh
+     the numbers after changing that directory:
+         cd examples/agency && find . -type f -not -path './.git/*' | wc -l
+     Angles are equal per folder so every label stays readable; the file COUNT
+     is carried by the ticks in the outer ring, which is the honest place for it.
+     ============================================================ -->
 <script>
 (function(){
   "use strict";
-  var cv = document.getElementById('hn-brain');
+  var cv = document.getElementById('hn-ring');
   if(!cv || !cv.getContext) return;
   var ctx = cv.getContext('2d');
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
 
-  // The model as a few legible nodes. CORE ships these; USER holds these; the
-  // bridge carries both ways. Labels track the page language toggle.
-  var LAB = {
-    core: { en:['Skills','Agents','Protocols','Schemas'], de:['Skills','Agenten','Protokolle','Schemas'] },
-    user: { en:['Projects','Clients','Conventions','Work log'], de:['Projekte','Kunden','Konventionen','Arbeitslog'] }
+  // examples/agency, counted on disk. 27 files, six folders plus the root.
+  var TREE = [
+    // f = files, l = lines of content in them. Both counted on disk:
+    //   find . -type f -not -path './.git/*' | wc -l        -> 27
+    //   find . -type f -not -path './.git/*' -exec cat {} + | wc -l  -> 1162
+    { key:'root',      label:'./',          l:306, kids:[ {n:'',           f:5} ] },
+    { key:'identity',  label:'identity/',   l:113, kids:[ {n:'accounts/',  f:1}, {n:'mandants/', f:1} ] },
+    { key:'workflow',  label:'workflow/',   l:129, kids:[ {n:'calendars/', f:1}, {n:'contexts/', f:1} ] },
+    { key:'infra',     label:'infra/',      l:279, kids:[ {n:'backups/',   f:1}, {n:'channels/', f:4}, {n:'remotes/', f:2} ] },
+    { key:'work',      label:'work/',       l:222, kids:[ {n:'',           f:2}, {n:'tasks/',    f:3}, {n:'streams/', f:1}, {n:'done/', f:1} ] },
+    { key:'protocols', label:'protocols/',  l:37,  kids:[ {n:'standing-orders/', f:1} ] },
+    { key:'claude',    label:'.claude/',    l:76,  kids:[ {n:'agents/',    f:3} ] }
+  ];
+  var TOTAL = 0;
+  TREE.forEach(function(t){ t.files = t.kids.reduce(function(a,k){ return a + k.f; }, 0); TOTAL += t.files; });
+
+  var CAP = {
+    en:{ reads:'session start', writes:'work/log.md', file:'file', files:'files' },
+    de:{ reads:'Session-Start', writes:'work/log.md', file:'Datei',  files:'Dateien' }
   };
   function lang(){ return document.documentElement.getAttribute('data-active-lang') === 'de' ? 'de' : 'en'; }
   function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
-  function hexA(h,a){ h=(h||'').replace('#',''); if(h.length===3) h=h.replace(/./g,'$&$&');
-    var n=parseInt(h||'888888',16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
+  function hex(h){ h=(h||'').replace('#',''); if(h.length===3) h=h.replace(/./g,'$&$&');
+    var n=parseInt(h||'888888',16); return [ (n>>16)&255, (n>>8)&255, n&255 ]; }
+  function rgba(h,a){ var c=hex(h); return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'; }
+  function mix(h1,h2,t){ var a=hex(h1), b=hex(h2);
+    return 'rgb('+Math.round(a[0]+(b[0]-a[0])*t)+','+Math.round(a[1]+(b[1]-a[1])*t)+','+Math.round(a[2]+(b[2]-a[2])*t)+')'; }
 
-  var W,H,DPR,COL={},nodes=[],edges=[],sig=[],coreA,userA,raf,running=false;
-  function recolor(){ COL={ core:css('--accent'), user:css('--accent-secondary'), spark:css('--accent-text'),
-    from:css('--accent-from'), to:css('--accent-to'), muted:css('--muted'), ink:css('--ink') }; }
-  function rnd(a,b){ return a+Math.random()*(b-a); }
+  var W,H,DPR,C={},tick=0,raf=null,running=false,dots=null;
+  var TAU = Math.PI*2, GAP = 0.016;
 
-  function build(){
+  /* The outer band is one dot per LINE of content, 1162 of them, not a decorative
+     scatter. Density is therefore the real weight of each folder, which is the
+     same truth claim the file counts make. Positions are built once per size from
+     a seeded generator so a resize or a theme flip never reshuffles the field,
+     and each frame fills two batched paths rather than 1162 separate arcs. */
+  function buildDots(cx,cy,r0,r1){
+    dots=[]; var seg=TAU/TREE.length, seed=1;
+    function rnd(){ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; }
+    for(var i=0;i<TREE.length;i++){
+      var a0=-Math.PI/2+i*seg+GAP, a1=-Math.PI/2+(i+1)*seg-GAP, n=TREE[i].l;
+      for(var k=0;k<n;k++){
+        var ang=a0+(a1-a0)*rnd(), rad=r0+(r1-r0)*Math.sqrt(rnd());
+        dots.push(Math.cos(ang)*rad+cx, Math.sin(ang)*rad+cy, i);
+      }
+    }
+  }
+
+  function recolor(){
+    C = { line:css('--line'), muted:css('--muted'), ink:css('--ink'), surface:css('--surface'),
+          accent:css('--accent'), accent2:css('--accent-secondary'), text:css('--accent-text'),
+          from:css('--accent-from'), to:css('--accent-to') };
+  }
+  function measure(){
     var r=cv.getBoundingClientRect(); if(!r.width||!r.height) return false;
     DPR=Math.min(devicePixelRatio||1,2); W=r.width; H=r.height;
     cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
-    recolor();
-    // two hubs mid-height; each lobe is a tall, narrow ellipse fanning nearly
-    // vertically so it fills the box height while labels stay inside the width.
-    var cy=H*0.50, lx=W*0.32, rx=W*0.68;
-    var radX=Math.min(W*0.15,92), radY=H*0.38;
-    nodes=[]; edges=[]; sig=[];
-    coreA={x:lx,y:cy,hub:true,side:'core',r:8,cap:'CORE'};
-    userA={x:rx,y:cy,hub:true,side:'user',r:8,cap:'USER'};
-    nodes.push(coreA,userA);
-    function lobe(anchor,dir){
-      var lbl=LAB[anchor.side][lang()], n=lbl.length;
-      for(var i=0;i<n;i++){
-        var ang=(-1.12+(i/(n-1))*2.24);                 // vertical-ish fan hugging the hub
-        var ax=anchor.x+Math.cos(ang)*dir*radX*rnd(.92,1.04);
-        var ay=cy+Math.sin(ang)*radY*rnd(.94,1.02);
-        var nd={x:ax,y:ay,x0:ax,y0:ay,side:anchor.side,r:rnd(3.6,5),li:i,ph:rnd(0,6),amp:rnd(1.5,3.4),fire:0};
-        nodes.push(nd); edges.push({a:anchor,b:nd});
-      }
-      for(var f=0;f<5;f++){ var fa=rnd(.34,1.1)*(f%2?-1:1);   // off-midline, inside the lobe
-        var fx=anchor.x+Math.cos(fa)*dir*radX*rnd(.4,.82), fy=cy+Math.sin(fa)*radY*rnd(.42,.82);
-        var fn={x:fx,y:fy,x0:fx,y0:fy,side:anchor.side,r:rnd(1.5,2.3),ph:rnd(0,6),amp:rnd(2,4.5),fire:0};
-        nodes.push(fn); edges.push({a:anchor,b:fn}); }
-    }
-    lobe(coreA,-1); lobe(userA,1);
-    edges.push({a:coreA,b:userA,bridge:true});
     return true;
   }
-  function labelFor(m){ return m.hub ? '' : (m.li!=null ? LAB[m.side][lang()][m.li] : ''); }
-  function sideCol(m){ return m.side==='core'?COL.core:COL.user; }
-  function spawnBridge(toUser){ sig.push({a:toUser?coreA:userA,b:toUser?userA:coreA,t:0,sp:rnd(.008,.013),cross:true}); }
-  function spawnSpoke(){ var sp=edges.filter(function(e){return !e.bridge;}); var e=sp[(Math.random()*sp.length)|0];
-    if(e) sig.push({a:Math.random()<.5?e.a:e.b, b:Math.random()<.5?e.b:e.a, t:0, sp:rnd(.012,.02), cross:false}); }
 
-  function draw(now){
-    ctx.clearRect(0,0,W,H);
-    var midx=(coreA.x+userA.x)/2, pulse=reduce?.6:(0.5+0.28*Math.sin(now/850));
-    var grd=ctx.createRadialGradient(midx,coreA.y,0,midx,coreA.y,Math.max(W*0.34,150));
-    grd.addColorStop(0,hexA(COL.from,.14*pulse)); grd.addColorStop(.55,hexA(COL.to,.06*pulse)); grd.addColorStop(1,'transparent');
-    ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
-    if(!reduce) for(var i=0;i<nodes.length;i++){ var n=nodes[i]; if(n.hub||n.x0==null) continue;
-      n.ph+=0.02; n.x=n.x0+Math.cos(n.ph)*(n.amp||4)*.5; n.y=n.y0+Math.sin(n.ph*1.2)*(n.amp||4)*.4; }
-    for(var q=0;q<nodes.length;q++) if(nodes[q].fire>0) nodes[q].fire-=reduce?1:.03;
-    ctx.strokeStyle=hexA(COL.muted,.22); ctx.lineWidth=1; ctx.beginPath();
-    for(var e=0;e<edges.length;e++){ if(edges[e].bridge) continue; ctx.moveTo(edges[e].a.x,edges[e].a.y); ctx.lineTo(edges[e].b.x,edges[e].b.y); }
-    ctx.stroke();
-    var bg=ctx.createLinearGradient(coreA.x,0,userA.x,0);
-    bg.addColorStop(0,hexA(COL.core,.5)); bg.addColorStop(.5,hexA(COL.spark,.6*pulse+.25)); bg.addColorStop(1,hexA(COL.user,.5));
-    ctx.strokeStyle=bg; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(coreA.x,coreA.y); ctx.lineTo(userA.x,userA.y); ctx.stroke(); ctx.lineWidth=1;
-    if(!reduce) for(var s=sig.length-1;s>=0;s--){ var g=sig[s]; g.t+=g.sp;
-      var x=g.a.x+(g.b.x-g.a.x)*g.t, y=g.a.y+(g.b.y-g.a.y)*g.t;
-      var col=g.cross?COL.spark:(g.a.side==='core'?COL.core:COL.user);
-      var tx=g.a.x+(g.b.x-g.a.x)*Math.max(0,g.t-.18), ty=g.a.y+(g.b.y-g.a.y)*Math.max(0,g.t-.18);
-      var lg=ctx.createLinearGradient(tx,ty,x,y); lg.addColorStop(0,'transparent'); lg.addColorStop(1,hexA(col,g.cross?.95:.7));
-      ctx.strokeStyle=lg; ctx.lineWidth=g.cross?2.4:1.4; ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(x,y); ctx.stroke();
-      ctx.fillStyle=hexA(col,1); ctx.beginPath(); ctx.arc(x,y,g.cross?3:1.9,0,6.283); ctx.fill();
-      if(g.t>=1){ g.b.fire=1; sig.splice(s,1); } }
-    ctx.lineWidth=1; ctx.textAlign='center'; ctx.textBaseline='middle';
-    for(var k=0;k<nodes.length;k++){ var m=nodes[k], base=m.hub?COL.spark:sideCol(m);
-      if(m.fire>0){ ctx.fillStyle=hexA(COL.spark,.5*m.fire); ctx.beginPath(); ctx.arc(m.x,m.y,m.r+6*m.fire,0,6.283); ctx.fill(); }
-      if(m.hub){ ctx.fillStyle=hexA(sideCol(m),.18); ctx.beginPath(); ctx.arc(m.x,m.y,m.r+7,0,6.283); ctx.fill(); }
-      ctx.fillStyle=hexA(base,m.hub?1:.92); ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,6.283); ctx.fill();
-      var lb=labelFor(m);
-      if(lb){ ctx.fillStyle=hexA(COL.muted,1); ctx.font='500 11px '+css('--font-sans'); ctx.fillText(lb,m.x,m.y-m.r-8); }
-    }
-    ctx.font='600 12px '+css('--font-sans');
-    ctx.fillStyle=hexA(COL.core,.95); ctx.fillText('CORE',coreA.x,coreA.y+24);
-    ctx.fillStyle=hexA(COL.user,.95); ctx.fillText('USER',userA.x,userA.y+24);
+  // one pass: rings light from the centre outward, then one line goes back in
+  // Real milliseconds, not rAF ticks: the old 611 tick cycle ran 10.2s at 60Hz
+  // and 5.1s at 120Hz, so the first screen animated at a rate that depended on
+  // the reader's monitor. One pass, then it rests. A figure on the first screen
+  // that never stops is the loudest thing on the page, and it is the last thing
+  // that should be.
+  var T_RING1=650, T_RING2=1400, T_RING3=2250, T_WRITE=3000, T_REST=4100;
+  var settled=false, t0=0, elapsed=0, onScreen=true;
+  function phase(){ return reduceMQ.matches ? T_REST : elapsed; }
+
+  function arc(cx,cy,r0,r1,a0,a1,fill){
+    ctx.beginPath();
+    ctx.arc(cx,cy,r1,a0,a1); ctx.arc(cx,cy,r0,a1,a0,true); ctx.closePath();
+    ctx.fillStyle=fill; ctx.fill();
   }
 
-  function loop(now){ draw(now||0); if(!reduce && running) raf=requestAnimationFrame(loop);
-    if(!reduce && running){ var xc=0; for(var i=0;i<sig.length;i++) if(sig[i].cross) xc++;
-      if(xc<2 && Math.random()<.03) spawnBridge(Math.random()<.5);
-      if(Math.random()<(sig.length<5?.26:.05)) spawnSpoke(); } }
-  function stop(){ running=false; cancelAnimationFrame(raf); }
-  function play(){ if(reduce||running) return; running=true; raf=requestAnimationFrame(loop); }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    var cx=W/2, cy=H*0.50, R=Math.min(W*0.40,H*0.455), t=phase();
+    var labRx=R*1.22, labRy=R*0.99;
+    var r0=R*0.185, r1a=R*0.24, r1b=R*0.47, r2a=R*0.50, r2b=R*0.68, r3a=R*0.71, r3b=R*0.88;
+    if(!dots) buildDots(cx,cy,r3a,r3b);
+    var lit1=Math.max(0,Math.min(1,(t-0)/T_RING1));
+    var lit2=Math.max(0,Math.min(1,(t-T_RING1)/(T_RING2-T_RING1)));
+    var lit3=Math.max(0,Math.min(1,(t-T_RING2)/(T_RING3-T_RING2)));
+    var wr =Math.max(0,Math.min(1,(t-T_RING3)/(T_WRITE-T_RING3)));
 
-  function start(){ stop(); if(!build()){ requestAnimationFrame(start); return; }
-    if(reduce){ for(var i=0;i<5;i++) nodes[(Math.random()*nodes.length)|0].fire=1; draw(0); }
-    else { spawnBridge(true); for(var j=0;j<3;j++) spawnSpoke(); play(); } }
+    var seg=TAU/TREE.length, a=-Math.PI/2;
+    var L=CAP[lang()];
+    ctx.textAlign='center'; ctx.textBaseline='middle';
 
-  var rt; addEventListener('resize',function(){ clearTimeout(rt); rt=setTimeout(start,160); });
-  // theme + language toggle → recolour, relabel, redraw (loop picks colours up live)
-  new MutationObserver(function(){ if(!W) return; recolor(); if(reduce||!running) draw(0); })
+    for(var i=0;i<TREE.length;i++){
+      var node=TREE[i], a0=a+GAP, a1=a+seg-GAP, on=(i+1)/TREE.length<=lit1;
+      // ring 1, the folder
+      arc(cx,cy,r1a,r1b,a0,a1, on ? mix(C.line,C.accent,0.75) : mix(C.surface,C.line,0.9));
+      // ring 2, what is inside it
+      var kn=node.kids.length, ks=(a1-a0)/kn;
+      for(var j=0;j<kn;j++){
+        var b0=a0+j*ks+GAP*0.4, b1=a0+(j+1)*ks-GAP*0.4;
+        var on2=((i*kn+j+1)/(TREE.length*kn))<=lit2;
+        arc(cx,cy,r2a,r2b,b0,b1, on2 ? mix(C.line,C.accent2,0.34) : mix(C.surface,C.line,0.94));
+        // ring 3 is the dot field, drawn once for all folders below
+      }
+      // the folder name, upright, outside the rings
+      var mid=(a0+a1)/2, lx=cx+Math.cos(mid)*labRx, ly=cy+Math.sin(mid)*labRy;
+      ctx.font='500 '+(W<380?9:11)+'px '+css('--font-mono');
+      // the leftmost and rightmost labels sit past the frame on a plain ellipse,
+      // so measure and pull them back inside instead of guessing a radius
+      var tw=ctx.measureText(node.label).width;
+      lx=Math.max(tw/2+5, Math.min(W-tw/2-5, lx));
+      ctx.fillStyle=rgba(on?C.ink:C.muted, on?0.95:0.6);
+      ctx.fillText(node.label, lx, ly);
+      if(W>=380){
+        ctx.font='400 '+(W<460?8:9)+'px '+css('--font-sans');
+        ctx.fillStyle=rgba(C.muted,1);
+        ctx.fillText(node.files+' '+(node.files===1?L.file:L.files), lx, ly+12);
+      }
+      a+=seg;
+    }
+
+    // the dot field, two batched fills instead of 1162 arcs
+    var dr=W<380?0.7:0.9;
+    for(var pass=0;pass<2;pass++){
+      ctx.beginPath();
+      for(var d=0;d<dots.length;d+=3){
+        var fi=dots[d+2], isOn=((fi+1)/TREE.length)<=lit3;
+        if((pass===0)!==isOn) continue;
+        ctx.moveTo(dots[d]+dr,dots[d+1]);
+        ctx.arc(dots[d],dots[d+1],dr,0,TAU);
+      }
+      ctx.fillStyle = pass===0 ? rgba(C.text,0.85) : rgba(C.muted,0.30);
+      ctx.fill();
+    }
+
+    // the write back: one line returns from work/ into the centre
+    if(wr>0){
+      var wi=4, wmid=-Math.PI/2+(wi+0.5)*seg;
+      var rr=r3a-(r3a-r0)*wr;
+      var gx=cx+Math.cos(wmid)*rr, gy=cy+Math.sin(wmid)*rr;
+      var g2=ctx.createLinearGradient(cx,cy,gx,gy);
+      g2.addColorStop(0,rgba(C.to,0)); g2.addColorStop(1,rgba(C.to,0.9));
+      ctx.strokeStyle=g2; ctx.lineWidth=2; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(gx,gy); ctx.stroke();
+      ctx.beginPath(); ctx.arc(gx,gy,2.6,0,TAU); ctx.fillStyle=rgba(C.to,1); ctx.fill();
+    }
+
+    // the centre: what does the reading
+    // solid, not a gradient: the label on it was failing at 3.66:1, and the disc
+    // was one of six gradient instances in a page that reserves them for headings
+    ctx.beginPath(); ctx.arc(cx,cy,r0+3,0,TAU);
+    ctx.fillStyle=rgba(C.text,0.16); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,r0,0,TAU); ctx.fillStyle=rgba(C.text,1); ctx.fill();
+    ctx.font='600 '+(W<380?8:9.5)+'px '+css('--font-sans');
+    ctx.fillStyle=rgba(C.surface,1);
+    ctx.fillText(t<T_RING3 ? L.reads : L.writes, cx, cy);
+  }
+
+  function frame(now){
+    if(!running) return;
+    elapsed = now - t0;
+    if(elapsed >= T_REST){ elapsed = T_REST; settled = true; running = false; raf = null; draw(); return; }
+    draw();
+    raf = requestAnimationFrame(frame);
+  }
+  function stop(){ running=false; if(raf) cancelAnimationFrame(raf); raf=null; }
+  // Every door into motion tests the same three gates. Scrolling away, hiding the
+  // tab and resizing are three separate callers, so the check belongs here rather
+  // than at each call site.
+  function play(){
+    if(running || settled || !onScreen || reduceMQ.matches) return;
+    running = true;
+    t0 = performance.now() - elapsed;   // resume where it paused, do not restart
+    raf = requestAnimationFrame(frame);
+  }
+  function start(){
+    stop(); if(!measure()){ requestAnimationFrame(start); return; }
+    recolor(); dots=null;
+    if(reduceMQ.matches){ elapsed=T_REST; settled=true; draw(); return; }
+    if(settled){ draw(); return; }   // a resize must not replay the sweep
+    elapsed=0; draw();               // paint the structure dim, then run
+    play();
+  }
+
+  var rt;
+  addEventListener('resize', function(){ clearTimeout(rt); rt=setTimeout(start,160); });
+  new MutationObserver(function(){ if(!W) return; recolor(); if(!running) draw(); })
     .observe(document.documentElement,{attributes:true,attributeFilter:['class','data-active-lang']});
-  document.addEventListener('visibilitychange',function(){ document.hidden?stop():play(); });
+  document.addEventListener('visibilitychange', function(){ document.hidden?stop():play(); });
+  if(reduceMQ.addEventListener){ reduceMQ.addEventListener('change', start); }
   if('IntersectionObserver' in window){
-    new IntersectionObserver(function(es){ es.forEach(function(en){ en.isIntersecting?play():stop(); }); },{threshold:0.05}).observe(cv);
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){ onScreen = e.isIntersecting; onScreen ? play() : stop(); });
+    },{threshold:0.05}).observe(cv);
   }
   start();
 })();
 </script>
 
-
-  <script defer src="assets/agent-config.js"></script>
+<script defer src="assets/agent-config.js"></script>
   <script defer src="assets/agent-widget.js"></script>
 </body>
 </html>
