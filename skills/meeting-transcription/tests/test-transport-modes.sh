@@ -42,7 +42,15 @@ cleanup() { for d in $TMPS; do rm -rf "$d"; done; }
 trap cleanup EXIT
 
 pass() { echo "  PASS — $1"; PASS=$((PASS + 1)); }
-fail() { echo "  FAIL — $1"; FAIL=$((FAIL + 1)); }
+# A failing assertion that hides the command's own output turns every failure
+# into guesswork: on 06.09.2026 a Linux-only `push` failure cost two wrong
+# diagnoses because the runner log carried the FAIL line and nothing else.
+# Second argument, when given, is dumped indented under the FAIL line.
+fail() {
+  echo "  FAIL — $1"
+  if [ -n "${2:-}" ]; then printf '%s\n' "$2" | sed 's/^/        /'; fi
+  FAIL=$((FAIL + 1))
+}
 
 # assert_file <path> <desc>
 assert_file() { if [ -f "$1" ]; then pass "$2"; else fail "$2 (missing: $1)"; fi; }
@@ -53,9 +61,9 @@ assert_contains() { case "$1" in *"$2"*) pass "$3";; *) fail "$3 (missing text: 
 # assert_not_contains <haystack> <needle> <desc>
 assert_not_contains() { case "$1" in *"$2"*) fail "$3 (unexpected text: '$2')";; *) pass "$3";; esac; }
 # assert_rc_zero <rc> <desc>
-assert_rc_zero() { if [ "$1" -eq 0 ]; then pass "$2"; else fail "$2 (rc=$1)"; fi; }
+assert_rc_zero() { if [ "$1" -eq 0 ]; then pass "$2"; else fail "$2 (rc=$1)" "${OUT:-}"; fi; }
 # assert_rc_nonzero <rc> <desc>
-assert_rc_nonzero() { if [ "$1" -ne 0 ]; then pass "$2"; else fail "$2 (rc=0, expected failure)"; fi; }
+assert_rc_nonzero() { if [ "$1" -ne 0 ]; then pass "$2"; else fail "$2 (rc=0, expected failure)" "${OUT:-}"; fi; }
 
 # run <cmd...>  →  sets OUT (stdout+stderr) and RC
 run() { OUT="$("$@" 2>&1)"; RC=$?; }
@@ -261,10 +269,11 @@ ssh -o BatchMode=yes "$WORKER" "mkdir -p ~/Transcripts/$ctx/_debriefed" 2>/dev/n
 mapfile -t files < <(ssh -o BatchMode=yes "$WORKER" "find ~/Transcripts/$ctx -maxdepth 1 -name '*.md' 2>/dev/null" || true)
 if rsync -av "$WORKER:$f" "$IMPORTS/${ctx}-${bn}" >/dev/null 2>&1; then
 ssh -o BatchMode=yes "$WORKER" "mv ~/Transcripts/$ctx/$bn ~/Transcripts/$ctx/_debriefed/" 2>/dev/null || true
+dup="$(ssh -o BatchMode=yes "$WORKER" \
 if ! ssh -o BatchMode=yes "$WORKER" "test -d ~/transcribe-inbox/$ctx" 2>/dev/null; then
 ssh -o BatchMode=yes "$WORKER" "mkdir -p ~/transcribe-inbox/$ctx/$ts"
 rsync -av "$audio" "$WORKER:~/transcribe-inbox/$ctx/$ts/meeting.mp3" >/dev/null
-ssh -o BatchMode=yes "$WORKER" "printf 'recorded_at: %s\nduration_s: 0\ncontext: %s\ntracks: single\nsource: debrief-handoff\n' \
+ssh -o BatchMode=yes "$WORKER" "printf 'recorded_at: %s\nduration_s: %s\ncontext: %s\ntracks: single\nsource: debrief-handoff\n' \
 ssh -o BatchMode=yes "$WORKER" "launchctl kickstart gui/\$(id -u)/$KICK_LABEL" >/dev/null 2>&1 \
 if ! ssh -o BatchMode=yes "$WORKER" "test -d ~/transcribe-pipeline/speaker-library/$ctx" 2>/dev/null; then
 n=$(rsync -av --include='*.npy' --exclude='*' \
