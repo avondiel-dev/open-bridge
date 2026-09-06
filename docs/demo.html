@@ -31,19 +31,40 @@
 
 <script>
 (function(){
+  var root = document.documentElement;
+  var pref = 'system';
   try {
-    var t = localStorage.getItem('html-canvas-theme');
-    if (t === 'dark' || (t == null && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-    }
-    var r = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if(!r) document.documentElement.classList.add('anim');
-    /* Honour the site-wide language choice (set on the other pages) for the bilingual CTA. */
+    /* Same key as the rest of the site. The old 'html-canvas-theme' is dropped
+       and never promoted: the previous controller wrote that key BY ITSELF
+       whenever the system appearance changed, with no click involved, so its
+       value cannot tell a deliberate choice from an automatic write. Promoting
+       it would pin all nine pages on a preference nobody expressed. Everyone
+       starts from "follow the system", which is what an absent key means now. */
+    var t = localStorage.getItem('ob-theme');
+    if (t === 'light' || t === 'dark') pref = t;
+    localStorage.removeItem('html-canvas-theme');
+  } catch (e) {}
+  /* Outside the try on purpose. This page links no stylesheet and carries no
+     prefers-color-scheme rule, so html.dark is the only route to the dark
+     palette; leaving the class inside the try meant a browser that refuses
+     storage painted light on a dark system, while the button below, which reads
+     the attribute rather than the class, cheerfully claimed to be following it. */
+  if (pref === 'dark' || (pref === 'system' && window.matchMedia &&
+      matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.classList.add('dark');
+  }
+  root.setAttribute('data-theme-pref', pref);
+  /* Also outside: the old catch added anim unconditionally, so a storage failure
+     forced animation on for a reader who had asked for reduced motion. */
+  var r = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!r) root.classList.add('anim');
+  /* Honour the site-wide language choice (set on the other pages) for the bilingual CTA. */
+  try {
     if (localStorage.getItem('ob-lang') === 'de') {
-      document.documentElement.setAttribute('data-active-lang','de');
-      document.documentElement.setAttribute('lang','de');
+      root.setAttribute('data-active-lang','de');
+      root.setAttribute('lang','de');
     }
-  } catch (e) { document.documentElement.classList.add('anim'); }
+  } catch (e) {}
 })();
 </script>
 
@@ -203,7 +224,7 @@ footer.foot code{font-family:var(--font-mono)}
     <a class="lnk" href="changelog.html">Changelog</a>
     <a class="lnk" href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">GitHub</a>
   </nav>
-  <button id="themeToggle" title="Light/Dark (T)">&#9680; Dark</button>
+  <button id="themeToggle" title="Theme follows your system. Click for light. (T)">◐ System</button>
 </div>
 
 <main class="wrap">
@@ -428,20 +449,38 @@ footer.foot code{font-family:var(--font-mono)}
 <!-- ─── Theme controller ─── -->
 <script>
 (function(){
-  var root=document.documentElement, KEY='html-canvas-theme', btn=document.getElementById('themeToggle');
-  function dark(){return root.classList.contains('dark');}
-  function render(){ if(btn){btn.innerHTML=dark()?'&#9728; Light':'&#9680; Dark';
-    btn.setAttribute('aria-label',dark()?'Switch to light theme':'Switch to dark theme');} }
-  function apply(d){ root.classList.toggle('dark',d); try{localStorage.setItem(KEY,d?'dark':'light');}catch(e){} render(); }
+  var root=document.documentElement, KEY='ob-theme', btn=document.getElementById('themeToggle');
+  var LBL={en:{system:'◐ System',light:'☀ Light',dark:'◑ Dark'},
+           de:{system:'◐ System',light:'☀ Hell',dark:'◑ Dunkel'}};
+  var HINT={en:{system:'Theme follows your system. Click for light.',
+                light:'Theme is light. Click for dark.',
+                dark:'Theme is dark. Click to follow your system again.'},
+            de:{system:'Design folgt deinem System. Klick für hell.',
+                light:'Design ist hell. Klick für dunkel.',
+                dark:'Design ist dunkel. Klick, um wieder dem System zu folgen.'}};
+  function lang(){ return root.getAttribute('data-active-lang')==='de' ? 'de' : 'en'; }
+  function systemDark(){ try{ return !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches); }catch(e){ return false; } }
+  function pref(){ var p=root.getAttribute('data-theme-pref'); return (p==='light'||p==='dark')?p:'system'; }
+  function render(){ if(!btn) return; var l=lang(), p=pref();
+    btn.textContent=LBL[l][p]; btn.setAttribute('aria-label',HINT[l][p]); btn.setAttribute('title',HINT[l][p]+' (T)'); }
+  function apply(p){
+    root.classList.toggle('dark', p==='dark' || (p==='system' && systemDark()));
+    root.setAttribute('data-theme-pref', p);
+    try{ if(p==='system'){ localStorage.removeItem(KEY); } else { localStorage.setItem(KEY,p); } }catch(e){}
+    render();
+  }
+  function cycle(){ var p=pref(); apply(p==='system'?'light':(p==='light'?'dark':'system')); }
   render();
-  if(btn) btn.addEventListener('click',function(){apply(!dark());});
+  if(btn) btn.addEventListener('click',cycle);
   document.addEventListener('keydown',function(e){
     if(e.metaKey||e.ctrlKey||e.altKey) return; if(e.key!=='t'&&e.key!=='T') return;
     var t=e.target||{}; if(t.isContentEditable||/^(input|textarea|select)$/i.test(t.tagName||'')) return;
-    apply(!dark());
+    cycle();
   });
-  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(e){
-    try{ if(localStorage.getItem(KEY)) return; }catch(_){} apply(e.matches); }); }catch(e){}
+  try{ var mq=matchMedia('(prefers-color-scheme: dark)');
+    var onSys=function(){ if(pref()==='system') apply('system'); };
+    if(mq.addEventListener){ mq.addEventListener('change',onSys); } else if(mq.addListener){ mq.addListener(onSys); }
+  }catch(e){}
 })();
 </script>
 

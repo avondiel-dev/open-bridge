@@ -29,12 +29,19 @@
 <script>
 (function(){
   var r = document.documentElement;
+  var pref = "system";
   try{
     var t = localStorage.getItem("ob-theme");
-    if(t === "dark" || (!t && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)){
-      r.classList.add("dark");
-    }
+    if(t === "light" || t === "dark") pref = t;
   }catch(e){}
+  /* Three states, and "system" is the default. Reading the media query here
+     rather than only at first paint is what makes the system setting the
+     default rather than a one time seed. */
+  if(pref === "dark" || (pref === "system" && window.matchMedia &&
+     window.matchMedia("(prefers-color-scheme: dark)").matches)){
+    r.classList.add("dark");
+  }
+  r.setAttribute("data-theme-pref", pref);
   try{
     var l = localStorage.getItem("ob-lang");
     var lang = (l === "de") ? "de" : (r.getAttribute("lang") || "en");
@@ -274,6 +281,7 @@ html.dark .code{background:var(--code-bg)}
         <button id="lang-de" type="button" aria-pressed="false" title="Sprache umschalten (Taste L)">DE</button>
       </div>
       <button class="icon-btn" id="theme-toggle" aria-label="Toggle light / dark theme (T)" title="Toggle theme (press T)">
+        <svg class="auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor" stroke="none"/></svg>
         <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       </button>
@@ -642,21 +650,65 @@ html.dark .code{background:var(--code-bg)}
   "use strict";
   var root = document.documentElement;
 
-  function applyTheme(mode){
-    if(mode === "dark"){ root.classList.add("dark"); }
-    else { root.classList.remove("dark"); }
+  /* Theme has three states, not two. The old toggle wrote a permanent override
+     on the very first click and offered no way back, so a reader who once tried
+     the other mode never saw their own system setting again, and nothing here
+     listened for that setting changing while the page was open. Now: no stored
+     value means "follow the system", and it follows it live; light and dark are
+     explicit choices; the button cycles back round to system. */
+  var THEME_KEY = "ob-theme";
+  var THEME_LBL = {
+    en:{ system:"Theme follows your system. Click for light.",
+         light:"Theme is light. Click for dark.",
+         dark:"Theme is dark. Click to follow your system again." },
+    de:{ system:"Design folgt deinem System. Klick für hell.",
+         light:"Design ist hell. Klick für dunkel.",
+         dark:"Design ist dunkel. Klick, um wieder dem System zu folgen." }
+  };
+  var themeBtn = document.getElementById("theme-toggle");
+  function systemDark(){
+    try { return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches); }
+    catch(e){ return false; }
+  }
+  function themePref(){
+    var p = root.getAttribute("data-theme-pref");
+    return (p === "light" || p === "dark") ? p : "system";
+  }
+  function labelTheme(){
+    if(!themeBtn) return;
+    var l = root.getAttribute("data-active-lang") === "de" ? "de" : "en";
+    var text = THEME_LBL[l][themePref()];
+    themeBtn.setAttribute("aria-label", text);
+    themeBtn.setAttribute("title", text + " (T)");
+  }
+  function applyTheme(pref){
+    var dark = pref === "dark" || (pref === "system" && systemDark());
+    if(dark){ root.classList.add("dark"); } else { root.classList.remove("dark"); }
+    root.setAttribute("data-theme-pref", pref);
+    labelTheme();
   }
   function toggleTheme(){
-    var next = root.classList.contains("dark") ? "light" : "dark";
+    var p = themePref();
+    var next = p === "system" ? "light" : (p === "light" ? "dark" : "system");
     applyTheme(next);
-    try { localStorage.setItem("ob-theme", next); } catch(e){}
+    try {
+      if(next === "system"){ localStorage.removeItem(THEME_KEY); }
+      else { localStorage.setItem(THEME_KEY, next); }
+    } catch(e){}
   }
-  var themeBtn = document.getElementById("theme-toggle");
   if(themeBtn){ themeBtn.addEventListener("click", toggleTheme); }
+  try{
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    var onSystem = function(){ if(themePref() === "system") applyTheme("system"); };
+    if(mq.addEventListener){ mq.addEventListener("change", onSystem); }
+    else if(mq.addListener){ mq.addListener(onSystem); }
+  }catch(e){}
+  labelTheme();
 
   function applyLang(lang){
     root.setAttribute("data-active-lang", lang);
     root.setAttribute("lang", lang);
+    labelTheme();          // the theme tooltip is bilingual too
     var en = document.getElementById("lang-en");
     var de = document.getElementById("lang-de");
     if(en){ en.setAttribute("aria-pressed", lang === "en" ? "true" : "false"); }
