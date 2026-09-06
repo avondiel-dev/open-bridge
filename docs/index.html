@@ -11,6 +11,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="BKS open-bridge: context that compounds across AI sessions">
 <meta property="og:description" content="Plain markdown + YAML in git your AI coding agent reads at session start, so context compounds instead of resetting. No database, no SaaS. MIT.">
+<link rel="canonical" href="https://bks-lab.github.io/open-bridge/">
 <meta property="og:url" content="https://bks-lab.github.io/open-bridge/">
 <meta property="og:image" content="https://bks-lab.github.io/open-bridge/social-preview.png">
 <meta property="og:image:width" content="1280">
@@ -346,6 +347,32 @@ html.dark .tile .demo{background:var(--code-bg)}
 .cap-grouphead{font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--secondary);margin:0 0 20px}
 .cap-group + .cap-group{margin-top:48px}
 .cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+/* ---- objections, answered ---- */
+.faq-list{max-width:var(--prose-w);margin-inline:auto;display:grid;gap:34px}
+.faq-q{font-size:19px;font-weight:500;line-height:1.35;color:var(--ink);margin:0 0 8px}
+.faq-a{font-size:16px;line-height:1.65;color:var(--on-surface);margin:0}
+.faq-a code{font-family:var(--font-mono);font-size:14px}
+@media (min-width:820px){ .faq-list{grid-template-columns:1fr 1fr;gap:38px 40px} }
+/* the optional list, folded. No <details> existed on the site before this. */
+.cap-fold > summary{
+  cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--secondary);margin:0 0 20px;padding:6px 2px;border-radius:var(--r-sm);
+}
+.cap-fold > summary::-webkit-details-marker{display:none}
+.cap-fold > summary:hover{color:var(--accent-text)}
+.cap-fold-mark{
+  width:9px;height:9px;flex:0 0 auto;border-right:1.6px solid currentColor;
+  border-bottom:1.6px solid currentColor;transform:rotate(-45deg) translate(-1px,-1px);
+  transition:transform .3s ease-out;
+}
+.cap-fold[open] .cap-fold-mark{transform:rotate(45deg) translate(-2px,-2px)}
+.cap-fold-n{
+  font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:0;
+  color:var(--muted);border:1px solid var(--line);border-radius:var(--r-full);
+  padding:1px 8px;
+}
+@media (prefers-reduced-motion:reduce){ .cap-fold-mark{transition:none} }
 .cap-item{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--r-lg);padding:24px 26px;box-shadow:var(--shadow-soft);
@@ -526,6 +553,7 @@ html.dark .path-prompts code{background:var(--code-bg)}
     <a href="#usecases"><span data-lang="en">Use cases</span><span data-lang="de">Anwendungsfälle</span></a>
     <a href="#honesty"><span data-lang="en">Status</span><span data-lang="de">Status</span></a>
     <a href="#concept"><span data-lang="en">Concept</span><span data-lang="de">Konzept</span></a>
+    <a href="#faq"><span data-lang="en">FAQ</span><span data-lang="de">FAQ</span></a>
     <a href="#start"><span data-lang="en">Get started</span><span data-lang="de">Loslegen</span></a>
   </div>
 </nav>
@@ -550,7 +578,7 @@ html.dark .path-prompts code{background:var(--code-bg)}
       </p>
 
       <div class="cta-row">
-        <button class="btn btn-primary" id="hero-setup" type="button">
+        <button class="btn btn-primary js-setup-cta" id="hero-setup" type="button">
           <span data-lang="en">Set it up: copy the prompt</span><span data-lang="de">Einrichten: Prompt kopieren</span>
           <span class="arrow">→</span>
         </button>
@@ -1041,7 +1069,19 @@ auf PR #214.</div>
     <p class="cap-intro reveal" style="margin-bottom:28px"><span data-lang="en">The four core pieces (<strong>context registry</strong>, <strong>task management</strong>, <strong>skills &amp; commands</strong>, <strong>standing orders</strong>) run from a fresh clone; they're what powered the day above. Everything below is optional, USER-scope, off until you turn it on.</span><span data-lang="de">Die vier Kernteile: <strong>Kontext-Registry</strong>, <strong>Task-Management</strong>, <strong>Skills &amp; Befehle</strong>, <strong>Standing Orders</strong>. Sie laufen direkt aus einem frischen Clone heraus (du hast sie oben im Tagesablauf gesehen). Alles darunter ist optional, USER-scope, und bleibt aus, bis du es einschaltest.</span></p>
 
     <div class="cap-group reveal">
-      <p class="cap-grouphead"><span data-lang="en">Optional: turn on when you want it</span><span data-lang="de">Optional: einschalten, wenn du es brauchst</span></p>
+      <!-- The heading two lines up calls this list optional, so the page now
+           treats it as optional instead of stacking nine more cards on the
+           reader. One <summary> with inner spans, never two with data-lang:
+           [data-lang]{display:none} would hide the first, and <details> takes
+           its FIRST summary child as the control, so the German one would
+           never become clickable. .cap-group keeps .reveal and stays outside,
+           or the IntersectionObserver has nothing left to see. -->
+      <details class="cap-fold">
+        <summary class="cap-grouphead">
+          <span class="cap-fold-mark" aria-hidden="true"></span>
+          <span data-lang="en">Optional: turn on when you want it</span><span data-lang="de">Optional: einschalten, wenn du es brauchst</span>
+          <span class="cap-fold-n">9</span>
+        </summary>
       <div class="cap-grid">
         <div class="cap-item">
           <div class="cap-label"><span data-lang="en">Channels</span><span data-lang="de">Channels</span><a class="cap-docs" href="https://github.com/bks-lab/open-bridge/blob/main/docs/channels.md" target="_blank" rel="noopener">docs →</a></div>
@@ -1080,6 +1120,7 @@ auf PR #214.</div>
           <p class="cap-benefit"><span data-lang="en">Bridge-Agents are persistent, addressable A2A endpoints that front one persona to the outside world; the MCP→A2A gateway makes them reachable from MCP-only frontends too, always under a human gate.</span><span data-lang="de">Bridge-Agents sind persistente, adressierbare A2A-Endpunkte, die eine Persona nach außen vertreten; das MCP→A2A-Gateway macht sie auch aus reinen MCP-Frontends erreichbar. Das läuft immer unter menschlicher Freigabe.</span></p>
         </div>
       </div>
+      </details>
     </div>
 
     <p class="cap-more reveal"><a href="https://github.com/bks-lab/open-bridge/tree/main/docs" target="_blank" rel="noopener"><span data-lang="en">And the full layout (every path, the CORE/USER split, the rest) is in the docs →</span><span data-lang="de">Und das ganze Layout (jeder Pfad, der CORE/USER-Split, der Rest) steht in den Docs →</span></a></p>
@@ -1234,6 +1275,47 @@ auf PR #214.</div>
       <div class="cta-row" style="justify-content:center">
         <a class="btn btn-primary" href="concepts.html"><span data-lang="en">Read the concept guide</span><span data-lang="de">Konzept-Leitfaden lesen</span><span class="arrow">→</span></a>
         <a class="btn btn-secondary" href="explore.html"><span data-lang="en">Explore the concepts</span><span data-lang="de">Konzepte erkunden</span><span class="arrow">→</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= OBJECTIONS, ANSWERED =======================
+     Open question and answer, not a row of <details>. An objection section
+     that shows a skimmer six questions with the answers folded away works
+     against itself. Sits directly before the final CTA, which is where A2
+     puts objection handling. Every answer rests on something the page already
+     states above it. -->
+<section class="alt" id="faq">
+  <div class="container">
+    <div class="sec-head reveal">
+      <p class="eyebrow"><span data-lang="en">Before you clone it</span><span data-lang="de">Bevor du es klonst</span></p>
+      <h2 class="h1"><span data-lang="en">The six questions people actually ask.</span><span data-lang="de">Die sechs Fragen, die wirklich kommen.</span></h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">Does it work outside Claude Code?</span><span data-lang="de">Läuft es außerhalb von Claude Code?</span></h3>
+        <p class="faq-a"><span data-lang="en">One <code>skills/</code> tree symlinks into each tool. It is tested on Claude Code and works elsewhere through <code>AGENTS.md</code>, which Codex, Cursor, Copilot CLI and Gemini read natively. Sub-agents are the one Claude Code specific piece; everywhere else that logic runs inline.</span><span data-lang="de">Ein <code>skills/</code>-Baum wird per Symlink in jedes Tool eingebunden. Getestet ist es auf Claude Code, anderswo läuft es über <code>AGENTS.md</code>, das Codex, Cursor, Copilot CLI und Gemini nativ lesen. Sub-Agenten sind das einzige Claude-Code-spezifische Stück, überall sonst läuft dieselbe Logik inline.</span></p>
+      </div>
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">What happens to my files when CORE updates?</span><span data-lang="de">Was passiert mit meinen Dateien, wenn CORE sich aktualisiert?</span></h3>
+        <p class="faq-a"><span data-lang="en">Nothing. Your files and the shipped templates sit on paths that never overlap, so the two merge without conflict by construction. Your config, your <code>work/</code> directory and every instance file live on your own branch; the templates live on the default branch.</span><span data-lang="de">Nichts. Deine Dateien und die mitgelieferten Templates liegen auf Pfaden, die sich nie überschneiden, also mergen die beiden konfliktfrei, schon vom Aufbau her. Deine Config, dein <code>work/</code>-Verzeichnis und jede Instanzdatei leben auf deinem eigenen Branch, die Templates auf dem Default-Branch.</span></p>
+      </div>
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">What does it cost?</span><span data-lang="de">Was kostet es?</span></h3>
+        <p class="faq-a"><span data-lang="en">The repo is MIT and there is nothing to host, no account and no waitlist. What you do pay for is the coding agent you already run: this is a layer of plain files beside it, not a replacement for it.</span><span data-lang="de">Das Repo ist MIT, es gibt nichts zu hosten, kein Konto und keine Warteliste. Was du zahlst, ist der Coding-Agent, den du ohnehin fährst: das hier ist eine Schicht aus Plain-Text daneben, kein Ersatz dafür.</span></p>
+      </div>
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">How does a public repo keep my work private?</span><span data-lang="de">Wie hält ein öffentliches Repo meine Arbeit privat?</span></h3>
+        <p class="faq-a"><span data-lang="en">Your copy has a private origin from the first command, and the public repo is only a read-only upstream. A push guard refuses to send a user branch anywhere public, and the same split is drawn in the diagram above: <code>scope:core</code> travels upstream, <code>scope:user</code> stops at the edge.</span><span data-lang="de">Deine Kopie hat vom ersten Befehl an ein privates Origin, und das öffentliche Repo ist nur ein Upstream zum Lesen. Ein Push-Guard weigert sich, einen User-Branch irgendwohin öffentlich zu schicken, und dieselbe Trennung ist oben gezeichnet: <code>scope:core</code> geht nach upstream, <code>scope:user</code> bleibt an der Kante stehen.</span></p>
+      </div>
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">How many bridges can I run?</span><span data-lang="de">Wie viele Bridges kann ich betreiben?</span></h3>
+        <p class="faq-a"><span data-lang="en">As many as you have worlds to keep apart, typically one per client or context. They share one CORE and keep separate private rooms, so data from one never bleeds into another.</span><span data-lang="de">So viele, wie du Welten auseinanderhalten musst, üblicherweise eine pro Kunde oder Kontext. Sie teilen sich ein CORE und behalten getrennte private Räume, damit Daten der einen nie in die andere laufen.</span></p>
+      </div>
+      <div class="faq-item reveal">
+        <h3 class="faq-q"><span data-lang="en">How early is this, really?</span><span data-lang="de">Wie früh ist das wirklich?</span></h3>
+        <p class="faq-a"><span data-lang="en">Early. It is newly public with no external users yet, and it runs the company that builds it every working day. That is the honest pair: proven in daily use by three people, unproven by anyone else. The status board above labels each piece as shipped, a bet, or open.</span><span data-lang="de">Früh. Es ist frisch öffentlich, bisher ohne externe Nutzer, und es betreibt die Firma, die es baut, an jedem Arbeitstag. Das ist das ehrliche Paar: im täglichen Gebrauch von drei Leuten bewährt, von sonst niemandem. Die Statustafel oben kennzeichnet jedes Stück als ausgeliefert, als Wette oder als offen.</span></p>
       </div>
     </div>
   </div>
@@ -1430,6 +1512,10 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   <div class="foot-bottom">
     <span data-lang="en">Public · MIT · no waitlist · newly released</span>
     <span data-lang="de">Public · MIT · keine Warteliste · frisch veröffentlicht</span>
+    <button class="btn btn-primary js-setup-cta" type="button" style="padding:10px 20px;font-size:14px">
+      <span data-lang="en">Set it up: copy the prompt</span><span data-lang="de">Einrichten: Prompt kopieren</span>
+      <span class="arrow">→</span>
+    </button>
     <a class="btn btn-secondary" style="padding:10px 20px;font-size:14px" href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">
       <span data-lang="en">Read the code on GitHub</span><span data-lang="de">Lies den Code auf GitHub</span>
       <span class="arrow">→</span>
@@ -1741,8 +1827,12 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   // block so the reader can see what landed on their clipboard. Reads the same DOM
   // node the copy button reads, so there is exactly one copy of that text on the page.
   (function(){
-    var hero = document.getElementById("hero-setup");
-    if(!hero){ return; }
+    // Both the hero button and the footer repeat carry .js-setup-cta. The jump to
+    // #get-started is right from either position: the footer sits BELOW that
+    // section, so the reader is taken back up to the block that was just copied.
+    var buttons = document.querySelectorAll(".js-setup-cta");
+    if(!buttons.length){ return; }
+    buttons.forEach(function(hero){
     hero.addEventListener("click", function(){
       var lang = root.getAttribute("data-active-lang") === "de" ? "de" : "en";
       var block = document.getElementById("agent-prompt-" + lang);
@@ -1773,6 +1863,7 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
         } catch(e){ fail(); }
       }
       location.hash = "get-started";
+    });
     });
   })();
 
