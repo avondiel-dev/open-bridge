@@ -149,6 +149,16 @@ def main() -> int:
             f"USER total: figure sums to {sum(drawn_user.values())}, tree has {user_total}"
         )
 
+    # every example path the figure names has to be a file that exists. A
+    # renamed skill would otherwise leave a dead path on a public page, and the
+    # page is making a point about claims being checkable.
+    tracked_set = set(files)
+    for m in re.finditer(r'\b(?:ex|cex|uex)\s*:\s*\[([^\]]*)\]', src):
+        for raw in re.findall(r'"([^"]+)"', m.group(1)):
+            path = raw if raw in tracked_set else USER_PREFIX + raw
+            if path not in tracked_set:
+                problems.append(f"example path not in the tree: {raw}")
+
     # the two numbers a reader actually sees, in both languages
     for phrase in (f"{core_total} files ship. {user_total} are yours.",
                    f"{core_total} Dateien kommen mit, {user_total} sind deine."):
@@ -179,7 +189,8 @@ def main() -> int:
 
     print(
         f"docs/explore.html matches the tree: CORE {core_total} in "
-        f"{len(drawn_core)} folders, USER {user_total} in {len(drawn_user)}."
+        f"{len(drawn_core)} folders, USER {user_total} in {len(drawn_user)}, "
+        f"{len(re.findall(chr(34), src))//2 and sum(len(re.findall(chr(34)+'([^'+chr(34)+']+)'+chr(34), m.group(1))) for m in re.finditer(r'\b(?:ex|cex|uex)\s*:\s*\[([^\]]*)\]', src))} example paths all present."
     )
     return 0
 

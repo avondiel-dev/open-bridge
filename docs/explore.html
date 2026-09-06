@@ -281,6 +281,11 @@ html.dark .stage{
 }
 .brain-spin:hover{color:var(--viz-fg)}
 .brain-spin:focus-visible{outline:2px solid var(--viz-user);outline-offset:1px}
+.detail .d-files{
+  list-style:none;margin:-4px 0 2px;padding:0 0 0 2px;
+  font:11.5px/1.75 var(--font-mono);color:var(--viz-fg-muted);
+}
+.detail .d-files li{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .brain-sr{
   position:absolute;width:1px;height:1px;padding:0;margin:-1px;
   overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
@@ -1080,36 +1085,42 @@ html.dark .stage{
      USER counts sum to 27, CORE counts to 166. */
   var PAIRS = [
     { id:"root", n:"./", core:22, user:8, x:0.30, y:-0.30, z:0.14,
+      cex:["AGENTS.md","CLAUDE.md","GEMINI.md","README.md","bridge-config.yaml.template","ecosystem.example.yaml"], uex:["bridge-config.yaml","ecosystem.yaml","AGENTS.md",".claude/agents/ops-officer.md"],
       t_en:"The root", t_de:"Die Wurzel",
       c_en:"22 files: AGENTS.md, CLAUDE.md, GEMINI.md, README.md, DESIGN.md, the licence, bridge-config.yaml.template and ecosystem.example.yaml. The manual and the two blank forms.",
       c_de:"22 Dateien: AGENTS.md, CLAUDE.md, GEMINI.md, README.md, DESIGN.md, die Lizenz, bridge-config.yaml.template und ecosystem.example.yaml. Das Handbuch und die zwei leeren Formulare.",
       u_en:"8 files: bridge-config.yaml and ecosystem.yaml, the two that describe your world, plus this instance's own AGENTS.md, CLAUDE.md and README.md. The three sub-agent definitions under .claude/agents/ are counted here too. Sub-agents are the one Claude Code specific piece in the whole system; everything else runs from AGENTS.md, which any tool reads.",
       u_de:"8 Dateien: bridge-config.yaml und ecosystem.yaml, die beiden, die deine Welt beschreiben, dazu die eigene AGENTS.md, CLAUDE.md und README.md dieser Instanz. Die drei Sub-Agenten unter .claude/agents/ zählen hier mit. Sub-Agenten sind das einzige Claude-Code-spezifische Stück im ganzen System, alles andere läuft über AGENTS.md, die jedes Werkzeug liest." },
     { id:"identity", n:"identity/", core:14, user:2, x:0.44, y:-0.16, z:0.26,
+      cex:["identity/personas/_template.yaml","identity/accounts/_schema.yaml","identity/mandants/_template.yaml"], uex:["identity/accounts/cloud-provider.yaml","identity/mandants/team.yaml"],
       t_en:"identity/", t_de:"identity/",
       c_en:"14 files, all templates and schemas: accounts, mandants, personas, contracts and the orchestrator's own identity. Blank forms, no data.",
       c_de:"14 Dateien, ausschließlich Vorlagen und Schemata: accounts, mandants, personas, contracts und die Identität des Orchestrators selbst. Leere Formulare, keine Daten.",
       u_en:"2 files, both filled in: identity/accounts/cloud-provider.yaml and identity/mandants/team.yaml. Who you are and who you send to.",
       u_de:"2 Dateien, beide ausgefüllt: identity/accounts/cloud-provider.yaml und identity/mandants/team.yaml. Wer du bist und an wen du sendest." },
     { id:"infra", n:"infra/", core:23, user:7, x:0.54, y:0.02, z:-0.18,
+      cex:["infra/remotes/_template.yaml","infra/channels/_schema.yaml","infra/backups/_template.yaml"], uex:["infra/channels/email.yaml","infra/remotes/prod-server.yaml","infra/backups/topology.yaml"],
       t_en:"infra/", t_de:"infra/",
       c_en:"23 files: templates and schemas for remotes, channels, backups and instances, plus the remote inventory contract tests that prove each rule still bites.",
       c_de:"23 Dateien: Vorlagen und Schemata für remotes, channels, backups und instances, dazu die Vertragstests der Remote-Inventur, die belegen, dass jede Regel noch greift.",
       u_en:"7 files: infra/channels/email.yaml and slack-bot.yaml, infra/remotes/prod-server.yaml with its setup note, infra/backups/topology.yaml and one scheduled check. Where things run and how to reach them.",
       u_de:"7 Dateien: infra/channels/email.yaml und slack-bot.yaml, infra/remotes/prod-server.yaml mit Setup-Notiz, infra/backups/topology.yaml und eine geplante Prüfung. Wo was läuft und wie man es erreicht." },
     { id:"workflow", n:"workflow/", core:82, user:2, x:0.34, y:0.16, z:0.22,
+      cex:["workflow/calendars/_template.yaml","workflow/contexts/_schema.yaml","workflow/workloads/_template.yaml"], uex:["workflow/calendars/entries.yaml","workflow/contexts/webapp/context.yaml"],
       t_en:"workflow/", t_de:"workflow/",
       c_en:"82 files, the largest of the six: templates and schemas for calendars, contexts, projects and workloads, and the workload contract fixtures, one per rule that must keep failing.",
       c_de:"82 Dateien, die größte der sechs: Vorlagen und Schemata für calendars, contexts, projects und workloads, dazu die Vertragsproben der Workloads, je eine pro Regel, die weiterhin scheitern muss.",
       u_en:"2 files: workflow/calendars/entries.yaml and workflow/contexts/webapp/context.yaml. What happens when, and where a piece of work gets documented.",
       u_de:"2 Dateien: workflow/calendars/entries.yaml und workflow/contexts/webapp/context.yaml. Was wann passiert und wo eine Arbeit dokumentiert wird." },
     { id:"protocols", n:"protocols/", core:10, user:1, x:0.60, y:0.20, z:-0.02,
+      cex:["protocols/standing-orders/task-sync.md","protocols/standing-orders/board-task-criteria.md","protocols/standing-orders/drift-advisory.md","protocols/standing-orders/security-baseline.md"], uex:["protocols/standing-orders/document-work.md"],
       t_en:"protocols/", t_de:"protocols/",
       c_en:"10 files: the standing orders a session loads every time. Task sync, board criteria, drift advisory, document work, code standards, security baseline.",
       c_de:"10 Dateien: die Standing Orders, die jede Sitzung lädt. Task-Sync, Board-Kriterien, Drift-Hinweis, Dokumentationspflicht, Code-Standards, Sicherheits-Basis.",
       u_en:"1 file: this instance's own document-work order. One rule the team decided on, in the same plain markdown as the shipped ones.",
       u_de:"1 Datei: die eigene document-work-Order dieser Instanz. Eine Regel, die das Team beschlossen hat, im selben schlichten Markdown wie die mitgelieferten." },
     { id:"work", n:"work/", core:15, user:7, x:0.42, y:0.32, z:0.06,
+      cex:["work/templates/STATUS.md","work/templates/board.md","work/templates/week-summary.md"], uex:["work/board.md","work/log.md","work/tasks/bigcorp-api-payment-retry/STATUS.md"],
       t_en:"work/", t_de:"work/",
       c_en:"15 files, all blank forms: the STATUS template, the board template, the day and week skeletons, and the learning folder the system files its own postmortems into.",
       c_de:"15 Dateien, alles leere Formulare: die STATUS-Vorlage, die Board-Vorlage, Tages- und Wochengerüst und der Lern-Ordner, in den das System seine eigenen Nachbetrachtungen ablegt.",
@@ -1119,18 +1130,23 @@ html.dark .stage{
   /* CORE only, 626 files. 626 + 166 in PAIRS = 792. */
   var CORE_ONLY = [
     { id:"skills",   n:"skills/",   c:345, x:-0.30, y:-0.04, z:0.02, key:1,
+      ex:["skills/bridge-onboard/SKILL.md","skills/briefing/SKILL.md","skills/debrief/SKILL.md","skills/github-projects-manager/SKILL.md","skills/remote/SKILL.md","skills/workload/SKILL.md"],
       d_en:"345 files. The largest thing open-bridge ships, and the one you extend most: each skill is a SKILL.md plus the reference files it loads only when triggered.",
       d_de:"345 Dateien. Das Größte, was open-bridge mitliefert, und das, was du am meisten erweiterst: jeder Skill ist eine SKILL.md plus die Referenzdateien, die er nur bei Bedarf lädt." },
     { id:"scripts",  n:"scripts/",  c:111, x:-0.46, y:0.26, z:-0.12, key:1,
+      ex:["scripts/validate-bridge.py","scripts/gen-board.py","scripts/measure-context.py","scripts/check-figure-counts.py","scripts/categorize-commits.py"],
       d_en:"111 files. The validators and generators. They are what makes a claim in this repo checkable rather than asserted.",
       d_de:"111 Dateien. Die Prüfer und Generatoren. Sie sind der Grund, warum eine Behauptung in diesem Repo nachprüfbar ist statt behauptet." },
     { id:"docs",     n:"docs/",     c:69,  x:-0.66, y:-0.18, z:0.14, key:1,
+      ex:["docs/structure.md","docs/extension-model.md","docs/commands.md","docs/workloads.md","docs/memory.md"],
       d_en:"69 files. The guides for humans, plus this site.",
       d_de:"69 Dateien. Die Anleitungen für Menschen, dazu diese Website." },
     { id:"agents",   n:"agents/",   c:45,  x:-0.34, y:-0.32, z:-0.10, key:1,
+      ex:["agents/README.md","agents/_gateway/SPEC.md"],
       d_en:"45 files. The Bridge-Agent runtime: persistent endpoints that front a persona to peer bridges, always behind a human gate.",
       d_de:"45 Dateien. Die Laufzeit der Bridge-Agents: dauerhafte Endpunkte, die eine Persona nach außen vertreten, immer hinter einem menschlichen Gate." },
     { id:"rules",    n:"rules/",    c:23,  x:-0.74, y:0.14, z:-0.08, key:1,
+      ex:["rules/session-start.md","rules/push-guard.md","rules/promote-safety.md","rules/ci-discipline.md","rules/file-creation.md"],
       d_en:"23 files. The behavioural rules: the session start gate, the push guard, promote safety, CI discipline.",
       d_de:"23 Dateien. Die Verhaltensregeln: das Sitzungsstart-Tor, der Push-Schutz, die Promote-Sicherheit, die CI-Disziplin." },
     { id:"github",   n:".github/",  c:15,  x:-0.56, y:0.34, z:0.10 },
@@ -1192,7 +1208,7 @@ html.dark .stage{
   var AMBIENT = 24000;
   var W=0, H=0, DPR=1, S=0, CX=0, CY=0, FOCAL=2.6;
   var ry=0.35, rx=-0.12, spin=0;
-  var P=null, N=0, hits=[], picked=null;
+  var P=null, N=0, hits=[], picked=null, pickedSide=0, hoverId=null, hoverSide=0;
 
   function measure(){
     var r = wrap.getBoundingClientRect();
@@ -1280,12 +1296,14 @@ html.dark .stage{
     ctx.setTransform(DPR,0,0,DPR,0,0);
     ctx.clearRect(0,0,W,H);
     var small = W < 620, i, p, q;
+    /* hover focuses, a click locks it: the knot stays lit after the pointer leaves */
+    var focusId = hoverId || picked, focusSide = hoverId ? hoverSide : pickedSide;
 
     /* A warm wash over the half that is yours. Twenty seven dots against seven
        hundred cannot hold that side of the picture on their own. */
     var hc = project(0.46, 0, 0);
     var halo = ctx.createRadialGradient(hc[0], hc[1], 0, hc[0], hc[1], S*1.05);
-    halo.addColorStop(0, hexa(USERCOL, 0.13));
+    halo.addColorStop(0, hexa(USERCOL, 0.20));
     halo.addColorStop(1, hexa(USERCOL, 0));
     ctx.globalCompositeOperation = "lighter";
     ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
@@ -1301,6 +1319,7 @@ html.dark .stage{
     for(b=0;b<NB;b++){ bodyC.push(new Path2D()); bodyU.push(new Path2D()); }
     var glow = { c:new Path2D(), u:new Path2D() };
     var core = { c:new Path2D(), u:new Path2D() };
+    var hotGlow = new Path2D(), hotCore = new Path2D();
     for(i=0;i<N;i++){
       p=P[i]; q=project(p.x,p.y,p.z);
       if(q[3] >= FOCAL-0.05) continue;
@@ -1311,20 +1330,28 @@ html.dark .stage{
         var tp = p.seam ? bodySeam[p.bk & 1] : (p.s<0 ? bodyC[p.bk] : bodyU[p.bk]);
         var w2 = r*1.9; tp.rect(q[0]-w2*0.5, q[1]-w2*0.5, w2, w2);
       } else {
-        var g = p.s<0 ? glow.c : glow.u, k = p.s<0 ? core.c : core.u;
-        g.moveTo(q[0]+r*3.4, q[1]); g.arc(q[0], q[1], r*3.4, 0, 6.283185307);
-        k.moveTo(q[0]+r*1.3, q[1]);  k.arc(q[0], q[1], r*1.3, 0, 6.283185307);
+        var hot = focusId && p.id === focusId && p.s === focusSide;
+        var g = hot ? hotGlow : (p.s<0 ? glow.c : glow.u);
+        var k = hot ? hotCore : (p.s<0 ? core.c : core.u);
+        var gr = hot ? r*4.6 : r*3.4, kr = hot ? r*1.7 : r*1.3;
+        g.moveTo(q[0]+gr, q[1]); g.arc(q[0], q[1], gr, 0, 6.283185307);
+        k.moveTo(q[0]+kr, q[1]); k.arc(q[0], q[1], kr, 0, 6.283185307);
       }
     }
     ctx.globalCompositeOperation = "lighter";
     ctx.fillStyle = hexa(CORECOL, 0.115); for(b=0;b<NB;b++) ctx.fill(bodyC[b]);
-    ctx.fillStyle = hexa(USERCOL, 0.115); for(b=0;b<NB;b++) ctx.fill(bodyU[b]);
+    ctx.fillStyle = hexa(USERCOL, 0.175); for(b=0;b<NB;b++) ctx.fill(bodyU[b]);
     ctx.fillStyle = hexa(FG, 0.18);       ctx.fill(bodySeam[0]); ctx.fill(bodySeam[1]);
 
     ctx.fillStyle=hexa(CORECOL,0.075); ctx.fill(glow.c);
-    ctx.fillStyle=hexa(USERCOL,0.095); ctx.fill(glow.u);
+    ctx.fillStyle=hexa(USERCOL,0.15);  ctx.fill(glow.u);
     ctx.fillStyle=hexa(CORECOL,0.95);  ctx.fill(core.c);
     ctx.fillStyle=hexa(USERCOL,1);     ctx.fill(core.u);
+    if(focusId){
+      var HOT = focusSide < 0 ? CORECOL : USERCOL;
+      ctx.fillStyle=hexa(HOT,0.20); ctx.fill(hotGlow);
+      ctx.fillStyle=hexa(FG,0.95);  ctx.fill(hotCore);
+    }
     ctx.globalCompositeOperation = "source-over";
 
     // the bridge on the seam
@@ -1357,21 +1384,22 @@ html.dark .stage{
     ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
     hits = [];
     var chips = [];
-    function want(id, name, wx, wy, wz, colour, extra){
+    function want(id, name, wx, wy, wz, colour, extra, side, ex){
       var s2 = project(wx,wy,wz);
       if(s2[3] >= FOCAL-0.05) return;
       var text = extra === undefined ? name : name + " " + extra;
-      chips.push({ id:id, text:text, colour:colour, sx:s2[0], sy:s2[1], sc:s2[2], z:s2[3],
+      chips.push({ id:id, name:name, text:text, colour:colour, side:side, ex:ex||[],
+                   sx:s2[0], sy:s2[1], sc:s2[2], z:s2[3],
                    w:ctx.measureText(text).width + 12, h:fs*1.5 });
     }
     for(i=0;i<PAIRS.length;i++){
-      want(PAIRS[i].id, PAIRS[i].n,  PAIRS[i].x, PAIRS[i].y, PAIRS[i].z, USERCOL, PAIRS[i].user);
-      want(PAIRS[i].id, PAIRS[i].n, -PAIRS[i].x, PAIRS[i].y, PAIRS[i].z, CORECOL, PAIRS[i].core);
+      want(PAIRS[i].id, PAIRS[i].n,  PAIRS[i].x, PAIRS[i].y, PAIRS[i].z, USERCOL, PAIRS[i].user,  1, PAIRS[i].uex);
+      want(PAIRS[i].id, PAIRS[i].n, -PAIRS[i].x, PAIRS[i].y, PAIRS[i].z, CORECOL, PAIRS[i].core, -1, PAIRS[i].cex);
     }
     for(i=0;i<CORE_ONLY.length;i++){
       if(!CORE_ONLY[i].key) continue;
       if(small && i > 2) continue;
-      want(CORE_ONLY[i].id, CORE_ONLY[i].n, CORE_ONLY[i].x, CORE_ONLY[i].y, CORE_ONLY[i].z, CORECOL, CORE_ONLY[i].c);
+      want(CORE_ONLY[i].id, CORE_ONLY[i].n, CORE_ONLY[i].x, CORE_ONLY[i].y, CORE_ONLY[i].z, CORECOL, CORE_ONLY[i].c, -1, CORE_ONLY[i].ex);
     }
     chips.sort(function(a,b){ return b.z - a.z; });   // nearest first, it keeps its place
     var placedBoxes = [];
@@ -1392,7 +1420,7 @@ html.dark .stage{
       if(by + c.h > H - fs*3 - 40) continue;          // never over the headers
       placedBoxes.push({ x:bx, y:by, w:c.w, h:c.h });
       var depth = Math.max(0.35, Math.min(1, (c.sc - 0.72)/0.5));
-      var on = picked === c.id;
+      var on = (picked === c.id) || (hoverId === c.id && hoverSide === c.side);
       ctx.globalAlpha = on ? 1 : 0.5 + depth*0.45;
       ctx.fillStyle = hexa("0f1421", on ? 0.94 : 0.78);
       ctx.beginPath();
@@ -1408,7 +1436,7 @@ html.dark .stage{
       ctx.fillStyle = on ? c.colour : hexa(c.colour, 0.94);
       ctx.fillText(c.text, bx + 6, by + c.h - fs*0.42);
       ctx.globalAlpha = 1;
-      hits.push({ id:c.id, x:bx, y:by, w:c.w, h:c.h, d:c.z });
+      hits.push({ id:c.id, name:c.name, side:c.side, ex:c.ex, colour:c.colour, x:bx, y:by, w:c.w, h:c.h, d:c.z });
     }
 
     // the two headers, in the bottom corners, clear of the view tabs above
@@ -1417,6 +1445,48 @@ html.dark .stage{
     ctx.fillStyle=DIM; ctx.fillText(L()==="de" ? "792 Dateien, alle mitgeliefert" : "792 files, all shipped", 14, hy+fs+4);
     ctx.textAlign="right"; ctx.fillStyle=USERCOL; ctx.fillText("user/<you>", W-14, hy);
     ctx.fillStyle=DIM; ctx.fillText(L()==="de" ? "27 Dateien, alle deine" : "27 files, all yours", W-14, hy+fs+4);
+
+    /* Hover shows what is actually in the folder. Names, not adjectives: the
+       point of "792 files ship" only lands once you can see six of them. */
+    if(hoverId){
+      var ht = null;
+      for(i=0;i<hits.length;i++) if(hits[i].id===hoverId && hits[i].side===hoverSide) ht=hits[i];
+      if(ht && ht.ex && ht.ex.length){
+        var de = L()==="de";
+        var head = ht.name + (ht.side<0 ? (de?"  in CORE, mitgeliefert":"  in CORE, shipped")
+                                        : (de?"  in USER, deine":"  in USER, yours"));
+        var lines = ht.ex.slice(0, 6), lh = fs*1.5, pad = 11, wmax = 0;
+        ctx.font = "600 " + fs + "px " + tok("--font-mono");
+        wmax = ctx.measureText(head).width;
+        ctx.font = fs + "px " + tok("--font-mono");
+        for(i=0;i<lines.length;i++) wmax = Math.max(wmax, ctx.measureText(lines[i]).width);
+        var tw2 = Math.min(wmax, 330) + pad*2, th = pad*2 + lh*(lines.length+1) + 3;
+        var tx = ht.x + ht.w + 12, ty = ht.y - 4;
+        if(tx + tw2 > W-8) tx = ht.x - tw2 - 12;
+        if(tx < 8) tx = 8;
+        if(ty + th > H-8) ty = H - 8 - th;
+        if(ty < 8) ty = 8;
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = hexa("080c15", 0.95);
+        ctx.beginPath();
+        var q3 = 8;
+        ctx.moveTo(tx+q3,ty); ctx.arcTo(tx+tw2,ty,tx+tw2,ty+th,q3); ctx.arcTo(tx+tw2,ty+th,tx,ty+th,q3);
+        ctx.arcTo(tx,ty+th,tx,ty,q3); ctx.arcTo(tx,ty,tx+tw2,ty,q3); ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = hexa(ht.colour, 0.45); ctx.lineWidth = 1; ctx.stroke();
+        ctx.textAlign = "left";
+        ctx.font = "600 " + fs + "px " + tok("--font-mono");
+        ctx.fillStyle = ht.colour;
+        ctx.fillText(head, tx+pad, ty+pad+fs);
+        ctx.font = fs + "px " + tok("--font-mono");
+        ctx.fillStyle = DIM;
+        for(i=0;i<lines.length;i++){
+          var line = lines[i];
+          while(ctx.measureText(line).width > tw2 - pad*2 && line.length > 6) line = "…" + line.slice(2);
+          ctx.fillText(line, tx+pad, ty+pad+fs+lh*(i+1)+3);
+        }
+      }
+    }
   }
 
   /* ---- motion ---------------------------------------------------------------
@@ -1424,14 +1494,20 @@ html.dark .stage{
      pause control so the page keeps a mechanism to stop it (WCAG 2.2.2). Reduced
      motion starts it stopped; dragging still works, because a drag is direct
      manipulation and not animation. */
-  var spinning = !reduceMQ.matches, raf=null, active=false, onScreen=true, dragging=false;
-  function frame(){
-    if(spinning && !dragging){ ry += 0.0022; spin += 0.010; }
+  /* Radians per SECOND, not per frame: the same increment on a 120 Hz display
+     turns twice as fast, and the reader's monitor is not a design input.
+     One full turn takes just over two minutes. */
+  var TURN = 0.048, SPIN = 0.26;
+  var spinning = !reduceMQ.matches, raf=null, active=false, onScreen=true, dragging=false, last=0;
+  function frame(now){
+    var dt = last ? Math.min(0.1, (now-last)/1000) : 0;
+    last = now;
+    if(spinning && !dragging){ ry += dt*TURN; spin += dt*SPIN; }
     draw();
     raf = spinning && !dragging ? requestAnimationFrame(frame) : null;
   }
   function stop(){ if(raf) cancelAnimationFrame(raf); raf=null; }
-  function play(){ if(raf || !active || !onScreen || !spinning) return; raf=requestAnimationFrame(frame); }
+  function play(){ if(raf || !active || !onScreen || !spinning) return; last=0; raf=requestAnimationFrame(frame); }
   function syncSpin(){
     if(!spinBtn) return;
     var de = L()==="de";
@@ -1459,7 +1535,17 @@ html.dark .stage{
   cv.addEventListener("pointerdown", function(e){ cv.setPointerCapture(e.pointerId); down(e.clientX,e.clientY); });
   cv.addEventListener("pointermove", function(e){
     if(dragging){ move(e.clientX,e.clientY); return; }
-    cv.style.cursor = at(e) ? "pointer" : "grab";
+    var h = atFull(e);
+    cv.style.cursor = h ? "pointer" : "grab";
+    var id = h ? h.id : null, sd = h ? h.side : 0;
+    if(id !== hoverId || sd !== hoverSide){ hoverId = id; hoverSide = sd; if(!raf) draw(); }
+  });
+  cv.addEventListener("pointerleave", function(){
+    if(hoverId){ hoverId = null; hoverSide = 0; if(!raf) draw(); }
+  });
+  addEventListener("keydown", function(e){
+    if(!active || e.key !== "Escape") return;
+    picked = null; pickedSide = 0; hoverId = null; hoverSide = 0; emptyPanel(); if(!raf) draw();
   });
   cv.addEventListener("pointerup", up);
   cv.addEventListener("pointercancel", up);
@@ -1470,8 +1556,8 @@ html.dark .stage{
     var de = L()==="de";
     detail.innerHTML =
       '<div class="empty"><span class="big">' + (de ? "Wähle einen Ordner" : "Pick a folder") + '</span><span>' +
-      (de ? "Links liegt CORE, alles was mitgeliefert wird. Rechts liegt USER, eine eigene Instanz. Sechs Ordnernamen kommen in beiden vor, an gespiegelter Stelle: links die leere Vorlage, rechts die ausgefüllte Datei. Klick einen an, oder zieh den Körper zum Drehen."
-          : "The left half is CORE, everything that ships. The right half is USER, one instance of your own. Six folder names appear in both, at mirrored positions: the blank form on the left, the filled in file on the right. Click one, or drag the body to turn it.") +
+      (de ? "Links liegt CORE, alles was mitgeliefert wird. Rechts liegt USER, eine eigene Instanz. Sechs Ordnernamen kommen in beiden vor, an gespiegelter Stelle: links die leere Vorlage, rechts die ausgefüllte Datei. Fahr über einen Ordner, dann siehst du echte Dateien darin. Klick hält ihn fest, Esc löst ihn wieder. Ziehen dreht den Körper."
+          : "The left half is CORE, everything that ships. The right half is USER, one instance of your own. Six folder names appear in both, at mirrored positions: the blank form on the left, the filled in file on the right. Hover a folder to see real files in it. Click keeps it, Escape lets go. Drag turns the body.") +
       '</span></div>';
   }
   function show(id){
@@ -1479,34 +1565,43 @@ html.dark .stage{
     for(i=0;i<PAIRS.length;i++) if(PAIRS[i].id===id) p2=PAIRS[i];
     for(i=0;i<CORE_ONLY.length;i++) if(CORE_ONLY[i].id===id) c2=CORE_ONLY[i];
     picked = id;
+    function files(list){
+      if(!list || !list.length) return "";
+      return '<ul class="d-files">' + list.map(function(f){ return '<li>' + esc(f) + '</li>'; }).join("") + '</ul>';
+    }
     if(p2){
       detail.innerHTML =
         '<span class="d-group"><span class="sw" style="background:var(--viz-user)"></span>' + (de?"Auf beiden Seiten":"On both sides") + '</span>' +
         '<h2>' + esc(de?p2.t_de:p2.t_en) + '</h2>' +
         '<p class="d-short"><b style="color:var(--viz-core)">CORE ' + p2.core + '</b><br>' + esc(de?p2.c_de:p2.c_en) + '</p>' +
-        '<p class="d-short"><b style="color:var(--viz-user)">USER ' + p2.user + '</b><br>' + esc(de?p2.u_de:p2.u_en) + '</p>';
+        files(p2.cex) +
+        '<p class="d-short"><b style="color:var(--viz-user)">USER ' + p2.user + '</b><br>' + esc(de?p2.u_de:p2.u_en) + '</p>' +
+        files(p2.uex);
     } else if(c2){
       detail.innerHTML =
         '<span class="d-group"><span class="sw" style="background:var(--viz-core)"></span>' + (de?"Nur CORE":"CORE only") + '</span>' +
         '<h2>' + esc(c2.n) + '</h2>' +
-        '<p class="d-short">' + esc(de?c2.d_de:c2.d_en) + '</p>';
+        '<p class="d-short">' + esc(de?c2.d_de:c2.d_en) + '</p>' +
+        files(c2.ex);
     } else { return; }
     draw();
   }
-  function at(ev){
+  function atFull(ev){
     var r=cv.getBoundingClientRect(), x=ev.clientX-r.left, y=ev.clientY-r.top, i, best=null;
     for(i=0;i<hits.length;i++){
       var h=hits[i];
       if(x>=h.x && x<=h.x+h.w && y>=h.y && y<=h.y+h.h){ if(!best || h.d > best.d) best=h; }
     }
-    return best ? best.id : null;
+    return best;
   }
+  function at(ev){ var h = atFull(ev); return h ? h.id : null; }
   var downX=0, downY=0;
   cv.addEventListener("pointerdown", function(e){ downX=e.clientX; downY=e.clientY; });
   cv.addEventListener("click", function(ev){
     if(Math.abs(ev.clientX-downX) > 4 || Math.abs(ev.clientY-downY) > 4) return; // that was a drag
-    var id = at(ev);
-    if(id) show(id); else { picked=null; emptyPanel(); draw(); }
+    var h = atFull(ev);
+    if(h){ pickedSide = h.side; show(h.id); }
+    else { picked=null; pickedSide=0; emptyPanel(); draw(); }
   });
 
   function setView(anatomy){
@@ -1519,7 +1614,7 @@ html.dark .stage{
          wires click handlers onto its related chips, and restoring an innerHTML
          string would hand back dead chips. Detached nodes keep their listeners. */
       if(parked === null) parked = Array.prototype.slice.call(detail.childNodes);
-      picked = null; emptyPanel(); syncSpin(); start();
+      picked = null; pickedSide = 0; hoverId = null; emptyPanel(); syncSpin(); start();
     } else {
       stop();
       detail.innerHTML = "";
