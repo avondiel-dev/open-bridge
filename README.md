@@ -208,7 +208,7 @@ next: Fix the failing UBL-validation case, then open the PR.
 ```
 
 ```markdown
-| 14:22 | Decision | bigcorp | Pinned the schema to v2 — v3 breaks the old exports. |
+| 14:22 | Decision | bigcorp | Pinned the schema to v2: v3 breaks the old exports. |
 ```
 
 That row is in the repo six months from now, in a diff, readable by any agent.
