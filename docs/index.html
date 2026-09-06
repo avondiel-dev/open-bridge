@@ -1604,6 +1604,28 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
   //                          DOM. Preferred: what you copy cannot drift from what you
   //                          read, because there is only one copy of the text.
   // wireCopy(btnId, text)  → copies a literal (legacy; keep the literal in sync by hand).
+  // A copy button that fails silently is worse than no button at all. Clipboard
+  // access is refused on an insecure origin, on a denied permission, and in
+  // Safari when the promise chain loses the user gesture; execCommand returns
+  // false rather than throwing. Every one of those paths lands here: say what
+  // happened, and select the block so the reader can still take the text.
+  function copyFailLabel(long){
+    var de = document.documentElement.getAttribute("data-active-lang") === "de";
+    if(long){ return de ? "nicht kopiert, Prompt unten markiert" : "not copied, prompt selected below"; }
+    return de ? "nicht kopiert" : "not copied";
+  }
+  function selectBlockBody(block){
+    if(!block){ return false; }
+    try{
+      var btn = block.querySelector(".copy-btn");
+      var r = document.createRange();
+      if(btn && btn.parentNode === block){ r.setStartAfter(btn); } else { r.setStart(block, 0); }
+      r.setEnd(block, block.childNodes.length);
+      var sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(r);
+      return true;
+    }catch(e){ return false; }
+  }
   function wireCopy(btnId, text){
     var copyBtn = document.getElementById(btnId);
     if(!copyBtn){ return; }
@@ -1621,14 +1643,21 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
         copyBtn.textContent = "copied";
         setTimeout(function(){ copyBtn.textContent = prev; }, 1400);
       };
+      var fail = function(){
+        var prev = copyBtn.textContent;
+        selectBlockBody(copyBtn.parentNode);
+        copyBtn.textContent = copyFailLabel(false);
+        setTimeout(function(){ copyBtn.textContent = prev; }, 3200);
+      };
       if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(out).then(done, function(){});
+        navigator.clipboard.writeText(out).then(done, fail);
       } else {
         try {
           var ta = document.createElement("textarea");
           ta.value = out; document.body.appendChild(ta); ta.select();
-          document.execCommand("copy"); document.body.removeChild(ta); done();
-        } catch(e){}
+          var ok = document.execCommand("copy"); document.body.removeChild(ta);
+          if(ok){ done(); } else { fail(); }
+        } catch(e){ fail(); }
       }
     });
   }
@@ -1651,14 +1680,21 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
         hero.textContent = lang === "de" ? "kopiert ✓" : "copied ✓";
         setTimeout(function(){ hero.innerHTML = prev; }, 1600);
       };
+      var fail = function(){
+        var prev = hero.innerHTML;
+        selectBlockBody(block);
+        hero.textContent = copyFailLabel(true);
+        setTimeout(function(){ hero.innerHTML = prev; }, 3200);
+      };
       if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(out).then(flash, function(){});
+        navigator.clipboard.writeText(out).then(flash, fail);
       } else {
         try {
           var ta = document.createElement("textarea");
           ta.value = out; document.body.appendChild(ta); ta.select();
-          document.execCommand("copy"); document.body.removeChild(ta); flash();
-        } catch(e){}
+          var ok = document.execCommand("copy"); document.body.removeChild(ta);
+          if(ok){ flash(); } else { fail(); }
+        } catch(e){ fail(); }
       }
       location.hash = "get-started";
     });
