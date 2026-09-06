@@ -218,7 +218,6 @@ section{padding-block:var(--section-y);scroll-margin-top:112px}
   box-shadow:var(--shadow-soft);
   padding:14px 14px 10px;
 }
-html.dark #hero-net .hn-frame{box-shadow:0 6px 18px -8px rgba(0,0,0,.5)}
 #hero-net .hn-stage{position:relative;width:100%}
 /* the brain canvas fills the stage at the old net's 5:4 aspect, transparent
    over the frame surface so it reads on both themes. */
@@ -731,7 +730,7 @@ auf PR #214.</div>
 
         <div style="height:24px"></div>
 
-        <!-- Verbatim README STATUS.md (README lines 84-89) -->
+        <!-- Verbatim README STATUS.md (README lines 203-207) -->
         <div class="code-label"><span>work/tasks/bigcorp-migration/STATUS.md</span><span data-lang="en">verbatim from the README</span><span data-lang="de">wortgetreu aus dem README</span></div>
         <div class="artifact" aria-label="STATUS.md, the shape a task takes">
           <div class="row add"><span class="gut">+</span><span class="ln"><span class="cmt"># STATUS: bigcorp-migration</span></span></div>
@@ -1851,7 +1850,7 @@ schreiben; vor allen destruktiven Aktionen nachfragen.</div>
       var out = payload();
       var done = function(){
         var prev = copyBtn.textContent;
-        copyBtn.textContent = "copied";
+        copyBtn.textContent = (document.documentElement.getAttribute("data-active-lang") === "de") ? "kopiert" : "copied";
         setTimeout(function(){ copyBtn.textContent = prev; }, 1400);
       };
       var fail = function(){
