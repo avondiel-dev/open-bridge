@@ -11,7 +11,12 @@ page has drifted.
 It checks the totals, the per folder counts inside both JS arrays, and the two
 numbers spelled out in the visible captions.
 
-Run: python3 scripts/check-figure-counts.py
+    python3 scripts/check-figure-counts.py            # report drift, exit 1
+    python3 scripts/check-figure-counts.py --write     # rewrite the page to match
+
+A strict census on a moving tree goes red on the next commit that adds a file,
+including the commit that added this script. That is the point, but a gate is
+only worth its friction if clearing it is one command, so --write exists.
 """
 from __future__ import annotations
 
@@ -69,7 +74,41 @@ def section(src: str, var: str) -> str:
     return src[start:src.index("\n  ];", start)]
 
 
+def rewrite(src: str, real_core: dict, real_user: dict, core_total: int, user_total: int) -> str:
+    """Put the recomputed numbers back into the page, in place."""
+    def fix_array(block: str, key: str, real: dict) -> str:
+        def one(m: re.Match) -> str:
+            text = m.group(0)
+            name = re.search(r'n\s*:\s*"([^"]+)"', text)
+            if not name or name.group(1) not in real:
+                return text
+            want = real[name.group(1)]
+            return re.sub(rf"(\b{key}\s*:\s*)\d+", rf"\g<1>{want}", text, count=1)
+        return re.sub(r"\{[^{}]*\}", one, block)
+
+    for var, key, real in (("CORE_ONLY", "c", real_core),
+                           ("PAIRS", "core", real_core),
+                           ("PAIRS", "user", real_user)):
+        block = section(src, var)
+        src = src.replace(block, fix_array(block, key, real), 1)
+
+    # the numbers a reader sees: captions, headers, screen reader text
+    src = re.sub(r"\b\d+ files ship\. \d+ are yours\.",
+                 f"{core_total} files ship. {user_total} are yours.", src)
+    src = re.sub(r"\b\d+ Dateien kommen mit, \d+ sind deine\.",
+                 f"{core_total} Dateien kommen mit, {user_total} sind deine.", src)
+    src = re.sub(r'"\d+ Dateien, alle mitgeliefert" : "\d+ files, all shipped"',
+                 f'"{core_total} Dateien, alle mitgeliefert" : "{core_total} files, all shipped"', src)
+    src = re.sub(r'"\d+ Dateien, alle deine" : "\d+ files, all yours"',
+                 f'"{user_total} Dateien, alle deine" : "{user_total} files, all yours"', src)
+    src = re.sub(r"\b\d+ tracked files, one dot each", f"{core_total} tracked files, one dot each", src)
+    src = re.sub(r"\b\d+ versionierte Dateien, je Datei ein Punkt",
+                 f"{core_total} versionierte Dateien, je Datei ein Punkt", src)
+    return src
+
+
 def main() -> int:
+    write = "--write" in sys.argv
     files = tracked()
     core_files = [f for f in files if not f.startswith("examples/")]
     user_files = [f[len(USER_PREFIX):] for f in files if f.startswith(USER_PREFIX)]
@@ -116,13 +155,24 @@ def main() -> int:
         if phrase not in src:
             problems.append(f"caption missing or stale: {phrase!r}")
 
+    if problems and write:
+        PAGE.write_text(
+            rewrite(src, dict(core_real), dict(user_real), core_total, user_total),
+            encoding="utf-8",
+        )
+        print(f"docs/explore.html rewritten: {len(problems)} number(s) brought back to the tree.")
+        print("Re-run without --write to confirm, and read the diff before committing:")
+        for p in problems:
+            print(f"  {p}")
+        return 0
+
     if problems:
         print("docs/explore.html has drifted from the tree:\n", file=sys.stderr)
         for p in problems:
             print(f"  {p}", file=sys.stderr)
         print(
-            "\nFix the PAIRS / CORE_ONLY arrays and the captions in "
-            "docs/explore.html, then run this again.",
+            "\nRun `python3 scripts/check-figure-counts.py --write` to bring the page "
+            "back to the tree, then read the diff.",
             file=sys.stderr,
         )
         return 1
