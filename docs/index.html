@@ -370,6 +370,11 @@ html.dark .tile .demo{background:var(--code-bg)}
 .dg-flow.user{stroke:var(--accent)}
 .dg-flow.core{stroke:var(--accent-secondary)}
 .dg-flow.promote{stroke:url(#dgGrad)}
+/* The refusal. The promote arc marches; this one is deliberately still, and
+   the contrast between moving and not moving carries the claim. */
+.dg-flow.blocked{stroke:var(--muted);opacity:.85}
+.dg-bound{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:4 6;opacity:.7}
+.dg-x{fill:var(--attention-text);font:600 15px var(--font-mono)}
 .dg-box{fill:var(--surface-subtle);stroke:var(--line);stroke-width:1}
 .dg-merge{fill:var(--surface);stroke:var(--accent-text);stroke-width:1.4}
 .dg-lbl{fill:var(--on-surface);font:500 13px var(--font-sans)}
@@ -378,6 +383,7 @@ html.dark .tile .demo{background:var(--code-bg)}
 .dg-mono{font:400 11px var(--font-mono)}
 @media (prefers-reduced-motion:no-preference){
   .diagram-frame.in .dg-flow{animation:dg-flow-anim 1.4s linear infinite}
+  .diagram-frame.in .dg-flow.blocked{animation:none}
 }
 @keyframes dg-flow-anim{to{stroke-dashoffset:-28}}
 
@@ -1136,7 +1142,7 @@ auf PR #214.</div>
 
     <!-- Disjoint-tracks → conflict-free merge (page-chrome tokens, animated dashoffset) -->
     <div class="diagram-frame reveal" role="img"
-         aria-label="Two git tracks over disjoint file paths: the user branch carries bridge-config, work/, personas and accounts; the CORE branch carries skills, docs, schemas and examples. Because the paths never overlap, the two merge without conflict, and a single scope:core file is promoted upstream.">
+         aria-label="Two git tracks over disjoint file paths: the user branch carries bridge-config, work/, personas and accounts; the CORE branch carries skills, docs, schemas and examples. Because the paths never overlap, the two merge without conflict, and a single scope:core file is promoted upstream. A dashed boundary marks the public upstream: the scope:core file crosses it, while the scope:user branch stops at it and stays local.">
       <svg viewBox="0 0 640 280" preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="dgGrad" x1="0" y1="0" x2="1" y2="0">
@@ -1170,6 +1176,15 @@ auf PR #214.</div>
         <path d="M401 146 l8 8 l14 -16" fill="none" stroke="var(--accent-text)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
         <text class="dg-cap" x="412" y="200" text-anchor="middle"><tspan data-lang="en">conflict-free merge</tspan><tspan data-lang="de">konfliktfreier Merge</tspan></text>
         <text class="dg-sub" x="412" y="216" text-anchor="middle"><tspan data-lang="en">paths never overlap</tspan><tspan data-lang="de">Pfade überlappen nie</tspan></text>
+
+        <!-- The refusal: scope:user reaches the upstream edge and stops there.
+             Kept clear of the /promote box above it, so the two read apart. -->
+        <text class="dg-cap" x="546" y="164" text-anchor="middle"><tspan data-lang="en">upstream</tspan><tspan data-lang="de">upstream</tspan></text>
+        <path class="dg-bound" d="M546 174 V248"/>
+        <path class="dg-flow blocked" d="M436 162 C478 178 500 196 522 207"/>
+        <text class="dg-x" x="546" y="212" text-anchor="middle">✕</text>
+        <text class="dg-mono" x="530" y="236" text-anchor="end" fill="var(--accent-text)">scope:user</text>
+        <text class="dg-sub" x="530" y="251" text-anchor="end"><tspan data-lang="en">stays local</tspan><tspan data-lang="de">bleibt lokal</tspan></text>
 
         <!-- /promote one core file upstream -->
         <path class="dg-flow promote" d="M438 132 C500 96 540 96 588 96"/>
