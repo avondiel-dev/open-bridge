@@ -86,11 +86,29 @@ def rewrite(src: str, real_core: dict, real_user: dict, core_total: int, user_to
             return re.sub(rf"(\b{key}\s*:\s*)\d+", rf"\g<1>{want}", text, count=1)
         return re.sub(r"\{[^{}]*\}", one, block)
 
+    def fix_prose(block: str, num_key: str, prose_keys: tuple) -> str:
+        def one(m: re.Match) -> str:
+            text = m.group(0)
+            num = re.search(rf"\b{num_key}\s*:\s*(\d+)", text)
+            if not num:
+                return text
+            for pk in prose_keys:
+                text = re.sub(rf'({pk}\s*:\s*")\d+ ', rf"\g<1>{num.group(1)} ", text, count=1)
+            return text
+        return re.sub(r"\{[^{}]*\}", one, block)
+
     for var, key, real in (("CORE_ONLY", "c", real_core),
                            ("PAIRS", "core", real_core),
                            ("PAIRS", "user", real_user)):
         block = section(src, var)
         src = src.replace(block, fix_array(block, key, real), 1)
+
+    # the sentence follows the field it describes
+    for var, num_key, prose_keys in (("CORE_ONLY", "c", ("d_en", "d_de")),
+                                     ("PAIRS", "core", ("c_en", "c_de")),
+                                     ("PAIRS", "user", ("u_en", "u_de"))):
+        block = section(src, var)
+        src = src.replace(block, fix_prose(block, num_key, prose_keys), 1)
 
     # the numbers a reader sees: captions, headers, screen reader text
     src = re.sub(r"\b\d+ files ship\. \d+ are yours\.",
@@ -148,6 +166,28 @@ def main() -> int:
         problems.append(
             f"USER total: figure sums to {sum(drawn_user.values())}, tree has {user_total}"
         )
+
+    # The prose beside a count quotes the same number, and --write used to fix
+    # the field while leaving the sentence saying something else. A figure whose
+    # chip says 112 next to a sentence saying 111 is worse than either alone.
+    for var, pairs in (("CORE_ONLY", (("c", ("d_en", "d_de")),)),
+                       ("PAIRS", (("core", ("c_en", "c_de")), ("user", ("u_en", "u_de"))))):
+        for entry in re.finditer(r"\{[^{}]*\}", section(src, var)):
+            text = entry.group(0)
+            name = re.search(r'n\s*:\s*"([^"]+)"', text)
+            if not name:
+                continue
+            for num_key, prose_keys in pairs:
+                num = re.search(rf"\b{num_key}\s*:\s*(\d+)", text)
+                if not num:
+                    continue
+                for pk in prose_keys:
+                    said = re.search(rf'{pk}\s*:\s*"(\d+) ', text)
+                    if said and said.group(1) != num.group(1):
+                        problems.append(
+                            f"{name.group(1)} {pk}: the sentence says {said.group(1)}, "
+                            f"the count says {num.group(1)}"
+                        )
 
     # every example path the figure names has to be a file that exists. A
     # renamed skill would otherwise leave a dead path on a public page, and the
