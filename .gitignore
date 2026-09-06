@@ -158,3 +158,8 @@ work/state.json
 # scripts/okf-export.py output — exported bundles may contain USER PII (work/ STATUS.md, deliverables); never commit.
 dist/
 okf/
+
+# Local render previews of docs/*.html, written while checking a figure in a
+# headless browser. They are copies of a page with a probe script spliced in and
+# have no business in the repo; three of them rode in on a `git add -A` once.
+docs/_*.html
