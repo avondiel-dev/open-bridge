@@ -1209,6 +1209,12 @@ html.dark .stage{
   var W=0, H=0, DPR=1, S=0, CX=0, CY=0, FOCAL=2.6;
   var ry=0.35, rx=-0.12, spin=0;
   var P=null, N=0, hits=[], picked=null, pickedSide=0, hoverId=null, hoverSide=0;
+  /* Every particle carries its own drift, the way the tool this view comes from
+     gives each one a velocity. Standing perfectly still read as dead. A lookup
+     table rather than 25000 Math.sin calls a frame. */
+  var SIN = new Float32Array(1024);
+  for(var si=0; si<1024; si++) SIN[si] = Math.sin(si/1024*6.283185307);
+  var clock = 0, breathe = 1;
 
   function measure(){
     var r = wrap.getBoundingClientRect();
@@ -1242,7 +1248,9 @@ html.dark .stage{
           }
           if(!ok) continue;
         }
-        pts.push({ x:x, y:y, z:z, s:side, id:b.id, f:1, r:0.9+rnd()*0.7, b:0.72+rnd()*0.28 });
+        pts.push({ x:x, y:y, z:z, s:side, id:b.id, f:1, r:0.9+rnd()*0.7, b:0.72+rnd()*0.28,
+                   ph:rnd()*1024, sp:0.55+rnd()*0.9,
+                   ax:(rnd()-0.5)*0.020, ay:(rnd()-0.5)*0.020, az:(rnd()-0.5)*0.016 });
         got++;
       }
     }
@@ -1261,6 +1269,8 @@ html.dark .stage{
       // the band across the midline: the folders that exist on both sides
       var seam = Math.abs(x)<0.11 && Math.abs(y)<0.16 && Math.abs(z)<0.22;
       pts.push({ x:x, y:y, z:z, s:(x<0?-1:1), id:"", f:0, seam:seam?1:0, bk:placed % 12,
+                 ph:rnd()*1024, sp:0.4+rnd()*0.8,
+                 ax:(rnd()-0.5)*0.026, ay:(rnd()-0.5)*0.026, az:(rnd()-0.5)*0.020,
                  r:seam ? 0.85+rnd()*0.5 : 0.62+rnd()*0.45,
                  b:seam ? 0.55+rnd()*0.3 : 0.22+rnd()*0.2 });
       placed++;
@@ -1295,7 +1305,7 @@ html.dark .stage{
         FG=tok("--viz-fg"), DIM=tok("--viz-fg-dim"), PANEL=tok("--viz-panel");
     ctx.setTransform(DPR,0,0,DPR,0,0);
     ctx.clearRect(0,0,W,H);
-    var small = W < 620, i, p, q;
+    var small = W < 620, i, p, q, k;
     /* hover focuses, a click locks it: the knot stays lit after the pointer leaves */
     var focusId = hoverId || picked, focusSide = hoverId ? hoverSide : pickedSide;
 
@@ -1321,7 +1331,13 @@ html.dark .stage{
     var core = { c:new Path2D(), u:new Path2D() };
     var hotGlow = new Path2D(), hotCore = new Path2D();
     for(i=0;i<N;i++){
-      p=P[i]; q=project(p.x,p.y,p.z);
+      p=P[i];
+      if(breathe){
+        var w = SIN[(p.ph + clock*p.sp) & 1023];
+        q = project(p.x + p.ax*w, p.y + p.ay*w, p.z + p.az*w);
+      } else {
+        q = project(p.x, p.y, p.z);
+      }
       if(q[3] >= FOCAL-0.05) continue;
       var r = p.r * q[2] * (small ? 0.85 : 1);
       if(!p.f){
@@ -1351,6 +1367,49 @@ html.dark .stage{
       var HOT = focusSide < 0 ? CORECOL : USERCOL;
       ctx.fillStyle=hexa(HOT,0.20); ctx.fill(hotGlow);
       ctx.fillStyle=hexa(FG,0.95);  ctx.fill(hotCore);
+    }
+    ctx.globalCompositeOperation = "source-over";
+
+    /* Traffic across the seam. Each of the six shared folders has an arc from its
+       CORE position to its USER position, bent through the bridge node, because
+       that is where the two branches actually meet. A pulse runs along it, cyan
+       to amber where a template becomes your file, amber to cyan where a
+       scope:core change goes back upstream with /promote. Three arcs each way:
+       the traffic is two directional and so is the model. */
+    ctx.globalCompositeOperation = "lighter";
+    for(i=0;i<PAIRS.length;i++){
+      var pr = PAIRS[i], back = (i % 2) === 1;
+      var a0x = back ? pr.x : -pr.x, a1x = back ? -pr.x : pr.x;
+      var cpx = 0, cpy = pr.y*0.30, cpz = pr.z*0.30 + 0.06;
+      var seg = 22, prev = null, u, bx2, by2, bz2, sp2;
+      ctx.strokeStyle = hexa(FG, 0.17); ctx.lineWidth = 1;
+      ctx.beginPath();
+      for(k=0;k<=seg;k++){
+        u = k/seg;
+        var iu = 1-u;
+        bx2 = iu*iu*a0x + 2*iu*u*cpx + u*u*a1x;
+        by2 = iu*iu*pr.y + 2*iu*u*cpy + u*u*pr.y;
+        bz2 = iu*iu*pr.z + 2*iu*u*cpz + u*u*pr.z;
+        sp2 = project(bx2,by2,bz2);
+        if(k===0) ctx.moveTo(sp2[0],sp2[1]); else ctx.lineTo(sp2[0],sp2[1]);
+      }
+      ctx.stroke();
+      if(!breathe) continue;                       // paused means paused
+      var pu = ((t*0.11 + i*0.1667) % 1);
+      var iu2 = 1-pu;
+      bx2 = iu2*iu2*a0x + 2*iu2*pu*cpx + pu*pu*a1x;
+      by2 = iu2*iu2*pr.y + 2*iu2*pu*cpy + pu*pu*pr.y;
+      bz2 = iu2*iu2*pr.z + 2*iu2*pu*cpz + pu*pu*pr.z;
+      sp2 = project(bx2,by2,bz2);
+      if(sp2[3] >= FOCAL-0.05) continue;
+      var from = back ? USERCOL : CORECOL, to = back ? CORECOL : USERCOL;
+      var col = pu < 0.5 ? from : to;
+      var fade = Math.sin(pu*3.14159265);          // in at the start, out at the end
+      var pr2 = (small ? 1.7 : 2.2) * sp2[2];
+      ctx.fillStyle = hexa(col, 0.10*fade);
+      ctx.beginPath(); ctx.arc(sp2[0],sp2[1],pr2*3.6,0,6.283185307); ctx.fill();
+      ctx.fillStyle = hexa(col, 0.95*fade);
+      ctx.beginPath(); ctx.arc(sp2[0],sp2[1],pr2,0,6.283185307); ctx.fill();
     }
     ctx.globalCompositeOperation = "source-over";
 
@@ -1503,32 +1562,34 @@ html.dark .stage{
 
      Radians per SECOND, not per frame: the same increment on a 120 Hz display
      turns twice as fast, and the reader's monitor is not a design input. */
-  var TURN = 0.016, SPIN = 0.08;
+  var SWAY = 0.26, SWAY_PERIOD = 78, SPIN = 0.16;
   /* The turn is bounded, and that is a correctness fix rather than a taste one.
      The figure asserts left is CORE and right is USER, and the two headers in
      the bottom corners say so in words. Turned past a quarter circle the halves
      cross over and those words become false. So the body sways inside a window
      wide enough to read as a solid and too narrow to swap its sides; the drift
      turns around when it reaches the edge. */
-  var YAW_MAX = 0.62, PITCH_MAX = 0.42, dir = 1;
-  var spinning = false, raf=null, active=false, onScreen=true, dragging=false, last=0;
+  var YAW_MAX = 0.62, PITCH_MAX = 0.42, t = 0, ryBase = 0.35;
+  var spinning = !reduceMQ.matches, raf=null, active=false, onScreen=true, dragging=false, last=0;
   function frame(now){
     var dt = last ? Math.min(0.1, (now-last)/1000) : 0;
-    last = now;
-    if(spinning && !dragging){
-      ry += dt*TURN*dir; spin += dt*SPIN;
-      if(ry > YAW_MAX){ ry = YAW_MAX; dir = -1; }
-      if(ry < -YAW_MAX){ ry = -YAW_MAX; dir = 1; }
-    }
+    last = now; t += dt; clock += dt*160;
+    spin += dt*SPIN;
+    /* The body sways rather than turns: a sine, so it eases at both ends
+       instead of hitting a wall and bouncing, and never wide enough to put
+       CORE on the right while the header underneath still says left. */
+    ry = Math.max(-YAW_MAX, Math.min(YAW_MAX,
+         ryBase + Math.sin(t/SWAY_PERIOD*6.283185307)*SWAY));
     draw();
-    raf = spinning && !dragging ? requestAnimationFrame(frame) : null;
+    raf = requestAnimationFrame(frame);
   }
   function stop(){ if(raf) cancelAnimationFrame(raf); raf=null; }
   function play(){ if(raf || !active || !onScreen || !spinning) return; last=0; raf=requestAnimationFrame(frame); }
+  function stillFrame(){ breathe = 0; draw(); breathe = 1; }
   function syncSpin(){
     if(!spinBtn) return;
     var de = L()==="de";
-    spinBtn.textContent = spinning ? (de?"Pause":"Pause") : (de?"Drehen":"Rotate");
+    spinBtn.textContent = spinning ? (de?"Pause":"Pause") : (de?"Bewegen":"Animate");
     spinBtn.setAttribute("aria-pressed", spinning ? "true" : "false");
   }
   function start(){
@@ -1544,7 +1605,8 @@ html.dark .stage{
   function down(x,y){ dragging=true; lastX=x; lastY=y; stop(); cv.style.cursor="grabbing"; }
   function move(x,y){
     if(!dragging) return;
-    ry = Math.max(-YAW_MAX, Math.min(YAW_MAX, ry + (x-lastX)*0.007));
+    ryBase = Math.max(-YAW_MAX, Math.min(YAW_MAX, ryBase + (x-lastX)*0.007));
+    ry = ryBase;
     rx = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, rx + (y-lastY)*0.005));
     lastX=x; lastY=y; draw();
   }
