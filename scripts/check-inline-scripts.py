@@ -80,7 +80,12 @@ def check(body: str) -> str | None:
 
 
 def main() -> int:
-    if subprocess.run(["node", "--version"], capture_output=True).returncode != 0:
+    # A missing binary raises rather than returning non-zero, so the guard that
+    # was meant to skip gracefully crashed the check instead.
+    try:
+        if subprocess.run(["node", "--version"], capture_output=True).returncode != 0:
+            raise OSError("node --version failed")
+    except OSError:
         print("check-inline-scripts: node is not available, skipping", file=sys.stderr)
         return 0
 
