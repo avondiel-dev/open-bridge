@@ -1664,6 +1664,15 @@ html.dark .stage{
 })();
 </script>
 
+<script>(function(){var n=0;function tick(){if(++n<5){requestAnimationFrame(tick);return;}
+  var c=document.getElementById("brain"), r=c.getBoundingClientRect();
+  var cx=r.left+r.width/2, cy=r.top+r.height/2;
+  c.dispatchEvent(new PointerEvent("pointerdown",{clientX:cx,clientY:cy,bubbles:true,pointerId:1}));
+  for(var k=1;k<=40;k++) c.dispatchEvent(new PointerEvent("pointermove",{clientX:cx+k*20,clientY:cy,bubbles:true,pointerId:1}));
+  c.dispatchEvent(new PointerEvent("pointerup",{clientX:cx+800,clientY:cy,bubbles:true,pointerId:1}));
+  var p=document.createElement("div");p.style.cssText="position:fixed;left:8px;bottom:8px;z-index:9999;color:#0f0;font:12px monospace";
+  p.textContent="dragged 800px right, far past any sane drag";document.body.appendChild(p);
+}requestAnimationFrame(tick);})();</script>
   <script defer src="assets/agent-config.js"></script>
   <script defer src="assets/agent-widget.js"></script>
 </body>

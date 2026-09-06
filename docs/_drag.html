@@ -1504,22 +1504,11 @@ html.dark .stage{
      Radians per SECOND, not per frame: the same increment on a 120 Hz display
      turns twice as fast, and the reader's monitor is not a design input. */
   var TURN = 0.016, SPIN = 0.08;
-  /* The turn is bounded, and that is a correctness fix rather than a taste one.
-     The figure asserts left is CORE and right is USER, and the two headers in
-     the bottom corners say so in words. Turned past a quarter circle the halves
-     cross over and those words become false. So the body sways inside a window
-     wide enough to read as a solid and too narrow to swap its sides; the drift
-     turns around when it reaches the edge. */
-  var YAW_MAX = 0.62, PITCH_MAX = 0.42, dir = 1;
   var spinning = false, raf=null, active=false, onScreen=true, dragging=false, last=0;
   function frame(now){
     var dt = last ? Math.min(0.1, (now-last)/1000) : 0;
     last = now;
-    if(spinning && !dragging){
-      ry += dt*TURN*dir; spin += dt*SPIN;
-      if(ry > YAW_MAX){ ry = YAW_MAX; dir = -1; }
-      if(ry < -YAW_MAX){ ry = -YAW_MAX; dir = 1; }
-    }
+    if(spinning && !dragging){ ry += dt*TURN; spin += dt*SPIN; }
     draw();
     raf = spinning && !dragging ? requestAnimationFrame(frame) : null;
   }
@@ -1544,8 +1533,8 @@ html.dark .stage{
   function down(x,y){ dragging=true; lastX=x; lastY=y; stop(); cv.style.cursor="grabbing"; }
   function move(x,y){
     if(!dragging) return;
-    ry = Math.max(-YAW_MAX, Math.min(YAW_MAX, ry + (x-lastX)*0.007));
-    rx = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, rx + (y-lastY)*0.005));
+    ry += (x-lastX)*0.007;
+    rx = Math.max(-0.85, Math.min(0.85, rx + (y-lastY)*0.005));
     lastX=x; lastY=y; draw();
   }
   function up(){ if(!dragging) return; dragging=false; cv.style.cursor=""; play(); }
@@ -1664,6 +1653,17 @@ html.dark .stage{
 })();
 </script>
 
+<script>(function(){var n=0;function tick(){if(++n<5){requestAnimationFrame(tick);return;}
+  var c=document.getElementById("brain"), r=c.getBoundingClientRect();
+  var cx=r.left+r.width/2, cy=r.top+r.height/2;
+  c.dispatchEvent(new PointerEvent("pointerdown",{clientX:cx,clientY:cy,bubbles:true,pointerId:1}));
+  for(var k=1;k<=14;k++) c.dispatchEvent(new PointerEvent("pointermove",{clientX:cx+k*11,clientY:cy-k*2,bubbles:true,pointerId:1}));
+  c.dispatchEvent(new PointerEvent("pointerup",{clientX:cx+154,clientY:cy-28,bubbles:true,pointerId:1}));
+  var p=document.createElement("div");
+  p.style.cssText="position:fixed;left:8px;bottom:8px;z-index:9999;color:#0f0;font:12px monospace";
+  p.textContent="dragged 154px right";
+  document.body.appendChild(p);
+}requestAnimationFrame(tick);})();</script>
   <script defer src="assets/agent-config.js"></script>
   <script defer src="assets/agent-widget.js"></script>
 </body>
