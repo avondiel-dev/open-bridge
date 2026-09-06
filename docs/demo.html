@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  BKS open-bridge — animated session demo (single-file, offline, no deps).
+  BKS open-bridge: animated session demo (single-file, offline, no deps).
   FOUR chapters, each replays a FORMAT-FAITHFUL Bridge flow from BKS-Lab's own
   instance (the team behind BKS open-bridge). REAL: ELOPe, BKS-Lab, logo, branch,
   internal public repos, stack. GENERIC: client names (none shown). NEVER: customer
@@ -14,19 +14,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BKS open-bridge — live session demo</title>
+<title>BKS open-bridge: live session demo</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="assets/favicon.ico" sizes="16x16 32x32 48x48">
-<meta name="description" content="Watch BKS open-bridge run — four format-faithful session flows (briefing, session-start, operator incident, onboarding) replayed from BKS-Lab's own instance. Offline, no deps.">
+<meta name="description" content="Watch BKS open-bridge run: four format-faithful session flows (briefing, session-start, operator incident, onboarding) replayed from BKS-Lab's own instance. Offline, no deps.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="BKS open-bridge — live session demo">
+<meta property="og:title" content="BKS open-bridge: live session demo">
 <meta property="og:description" content="Four format-faithful BKS open-bridge session flows, replayed live. Offline, no deps.">
 <meta property="og:url" content="https://bks-lab.github.io/open-bridge/demo.html">
 <meta property="og:image" content="https://bks-lab.github.io/open-bridge/social-preview.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="BKS open-bridge — live session demo">
+<meta name="twitter:title" content="BKS open-bridge: live session demo">
 <meta name="twitter:description" content="Four format-faithful BKS open-bridge session flows, replayed live. Offline, no deps.">
 
 <script>
@@ -69,7 +69,7 @@
 </script>
 
 <style>
-/* ─── Brand tokens — from DESIGN.md (design-to-css.py). Do not hand-edit. ─── */
+/* ─── Brand tokens from DESIGN.md (design-to-css.py). Do not hand-edit. ─── */
 :root{
   --ink:#111827; --muted:#6B7280;
   --surface:#FFFFFF; --surface-subtle:#F9FAFB; --surface-muted:#F3F4F6;
@@ -170,7 +170,7 @@ html.anim #source{display:none}
 .caption{font-size:12.5px;color:var(--muted);max-width:80ch;margin:14px 0 0}
 .caption code{font-family:var(--font-mono)}
 .skip-hint{margin:8px 0 0;font-size:12px;color:var(--muted)}
-/* one-shot money-line highlight — existing accent token, no permanent glow */
+/* one-shot money-line highlight: existing accent token, no permanent glow */
 html.anim .line.money.show{animation:moneyFlash 1.4s ease-out 1}
 @keyframes moneyFlash{0%,30%{background:var(--accent-soft)}100%{background:transparent}}
 
@@ -179,7 +179,7 @@ html.anim .line.money.show{animation:moneyFlash 1.4s ease-out 1}
 #source .lines{padding:16px 18px;font-family:var(--font-mono);font-size:13px;line-height:1.6;overflow-x:auto}
 #source .line{opacity:1;transform:none}
 
-/* ─── Funnel CTA (end of page) — bilingual via the shared ob-lang choice; EN is the no-JS default ─── */
+/* ─── Funnel CTA (end of page): bilingual via the shared ob-lang choice; EN is the no-JS default ─── */
 [data-lang="de"]{display:none}
 html[data-active-lang="de"] [data-lang="en"]{display:none}
 html[data-active-lang="de"] [data-lang="de"]{display:revert}
@@ -231,7 +231,7 @@ footer.foot code{font-family:var(--font-mono)}
   <header class="doc">
     <div class="eyebrow">BKS open-bridge · live demo</div>
     <h1>What a real session <span class="grad">looks like</span></h1>
-    <p class="lead">Four flows from the team that builds BKS open-bridge — replayed from BKS-Lab's own instance. Branding and work are real; client names are kept generic. The formats are exactly what a live session prints: the morning greeting, the briefing dashboard, an incident handed to a specialist, and first-run onboarding.</p>
+    <p class="lead">Four flows from the team that builds BKS open-bridge, replayed from BKS-Lab's own instance. Branding and work are real; client names are kept generic. The formats are exactly what a live session prints: the morning greeting, the briefing dashboard, an incident handed to a specialist, and first-run onboarding.</p>
   </header>
 
   <div id="stage">
@@ -254,13 +254,13 @@ footer.foot code{font-family:var(--font-mono)}
     </p>
   </div>
 
-  <!-- ════ SOURCE OF TRUTH / NO-JS FALLBACK — four chapters ════ -->
+  <!-- ════ SOURCE OF TRUTH / NO-JS FALLBACK: four chapters ════ -->
   <div id="source">
 
-    <!-- ───── Chapter 1: Morning — session start ───── -->
+    <!-- ───── Chapter 1: Morning (session start) ───── -->
     <div class="chap" data-title="Morning"
-         data-sub="<b>Session start.</b> Not a status dump — a briefing: an overnight CI failure, its collision with today's 14:00 review, and an answer quoted from a dated log row.">
-      <h3 class="chap-h">① Morning — session start</h3>
+         data-sub="<b>Session start.</b> Not a status dump but a briefing: an overnight CI failure, its collision with today's 14:00 review, and an answer quoted from a dated log row.">
+      <h3 class="chap-h">① Morning: session start</h3>
       <div class="lines">
         <div class="line cmd" data-type data-after="250"><span class="pr">$</span> <span class="ti">cd ~/Developer/bks/your-bridge</span></div>
         <div class="line fx logo" data-block><span class="c1"> ██████╗ </span><span class="c2">██╗  ██╗</span><span class="c1">███████╗</span></div>
@@ -278,7 +278,7 @@ footer.foot code{font-family:var(--font-mono)}
         <div class="line fx" data-block data-after="200">  <span class="ag">◆</span> 14:00  Launch review · BKS open-bridge live demo · 60m</div>
         <div class="line" data-after="150">🔴 2 waiting for your review     ⚠ WIP 5/5</div>
         <div class="line gap"></div>
-        <div class="line fx fr" data-block>┌─ <span class="lbl">Doing — BKS-Lab</span> <span class="fr">─────────────────────────────┐</span></div>
+        <div class="line fx fr" data-block>┌─ <span class="lbl">Doing · BKS-Lab</span> <span class="fr">─────────────────────────────┐</span></div>
         <div class="line fx" data-block><span class="fr">│</span>  <span class="ag">●</span> open-bridge-launch  distribution + live demo  <span class="fr">│</span></div>
         <div class="line fx" data-block><span class="fr">│</span>  <span class="ag">●</span> bridge-deck         calendar timeline view     <span class="fr">│</span></div>
         <div class="line fx" data-block><span class="fr">│</span>  <span class="ag">●</span> bks-news            weekly briefing automation  <span class="fr">│</span></div>
@@ -287,30 +287,30 @@ footer.foot code{font-family:var(--font-mono)}
         <div class="line cmd" data-type data-after="300"><span class="pr">$</span> <span class="ti">claude</span></div>
         <div class="line fx dim" data-block>&lt;bridge-phase0&gt;</div>
         <div class="line fx dim" data-block>  state=<span class="ok">NORMAL</span> · branch=user/alex · config=yes</div>
-        <div class="line fx dim" data-block>  3 CORE commits ahead — offer `git merge development`</div>
+        <div class="line fx dim" data-block>  3 CORE commits ahead: offer `git merge development`</div>
         <div class="line fx dim" data-block data-after="300">&lt;/bridge-phase0&gt;</div>
         <div class="line cmd" data-type data-after="300"><span class="pr">&gt;</span> <span class="ti">good morning</span></div>
         <div class="line scene" data-after="350"><span class="ti">Morning. Three things since last night:</span></div>
-        <div class="line"><span class="ti">1. 02:14 — CI went red on BKS open-bridge main: the release publish step</span></div>
-        <div class="line" data-after="400"><span class="ti">   flaked. Same failure you fixed Tuesday — that fix never reached main.</span></div>
-        <div class="line"><span class="ti">2. Pages deploys from main, so the live demo hasn't rebuilt since 02:14 —</span></div>
+        <div class="line"><span class="ti">1. 02:14, CI went red on BKS open-bridge main: the release publish step</span></div>
+        <div class="line" data-after="400"><span class="ti">   flaked. Same failure you fixed Tuesday. That fix never reached main.</span></div>
+        <div class="line"><span class="ti">2. Pages deploys from main, so the live demo hasn't rebuilt since 02:14,</span></div>
         <div class="line" data-after="400"><span class="ti">   and your 14:00 launch review walks exactly that page.</span></div>
-        <div class="line"><span class="ti">3. PR #61 (bridge-deck) hits day 4 today — your own three-day review</span></div>
+        <div class="line"><span class="ti">3. PR #61 (bridge-deck) hits day 4 today: your own three-day review</span></div>
         <div class="line" data-after="450"><span class="ti">   rule fired yesterday.</span></div>
-        <div class="line money"><span class="ti">Suggest: merge the retry fix first — ~15 min, and Pages rebuilds well</span></div>
+        <div class="line money"><span class="ti">Suggest: merge the retry fix first (~15 min), and Pages rebuilds well</span></div>
         <div class="line" data-after="550"><span class="ti">before 14:00. Demo prep second, #61 review after. Want the diff summary?</span></div>
         <div class="line cmd" data-type data-after="250"><span class="pr">&gt;</span> <span class="ti">what did I fix on tuesday?</span></div>
-        <div class="line" data-after="250"><span class="ti">One row from </span><span class="k">work/log.md</span><span class="ti"> — Tue 24.06:</span></div>
-        <div class="line fx" data-after="450">  <span class="dim">| 14:32 | 🔧 | BKS open-bridge |</span> release publish flaked 3× — pinned retry backoff in <span class="k">release.yml</span>. Config, not code. <span class="dim">|</span></div>
-        <div class="line"><span class="ti">Same root cause, red on main since 02:14 — the pin never left</span></div>
+        <div class="line" data-after="250"><span class="ti">One row from </span><span class="k">work/log.md</span><span class="ti">, Tue 24.06:</span></div>
+        <div class="line fx" data-after="450">  <span class="dim">| 14:32 | 🔧 | BKS open-bridge |</span> release publish flaked 3×: pinned retry backoff in <span class="k">release.yml</span>. Config, not code. <span class="dim">|</span></div>
+        <div class="line"><span class="ti">Same root cause, red on main since 02:14. The pin never left</span></div>
         <div class="line" data-after="450"><span class="ti">fix/release-retry. One merge and tonight's 02:14 run is green again.</span></div>
       </div>
     </div>
 
     <!-- ───── Chapter 2: /briefing ───── -->
     <div class="chap" data-title="Briefing"
-         data-sub="<b>/briefing.</b> A 76-column dashboard — warnings, focus, trackers, PRs, 7-day activity, calendar, next steps — generated from plain Markdown + YAML.">
-      <h3 class="chap-h">② /briefing — the daily dashboard</h3>
+         data-sub="<b>/briefing.</b> A 76-column dashboard (warnings, focus, trackers, PRs, 7-day activity, calendar, next steps) generated from plain Markdown + YAML.">
+      <h3 class="chap-h">② /briefing: the daily dashboard</h3>
       <div class="lines">
         <div class="line cmd" data-type data-after="300"><span class="pr">&gt;</span> <span class="ti">/briefing</span></div>
         <div class="line fx fr" data-block>╭──────────────────────────────────────────────────────────╮</div>
@@ -319,7 +319,7 @@ footer.foot code{font-family:var(--font-mono)}
         <div class="line fx fr" data-block data-after="250">╰──────────────────────────────────────────────────────────╯</div>
         <div class="line gap"></div>
         <div class="line fx dim" data-block>── ⚠ Warnings ──────────────────────────────────────────────</div>
-        <div class="line fx money" data-block>  🟡 WIP 5/5 — at cap; close or reclassify before new work</div>
+        <div class="line fx money" data-block>  🟡 WIP 5/5 at cap; close or reclassify before new work</div>
         <div class="line fx" data-block data-after="200">  🟡 Tailscale node-key expires in 18 days</div>
         <div class="line gap"></div>
         <div class="line fx dim" data-block>── Focus today ─────────────────────────────────────────────</div>
@@ -336,7 +336,7 @@ footer.foot code{font-family:var(--font-mono)}
         <div class="line fx" data-block data-after="200">  #18  launch demo            BKS open-bridge    ↑ alex  3h</div>
         <div class="line gap"></div>
         <div class="line fx dim" data-block>── Activity (7 days) ───────────────────────────────────────</div>
-        <div class="line fx" data-block data-after="200">  44 commits — BKS open-bridge 24 · bridge-deck 13 · bks-news 7</div>
+        <div class="line fx" data-block data-after="200">  44 commits: BKS open-bridge 24 · bridge-deck 13 · bks-news 7</div>
         <div class="line gap"></div>
         <div class="line fx dim" data-block>── Calendar today ──────────────────────────────────────────</div>
         <div class="line fx" data-block data-after="200">  <span class="ag">◆</span> 11:00  Weekly · BKS-Lab · 45m</div>
@@ -348,27 +348,27 @@ footer.foot code{font-family:var(--font-mono)}
       </div>
     </div>
 
-    <!-- ───── Chapter 3: Operator — find the bug, TDD the fix, ship (UAT autonomous, prod gated) ───── -->
+    <!-- ───── Chapter 3: Operator, find the bug, TDD the fix, ship (UAT autonomous, prod gated) ───── -->
     <div class="chap" data-title="Operator"
-         data-sub="<b>Incident → code fix.</b> The log-analyst pinpoints the bug in the code; the agent writes a failing test (red), fixes it (green), passes suite, lint and types, ships to UAT — and stops at the prod gate.">
-      <h3 class="chap-h">③ Operator — find the bug, TDD the fix, ship</h3>
+         data-sub="<b>Incident → code fix.</b> The log-analyst pinpoints the bug in the code; the agent writes a failing test (red), fixes it (green), passes suite, lint and types, ships to UAT, and stops at the prod gate.">
+      <h3 class="chap-h">③ Operator: find the bug, TDD the fix, ship</h3>
       <div class="lines">
-        <div class="line cmd" data-type data-after="300"><span class="pr">&gt;</span> <span class="ti">inbound invoices aren't booking — what happened?</span></div>
+        <div class="line cmd" data-type data-after="300"><span class="pr">&gt;</span> <span class="ti">inbound invoices aren't booking, what happened?</span></div>
         <div class="line" data-block><span class="ti">Loading the e-invoicing ops playbook. Dispatching the log-analyst against</span></div>
-        <div class="line" data-block data-after="250"><span class="ti">the last 3h of fn-invoicing-in-prd logs — read-only, isolated.</span></div>
+        <div class="line" data-block data-after="250"><span class="ti">the last 3h of fn-invoicing-in-prd logs (read-only, isolated).</span></div>
         <div class="line dim" data-after="500">  <span class="spin">◐</span> <span class="dim">Task · subagent_type=log-analyst · running …</span></div>
         <div class="line fx" data-block><span class="ag">◇ log-analyst → returned</span></div>
-        <div class="line fx" data-block>  <span class="lbl">Summary</span>      <span class="warn">NEW BLOCKER</span> — inbound parse fails in prod since 08:31 UTC; docs stuck in retry</div>
+        <div class="line fx" data-block>  <span class="lbl">Summary</span>      <span class="warn">NEW BLOCKER</span>: inbound parse fails in prod since 08:31 UTC; docs stuck in retry</div>
         <div class="line fx" data-block>  <span class="lbl">Scope</span>        last 3h · fn-invoicing-in-prd · 1,120 hits</div>
         <div class="line fx" data-block>  <span class="lbl">Clusters</span>     🔴 parse_error @ map_invoice   54×  08:31→now  NEW</div>
-        <div class="line fx" data-block>  <span class="lbl">Correlation</span>  doc_8842 — received OK · parse <span class="warn">FAIL</span> @ map_invoice · never booked</div>
+        <div class="line fx" data-block>  <span class="lbl">Correlation</span>  doc_8842: received OK · parse <span class="warn">FAIL</span> @ map_invoice · never booked</div>
         <div class="line fx" data-block data-after="450">  <span class="lbl">Root cause</span>   payment_means code "59" (SEPA DD) missing from the enum → KeyError aborts the pipeline</div>
         <div class="line scene" data-after="400"><span class="ti">That's a code bug in invoicing-service, not the operator. Fixing it test-first.</span></div>
-        <div class="line fx"><span class="ag">▸ red</span>  <span class="dim">— a test that reproduces doc_8842</span></div>
+        <div class="line fx"><span class="ag">▸ red</span>  <span class="dim">(a test that reproduces doc_8842)</span></div>
         <div class="line fx">  <span class="ok">+</span> tests/test_payment_means.py::test_sepa_dd_59</div>
         <div class="line fx">  <span class="dim">▸ pytest -k payment_means</span></div>
-        <div class="line fx" data-after="400">  <span class="warn">✗ 1 failed — KeyError: '59'</span>   <span class="dim">← reproduced</span></div>
-        <div class="line fx"><span class="ag">▸ green</span>  <span class="dim">— minimal fix</span></div>
+        <div class="line fx" data-after="400">  <span class="warn">✗ 1 failed (KeyError: '59')</span>   <span class="dim">← reproduced</span></div>
+        <div class="line fx"><span class="ag">▸ green</span>  <span class="dim">(minimal fix)</span></div>
         <div class="line fx">  <span class="warn">~</span> invoicing-service/mapping.py · payment_means via .get(code, OTHER)</div>
         <div class="line fx">  <span class="dim">▸ pytest · ruff · mypy</span></div>
         <div class="line fx money" data-after="400">  <span class="ok">✓ 214 passed</span> · ruff <span class="ok">✓</span> · mypy <span class="ok">✓</span> · coverage 100%</div>
@@ -378,26 +378,26 @@ footer.foot code{font-family:var(--font-mono)}
         <div class="line fx" data-after="400">  <span class="ok">✓</span> replayed doc_8842 on UAT → <span class="ok">booked</span></div>
         <div class="line scene"><span class="ti">Done: off-spec SEPA-DD code "59" hit an enum with no fallback → KeyError, so every</span></div>
         <div class="line"><span class="ti">inbound aborted. Test-first fix red→green, full suite + lint + types pass,</span></div>
-        <div class="line" data-after="200"><span class="ti">shipped to UAT and replayed doc_8842 — it books cleanly now.</span></div>
+        <div class="line" data-after="200"><span class="ti">shipped to UAT and replayed doc_8842. It books cleanly now.</span></div>
         <div class="line" data-after="500"><span class="ti">Prod deploy + PR #87 merge are your call. Ship it? <span class="k">[y/n]</span></span></div>
       </div>
     </div>
 
-    <!-- ───── Chapter 4: First run — onboarding (NEW_USER, realistic BKS stack) ───── -->
+    <!-- ───── Chapter 4: First run, onboarding (NEW_USER, realistic BKS stack) ───── -->
     <div class="chap" data-title="First run"
-         data-sub="<b>Onboarding.</b> On a fresh clone ELOPe introduces itself, then a guided, reversible 5-minute wizard scans your real setup and wires features from the evidence — each one gated on your yes. <i>This chapter captures an earlier onboarding revision — today's flow opens with a four-lane front door instead of the [y]/[t]/[n] prompt shown here.</i>">
-      <h3 class="chap-h">④ First run — onboarding</h3>
+         data-sub="<b>Onboarding.</b> On a fresh clone ELOPe introduces itself, then a guided, reversible 5-minute wizard scans your real setup and wires features from the evidence, each one gated on your yes. <i>This chapter captures an earlier onboarding revision. Today's flow opens with a four-lane front door instead of the [y]/[t]/[n] prompt shown here.</i>">
+      <h3 class="chap-h">④ First run: onboarding</h3>
       <div class="lines">
         <div class="line cmd" data-type data-after="250"><span class="pr">&gt;</span> <span class="ti">hi</span></div>
-        <div class="line" data-block><span class="ti">Hi — I'm ELOPe, the AI running this bridge: your command hub for</span></div>
-        <div class="line" data-block><span class="ti">agents, repos and standing orders — and I remember every session.</span></div>
-        <div class="line" data-block data-after="300"><span class="ti">Fresh clone, nothing wired up yet — a 5-minute, reversible fix. I'll:</span></div>
+        <div class="line" data-block><span class="ti">Hi, I'm ELOPe, the AI running this bridge: your command hub for</span></div>
+        <div class="line" data-block><span class="ti">agents, repos and standing orders, and I remember every session.</span></div>
+        <div class="line" data-block data-after="300"><span class="ti">Fresh clone, nothing wired up yet (a 5-minute, reversible fix). I'll:</span></div>
         <div class="line dim" data-block>  1. spin up your user/alex branch (keeps your data out of CORE)</div>
         <div class="line dim" data-block>  2. scan your projects folder and map the BKS-Lab ecosystem</div>
         <div class="line dim" data-block data-after="200">  3. pick a theme and wire up your first agents</div>
         <div class="line" data-after="450"><span class="k">[y]</span> Let's go   <span class="k">[t]</span> Tell me more   <span class="k">[n]</span> Not now</div>
         <div class="line cmd" data-type data-after="300"><span class="pr">&gt;</span> <span class="ti">y</span></div>
-        <div class="line dim" data-after="200">Great — about 5 minutes.  <span class="dim">[A] Identity</span></div>
+        <div class="line dim" data-after="200">Great, about 5 minutes.  <span class="dim">[A] Identity</span></div>
         <div class="line" data-block>  Name      → detected <span class="ok">"Alex"</span> from git config. Keep it? <span class="k">[y/edit]</span></div>
         <div class="line" data-block>  GitHub    → <span class="ok">bks-lab</span>   ·   Projects → <span class="ok">~/Developer/bks</span></div>
         <div class="line" data-after="400">  ✓ created + checked out branch <span class="ok">user/alex</span></div>
@@ -412,19 +412,19 @@ footer.foot code{font-family:var(--font-mono)}
         <div class="line">  ② tailscale (4 devices) → scaffold <span class="lbl">infra/remotes/</span>? <span class="k">[y/m/l]</span></div>
         <div class="line ag" data-after="250">     ✓ infra/remotes/ scaffolded · 4 machines registered</div>
         <div class="line gap"></div>
-        <div class="line money" data-after="500"><span class="ok">✓ Onboarding complete</span><span class="ti"> — your bridge is live. See you tomorrow, Alex.</span></div>
+        <div class="line money" data-after="500"><span class="ok">✓ Onboarding complete</span><span class="ti">. Your bridge is live. See you tomorrow, Alex.</span></div>
       </div>
     </div>
 
   </div>
 
-  <p class="caption">The live instance of <code>BKS-Lab</code> — the team behind BKS open-bridge. Branding, repos and stack are real, though chapter ④ shows an earlier onboarding revision (see note above); client names are kept generic and there is <b>no customer data, no secrets, no PII</b>. Formats mirror the live <code>briefing</code>, session-start, coordinator/sub-agent and <code>bridge-onboard</code> flows.</p>
+  <p class="caption">The live instance of <code>BKS-Lab</code>, the team behind BKS open-bridge. Branding, repos and stack are real, though chapter ④ shows an earlier onboarding revision (see note above); client names are kept generic and there is <b>no customer data, no secrets, no PII</b>. Formats mirror the live <code>briefing</code>, session-start, coordinator/sub-agent and <code>bridge-onboard</code> flows.</p>
 
   <!-- ─── Funnel CTA ─── -->
   <div class="cta-funnel">
     <p class="cta-lead">
-      <span data-lang="en">Liked what you saw? Run it yourself in a ready-made workspace — 2 minutes, nothing to configure.</span>
-      <span data-lang="de">Gefällt dir, was du siehst? Probier es selbst in einem fertigen Workspace aus — 2 Minuten, nichts zu konfigurieren.</span>
+      <span data-lang="en">Liked what you saw? Run it yourself in a ready-made workspace: 2 minutes, nothing to configure.</span>
+      <span data-lang="de">Gefällt dir, was du siehst? Probier es selbst in einem fertigen Workspace aus: 2 Minuten, nichts zu konfigurieren.</span>
     </p>
     <div class="cta-btns">
       <a class="cta-go" href="index.html#get-started">

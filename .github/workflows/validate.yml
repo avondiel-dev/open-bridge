@@ -145,6 +145,12 @@ jobs:
       - name: Every inline script in docs/ parses
         run: python3 scripts/check-inline-scripts.py
 
+      # .nojekyll means Pages serves markdown raw, so a relative .md link takes
+      # the reader to an unstyled file. Deep links into repo documents go to
+      # GitHub; only .html is linked relatively.
+      - name: Every internal link on the site resolves
+        run: python3 scripts/check-site-links.py
+
       # Refuses an order that defers without a trigger or without a summary.
       # Such a file reads as enforced in the tree and loads in no session, which
       # is a worse failure than the cost the contract removes.

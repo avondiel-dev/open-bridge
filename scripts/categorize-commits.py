@@ -241,6 +241,7 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     "scripts/categorize-commits.py",
     "scripts/check-figure-counts.py",
     "scripts/check-inline-scripts.py",
+    "scripts/check-site-links.py",
     "scripts/extract-bridge-state.py",
     "scripts/extract-frontmatter.py",
     "scripts/gen-board.py",
