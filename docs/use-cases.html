@@ -1,29 +1,29 @@
 <!DOCTYPE html>
 <!-- ============================================================================
-     BKS open-bridge — use-cases.html  (use cases & solutions)
+     BKS open-bridge: use-cases.html  (use cases & solutions)
      Built from the shared shell (NAV_ACTIVE = use-cases), mirroring concepts.html.
      Self-contained single file, GitHub-Pages-ready, fully offline, native UTF-8.
-     Describes CAPABILITIES generically — no customer names, no PII, no internal hosts.
+     Describes CAPABILITIES generically: no customer names, no PII, no internal hosts.
      ============================================================================ -->
 <html lang="en" data-active-lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BKS open-bridge — Use cases &amp; solutions</title>
+<title>BKS open-bridge: Use cases &amp; solutions</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="assets/favicon.ico" sizes="16x16 32x32 48x48">
-<meta name="description" content="Seven concrete jobs teams run on BKS open-bridge — each pairs a problem you'll recognise with what the bridge does about it, the primitives involved, and where to read more. Plain files in git, nothing to host.">
+<meta name="description" content="Seven concrete jobs teams run on BKS open-bridge: each pairs a problem you'll recognise with what the bridge does about it, the primitives involved, and where to read more. Plain files in git, nothing to host.">
 <!-- Social / Open Graph -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="BKS open-bridge — Use cases &amp; solutions">
-<meta property="og:description" content="Seven concrete jobs teams run on BKS open-bridge — problem, solution, primitives, and a link to read more.">
+<meta property="og:title" content="BKS open-bridge: Use cases &amp; solutions">
+<meta property="og:description" content="Seven concrete jobs teams run on BKS open-bridge: problem, solution, primitives, and a link to read more.">
 <meta property="og:url" content="https://bks-lab.github.io/open-bridge/use-cases.html">
 <meta property="og:image" content="https://bks-lab.github.io/open-bridge/social-preview.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="BKS open-bridge — Use cases &amp; solutions">
-<meta name="twitter:description" content="Seven concrete jobs teams run on BKS open-bridge — problem, solution, primitives, and a link to read more.">
+<meta name="twitter:title" content="BKS open-bridge: Use cases &amp; solutions">
+<meta name="twitter:description" content="Seven concrete jobs teams run on BKS open-bridge: problem, solution, primitives, and a link to read more.">
 
 <!-- Anti-FOUC pre-paint: theme + language set BEFORE the stylesheet paints. -->
 <script>
@@ -54,10 +54,10 @@
 <noscript><style>.reveal,.reset-line{opacity:1!important;transform:none!important}</style></noscript>
 <style>
 /* ============================================================
-   BKS open-bridge shared shell — single file, fully offline.
+   BKS open-bridge shared shell: single file, fully offline.
    Colour / type / space tokens lifted from DESIGN.md (Editorial
    Minimalism) via landing/tokens.css. AA-correct text tokens
-   (--accent-text, --code-bg, --ok-text …) layered on top — these
+   (--accent-text, --code-bg, --ok-text …) layered on top. These
    are NOT in tokens.css and must be preserved.
    No external fonts, no CDN, no network calls.
    ============================================================ */
@@ -90,7 +90,7 @@
   --feature-indigo-from:#4F46E5; --feature-indigo-to:#9333EA;
   --mono:var(--font-mono);
 
-  /* shadows — whisper quiet */
+  /* shadows: whisper quiet */
   --shadow-soft:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
   --shadow-hover:0 20px 25px -5px rgba(0,0,0,.08),0 10px 10px -5px rgba(0,0,0,.04);
 
@@ -260,8 +260,8 @@ header.nav{
           <span data-lang="en">What teams actually do with it.</span>
           <span data-lang="de">Was Teams wirklich damit tun.</span>
         </h1>
-        <p class="lede" data-lang="en">BKS open-bridge is a framework, not a product with one fixed workflow. Below are eight concrete jobs teams run on it — each names a problem you'll recognise, what your bridge does about it, the primitives involved, and where to read more. Everything here works on plain files in git: nothing to host, and the agent never sends or merges anything without a human gate.</p>
-        <p class="lede" data-lang="de">BKS open-bridge ist ein Framework, kein Produkt mit einem festen Ablauf. Unten stehen acht konkrete Aufgaben, die Teams damit erledigen — jede nennt ein Problem, das du wiedererkennst, was deine Bridge dagegen tut, die beteiligten Primitive und einen Link zum Weiterlesen. Alles hier läuft auf schlichten Dateien in Git: nichts zu hosten, und der Agent sendet oder merged nie etwas ohne menschliches Gate.</p>
+        <p class="lede" data-lang="en">BKS open-bridge is a framework, not a product with one fixed workflow. Below are eight concrete jobs teams run on it. Each names a problem you'll recognise, what your bridge does about it, the primitives involved, and where to read more. Everything here works on plain files in git: nothing to host, and the agent never sends or merges anything without a human gate.</p>
+        <p class="lede" data-lang="de">BKS open-bridge ist ein Framework, kein Produkt mit einem festen Ablauf. Unten stehen acht konkrete Aufgaben, die Teams damit erledigen. Jede nennt ein Problem, das du wiedererkennst, was deine Bridge dagegen tut, die beteiligten Primitive und einen Link zum Weiterlesen. Alles hier läuft auf schlichten Dateien in Git: nichts zu hosten, und der Agent sendet oder merged nie etwas ohne menschliches Gate.</p>
       </div>
     </div>
   </section>
@@ -271,7 +271,7 @@ header.nav{
     <div class="container">
       <div class="uc-grid">
 
-        <!-- ① FLAGSHIP — Org-aware without forking -->
+        <!-- ① FLAGSHIP: Org-aware without forking -->
         <article class="uc flagship reveal" id="org-aware">
           <div class="uc-head">
             <span class="uc-num">01</span>
@@ -283,13 +283,13 @@ header.nav{
           </h3>
           <p class="uc-problem">
             <span class="lab"><span data-lang="en">Problem</span><span data-lang="de">Problem</span></span>
-            <span data-lang="en">Every teammate needs your org's customizations — skills, configs, accounts — but forking a tailored bridge per person is unmaintainable.</span>
-            <span data-lang="de">Jede:r im Team braucht die Anpassungen deiner Organisation — Skills, Configs, Accounts — aber pro Person eine angepasste Bridge zu forken ist nicht wartbar.</span>
+            <span data-lang="en">Every teammate needs your org's customizations (skills, configs, accounts), but forking a tailored bridge per person is unmaintainable.</span>
+            <span data-lang="de">Jede:r im Team braucht die Anpassungen deiner Organisation (Skills, Configs, Accounts), aber pro Person eine angepasste Bridge zu forken ist nicht wartbar.</span>
           </p>
           <p class="uc-solution">
             <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
-            <span data-lang="en"><code>/overlay add &lt;git-url&gt;</code> subscribes a vanilla bridge to a private org-config repo and materializes its files across your tree as tracked copies, recorded in a manifest and a lockfile. It is the downstream inverse of <code>/promote</code>. CORE files are never overridable; managed files stay public-fork-safe; and your own edits always win on conflict. One URL gives a teammate a full org bridge — no fork, no per-person drift.</span>
-            <span data-lang="de"><code>/overlay add &lt;git-url&gt;</code> abonniert für eine unveränderte Bridge ein privates Org-Config-Repo und materialisiert dessen Dateien über deinen Baum verteilt als getrackte Kopien, festgehalten in einem Manifest und einem Lockfile. Es ist die Downstream-Umkehrung von <code>/promote</code>. CORE-Dateien sind nie überschreibbar; verwaltete Dateien bleiben public-fork-sicher; und bei Konflikt gewinnen stets deine eigenen Edits. Eine URL gibt einem Teammitglied eine vollständige Org-Bridge — kein Fork, kein Drift pro Person.</span>
+            <span data-lang="en"><code>/overlay add &lt;git-url&gt;</code> subscribes a vanilla bridge to a private org-config repo and materializes its files across your tree as tracked copies, recorded in a manifest and a lockfile. It is the downstream inverse of <code>/promote</code>. CORE files are never overridable; managed files stay public-fork-safe; and your own edits always win on conflict. One URL gives a teammate a full org bridge: no fork, no per-person drift.</span>
+            <span data-lang="de"><code>/overlay add &lt;git-url&gt;</code> abonniert für eine unveränderte Bridge ein privates Org-Config-Repo und materialisiert dessen Dateien über deinen Baum verteilt als getrackte Kopien, festgehalten in einem Manifest und einem Lockfile. Es ist die Downstream-Umkehrung von <code>/promote</code>. CORE-Dateien sind nie überschreibbar; verwaltete Dateien bleiben public-fork-sicher; und bei Konflikt gewinnen stets deine eigenen Edits. Eine URL gibt einem Teammitglied eine vollständige Org-Bridge: kein Fork, kein Drift pro Person.</span>
           </p>
           <div class="uc-prim">
             <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
@@ -298,7 +298,7 @@ header.nav{
               <code>scripts/overlay.py</code>
             </div>
           </div>
-          <a class="uc-more" href="org-overlays.md">
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/org-overlays.md" target="_blank" rel="noopener">
             <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
           </a>
         </article>
@@ -312,13 +312,13 @@ header.nav{
           </h3>
           <p class="uc-problem">
             <span class="lab"><span data-lang="en">Problem</span><span data-lang="de">Problem</span></span>
-            <span data-lang="en">Recurring status emails to clients must come from you, with correct attribution — and must never address the recipient as "you".</span>
-            <span data-lang="de">Wiederkehrende Status-Mails an Kunden müssen von dir kommen, mit korrektem Absender — und dürfen die Empfänger nie mit „Du" ansprechen.</span>
+            <span data-lang="en">Recurring status emails to clients must come from you, with correct attribution, and must never address the recipient as "you".</span>
+            <span data-lang="de">Wiederkehrende Status-Mails an Kunden müssen von dir kommen, mit korrektem Absender, und dürfen die Empfänger nie mit „Du" ansprechen.</span>
           </p>
           <p class="uc-solution">
             <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
             <span data-lang="en">Turn a task or board item into a styled email routed to the right recipient group, optionally scheduled for later. The sender is always you; recipients are kept in the third person by construction, so attribution never slips.</span>
-            <span data-lang="de">Verwandle einen Task oder ein Board-Item in eine gestylte E-Mail, geroutet an die richtige Empfängergruppe, optional für später geplant. Absender bist immer du; Empfänger bleiben konstruktionsbedingt in der dritten Person — der Absender verrutscht nie.</span>
+            <span data-lang="de">Verwandle einen Task oder ein Board-Item in eine gestylte E-Mail, geroutet an die richtige Empfängergruppe, optional für später geplant. Absender bist immer du; Empfänger bleiben konstruktionsbedingt in der dritten Person. Der Absender verrutscht nie.</span>
           </p>
           <div class="uc-prim">
             <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
@@ -327,7 +327,7 @@ header.nav{
               <code>calendar</code>
             </div>
           </div>
-          <a class="uc-more" href="mandants.md">
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/mandants.md" target="_blank" rel="noopener">
             <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
           </a>
         </article>
@@ -346,8 +346,8 @@ header.nav{
           </p>
           <p class="uc-solution">
             <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
-            <span data-lang="en">A debrief step takes your meeting notes, classifies the meeting, extracts insights across categories, and proposes board-mapped tasks you approve — so a conversation becomes tracked work instead of a fading memory.</span>
-            <span data-lang="de">Ein Debrief-Schritt nimmt deine Meeting-Notizen, klassifiziert das Meeting, extrahiert Erkenntnisse über Kategorien hinweg und schlägt board-zugeordnete Tasks vor, die du freigibst — aus einem Gespräch wird getrackte Arbeit statt verblassender Erinnerung.</span>
+            <span data-lang="en">A debrief step takes your meeting notes, classifies the meeting, extracts insights across categories, and proposes board-mapped tasks you approve, so a conversation becomes tracked work instead of a fading memory.</span>
+            <span data-lang="de">Ein Debrief-Schritt nimmt deine Meeting-Notizen, klassifiziert das Meeting, extrahiert Erkenntnisse über Kategorien hinweg und schlägt board-zugeordnete Tasks vor, die du freigibst. Aus einem Gespräch wird getrackte Arbeit statt verblassender Erinnerung.</span>
           </p>
           <div class="uc-prim">
             <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
@@ -356,7 +356,7 @@ header.nav{
               <code>github-projects-manager</code>
             </div>
           </div>
-          <a class="uc-more" href="work-system.md">
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/work-system.md" target="_blank" rel="noopener">
             <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
           </a>
         </article>
@@ -375,8 +375,8 @@ header.nav{
           </p>
           <p class="uc-solution">
             <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
-            <span data-lang="en">The doc-system scans your sources — filesystem inboxes and flagged mail — categorizes each document, and files it using routing rules plus per-persona destinations, for example a PARA tree. Renamed, tagged, filed, and audited.</span>
-            <span data-lang="de">Das Doc-System scannt deine Quellen — Dateisystem-Inboxen und geflaggte Mails — kategorisiert jedes Dokument und legt es per Routing-Regeln plus Persona-Zielpfaden ab, etwa einem PARA-Baum. Umbenannt, getaggt, abgelegt und auditiert.</span>
+            <span data-lang="en">The doc-system scans your sources (filesystem inboxes and flagged mail), categorizes each document, and files it using routing rules plus per-persona destinations, for example a PARA tree. Renamed, tagged, filed, and audited.</span>
+            <span data-lang="de">Das Doc-System scannt deine Quellen (Dateisystem-Inboxen und geflaggte Mails), kategorisiert jedes Dokument und legt es per Routing-Regeln plus Persona-Zielpfaden ab, etwa einem PARA-Baum. Umbenannt, getaggt, abgelegt und auditiert.</span>
           </p>
           <div class="uc-prim">
             <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
@@ -385,7 +385,7 @@ header.nav{
               <code>personas</code>
             </div>
           </div>
-          <a class="uc-more" href="doc-system.md">
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/doc-system.md" target="_blank" rel="noopener">
             <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
           </a>
         </article>
@@ -404,8 +404,8 @@ header.nav{
           </p>
           <p class="uc-solution">
             <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
-            <span data-lang="en">Run a separate bridge instance per org — each its own clone with its own user branch, some pushed to a remote, some kept local-only. A registry indexes them all, so you stay aware of every instance without ever cross-contaminating their data.</span>
-            <span data-lang="de">Betreibe eine eigene Bridge-Instanz pro Organisation — jede ein eigener Clone mit eigenem User-Branch, manche zu einem Remote gepusht, manche nur lokal. Eine Registry indiziert sie alle, sodass du jede Instanz im Blick hast, ohne dass sich ihre Daten je vermischen.</span>
+            <span data-lang="en">Run a separate bridge instance per org: each its own clone with its own user branch, some pushed to a remote, some kept local-only. A registry indexes them all, so you stay aware of every instance without ever cross-contaminating their data.</span>
+            <span data-lang="de">Betreibe eine eigene Bridge-Instanz pro Organisation: jede ein eigener Clone mit eigenem User-Branch, manche zu einem Remote gepusht, manche nur lokal. Eine Registry indiziert sie alle, sodass du jede Instanz im Blick hast, ohne dass sich ihre Daten je vermischen.</span>
           </p>
           <div class="uc-prim">
             <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
@@ -414,7 +414,7 @@ header.nav{
               <code>infra/instances</code>
             </div>
           </div>
-          <a class="uc-more" href="multi-instance.md">
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/multi-instance.md" target="_blank" rel="noopener">
             <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
           </a>
         </article>
@@ -433,8 +433,8 @@ header.nav{
           </p>
           <p class="uc-solution">
             <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
-            <span data-lang="en">A file-based memory keeps durable facts as plain text the agent reads back later. A learning loop closes the gap: postmortems and audits emit improvement proposals you review, and a curator consolidates recurring patterns — so the system compounds instead of forgetting.</span>
-            <span data-lang="de">Ein dateibasiertes Gedächtnis hält dauerhafte Fakten als Klartext, den der Agent später wieder liest. Eine Lernschleife schließt die Lücke: Postmortems und Audits erzeugen Verbesserungsvorschläge, die du prüfst, und ein Kurator konsolidiert wiederkehrende Muster — das System wächst, statt zu vergessen.</span>
+            <span data-lang="en">A file-based memory keeps durable facts as plain text the agent reads back later. A learning loop closes the gap: postmortems and audits emit improvement proposals you review, and a curator consolidates recurring patterns, so the system compounds instead of forgetting.</span>
+            <span data-lang="de">Ein dateibasiertes Gedächtnis hält dauerhafte Fakten als Klartext, den der Agent später wieder liest. Eine Lernschleife schließt die Lücke: Postmortems und Audits erzeugen Verbesserungsvorschläge, die du prüfst, und ein Kurator konsolidiert wiederkehrende Muster. Das System wächst, statt zu vergessen.</span>
           </p>
           <div class="uc-prim">
             <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
@@ -444,7 +444,7 @@ header.nav{
               <code>bridge-curator</code>
             </div>
           </div>
-          <a class="uc-more" href="memory.md">
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/memory.md" target="_blank" rel="noopener">
             <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
           </a>
         </article>
@@ -458,13 +458,13 @@ header.nav{
           </h3>
           <p class="uc-problem">
             <span class="lab"><span data-lang="en">Problem</span><span data-lang="de">Problem</span></span>
-            <span data-lang="en">Tooling built for one agent CLI is stuck there — and contributing improvements upstream risks dragging private org content along.</span>
-            <span data-lang="de">Tooling, das für ein einzelnes Agent-CLI gebaut ist, bleibt dort hängen — und Verbesserungen upstream beizutragen riskiert, private Org-Inhalte mitzuschleppen.</span>
+            <span data-lang="en">Tooling built for one agent CLI is stuck there, and contributing improvements upstream risks dragging private org content along.</span>
+            <span data-lang="de">Tooling, das für ein einzelnes Agent-CLI gebaut ist, bleibt dort hängen, und Verbesserungen upstream beizutragen riskiert, private Org-Inhalte mitzuschleppen.</span>
           </p>
           <p class="uc-solution">
             <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
-            <span data-lang="en">Agent Skills follow the open SKILL.md standard, discoverable by Claude Code, Copilot CLI, Codex, Cursor and Gemini through one shared tree. A three-tier promote/contribute flow routes every change by its scope, so private content stays local while generic CORE content flows upstream — decided by structure, not by a tag you can forget.</span>
-            <span data-lang="de">Agent-Skills folgen dem offenen SKILL.md-Standard, auffindbar für Claude Code, Copilot CLI, Codex, Cursor und Gemini über einen gemeinsamen Baum. Ein dreistufiger Promote/Contribute-Fluss routet jede Änderung nach ihrem Scope, sodass private Inhalte lokal bleiben und generische CORE-Inhalte upstream fließen — entschieden durch Struktur, nicht durch ein Tag, das man vergessen kann.</span>
+            <span data-lang="en">Agent Skills follow the open SKILL.md standard, discoverable by Claude Code, Copilot CLI, Codex, Cursor and Gemini through one shared tree. A three-tier promote/contribute flow routes every change by its scope, so private content stays local while generic CORE content flows upstream, decided by structure, not by a tag you can forget.</span>
+            <span data-lang="de">Agent-Skills folgen dem offenen SKILL.md-Standard, auffindbar für Claude Code, Copilot CLI, Codex, Cursor und Gemini über einen gemeinsamen Baum. Ein dreistufiger Promote/Contribute-Fluss routet jede Änderung nach ihrem Scope, sodass private Inhalte lokal bleiben und generische CORE-Inhalte upstream fließen, entschieden durch Struktur, nicht durch ein Tag, das man vergessen kann.</span>
           </p>
           <div class="uc-prim">
             <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
@@ -474,7 +474,7 @@ header.nav{
               <code>/contribute</code>
             </div>
           </div>
-          <a class="uc-more" href="extension-model.md">
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/extension-model.md" target="_blank" rel="noopener">
             <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
           </a>
         </article>
@@ -488,8 +488,8 @@ header.nav{
           </h3>
           <p class="uc-problem">
             <span class="lab"><span data-lang="en">Problem</span><span data-lang="de">Problem</span></span>
-            <span data-lang="en">A client or engagement spans several repos plus an org config overlay — nothing names that they belong together, or tracks whether the clones have drifted.</span>
-            <span data-lang="de">Ein Kunde oder Engagement erstreckt sich über mehrere Repos plus ein Org-Config-Overlay — nichts benennt, dass sie zusammengehören, oder verfolgt, ob die Clones auseinandergelaufen sind.</span>
+            <span data-lang="en">A client or engagement spans several repos plus an org config overlay. Nothing names that they belong together, or tracks whether the clones have drifted.</span>
+            <span data-lang="de">Ein Kunde oder Engagement erstreckt sich über mehrere Repos plus ein Org-Config-Overlay. Nichts benennt, dass sie zusammengehören, oder verfolgt, ob die Clones auseinandergelaufen sind.</span>
           </p>
           <p class="uc-solution">
             <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
@@ -521,8 +521,8 @@ header.nav{
           <span data-lang="de">Deinen eigenen Arbeitstag wiedererkannt?</span>
         </h2>
         <p>
-          <span data-lang="en">Everything above runs on plain files in git. The shipped demo workspace lets you feel it — two minutes, nothing to configure.</span>
-          <span data-lang="de">Alles oben läuft auf schlichten Dateien in Git. Mit dem mitgelieferten Demo-Workspace spürst du es — zwei Minuten, nichts zu konfigurieren.</span>
+          <span data-lang="en">Everything above runs on plain files in git. The shipped demo workspace lets you feel it: two minutes, nothing to configure.</span>
+          <span data-lang="de">Alles oben läuft auf schlichten Dateien in Git. Mit dem mitgelieferten Demo-Workspace spürst du es: zwei Minuten, nichts zu konfigurieren.</span>
         </p>
         <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px">
           <a class="btn btn-primary" href="index.html#get-started">
@@ -548,8 +548,8 @@ header.nav{
   <div class="foot-grid">
     <div class="foot-blurb">
       <a class="wordmark" href="index.html">open<span class="text-gradient">-bridge</span></a>
-      <span data-lang="en">Built at BKS-Lab — a small team — and used daily to run it. Present tense, no hero arc: this is method and substrate.</span>
-      <span data-lang="de">Gebaut bei BKS-Lab — einem kleinen Team — und täglich genutzt, um genau diese Firma zu betreiben. Präsens, kein Heldenbogen: das ist Methode und Substrat.</span>
+      <span data-lang="en">Built at BKS-Lab (a small team) and used daily to run it. Present tense, no hero arc: this is method and substrate.</span>
+      <span data-lang="de">Gebaut bei BKS-Lab (einem kleinen Team) und täglich genutzt, um genau diese Firma zu betreiben. Präsens, kein Heldenbogen: das ist Methode und Substrat.</span>
       <table class="license-table">
         <tr><td><span data-lang="en">Code &amp; content</span><span data-lang="de">Code &amp; Inhalt</span></td><td>MIT</td><td><a href="https://github.com/bks-lab/open-bridge/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a></td></tr>
         <tr><td><span data-lang="en">Brand</span><span data-lang="de">Marke</span></td><td><span data-lang="en">Trademark policy</span><span data-lang="de">Markenrichtlinie</span></td><td><a href="https://github.com/bks-lab/open-bridge/blob/main/TRADEMARK.md" target="_blank" rel="noopener">TRADEMARK.md</a></td></tr>

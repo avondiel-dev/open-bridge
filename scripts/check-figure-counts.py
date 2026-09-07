@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: MIT
 """Hold the CORE/USER figure on docs/explore.html to the actual tree.
 
-The figure draws one dot per tracked file: 791 on the CORE half, 27 on the USER
-half, split by top level folder. Those numbers are true on the commit that wrote
+The figure draws one dot per tracked file, the CORE half against the shipped
+example workspace, split by top level folder. Those numbers are true on the commit that wrote
 them and quietly false on the next merge, which is worse than shipping no number
 at all. This recomputes every one of them from `git ls-files` and fails when the
 page has drifted.
@@ -122,6 +122,11 @@ def rewrite(src: str, real_core: dict, real_user: dict, core_total: int, user_to
     src = re.sub(r"\b\d+ tracked files, one dot each", f"{core_total} tracked files, one dot each", src)
     src = re.sub(r"\b\d+ versionierte Dateien, je Datei ein Punkt",
                  f"{core_total} versionierte Dateien, je Datei ein Punkt", src)
+    for fam, n in real_core.items():
+        name = fam.rstrip("/")
+        if not name or name.startswith("."):
+            continue
+        src = re.sub(rf"\b({re.escape(name)} (?:at|bei) )\d+\b", rf"\g<1>{n}", src)
     return src
 
 
@@ -198,6 +203,20 @@ def main() -> int:
             path = raw if raw in tracked_set else USER_PREFIX + raw
             if path not in tracked_set:
                 problems.append(f"example path not in the tree: {raw}")
+
+    # The screen reader paragraph names folders with their counts in prose:
+    # "with skills at 345 files and scripts at 113 the largest by far". It is a
+    # third renderer of the same numbers and it drifted twice through this gap
+    # while everything else stayed green, because a sighted reader never sees it.
+    for fam, n in core_real.items():
+        name = fam.rstrip("/")
+        if not name or name.startswith("."):
+            continue
+        for m in re.finditer(rf"\b{re.escape(name)} (?:at|bei) (\d+)\b", src):
+            if int(m.group(1)) != n:
+                problems.append(
+                    f"screen reader text says {name} has {m.group(1)}, the tree says {n}"
+                )
 
     # the two numbers a reader actually sees, in both languages
     for phrase in (f"{core_total} files ship. {user_total} are yours.",

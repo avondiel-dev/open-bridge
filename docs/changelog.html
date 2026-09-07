@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <!-- ============================================================================
-     BKS open-bridge — concepts.html  (deep-dive reference)
-     Built from the shared shell /tmp/ob-shell.html (NAV_ACTIVE = concepts).
+     BKS open-bridge: changelog.html  (release history)
+     Built from the shared shell /tmp/ob-shell.html (NAV_ACTIVE = changelog).
      Self-contained single file, GitHub-Pages-ready, fully offline, native UTF-8.
      ============================================================================ -->
 <html lang="en" data-active-lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BKS open-bridge — Changelog</title>
-<meta name="description" content="The BKS open-bridge changelog — every release, generated automatically on each merge to main, pulled live from GitHub Releases.">
+<title>BKS open-bridge: Changelog</title>
+<meta name="description" content="The BKS open-bridge changelog: every release, generated automatically on each merge to main, pulled live from GitHub Releases.">
 <!-- Social / Open Graph -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="BKS open-bridge — Changelog">
-<meta property="og:description" content="The BKS open-bridge changelog — every release, generated automatically on each merge to main, pulled live from GitHub Releases.">
+<meta property="og:title" content="BKS open-bridge: Changelog">
+<meta property="og:description" content="The BKS open-bridge changelog: every release, generated automatically on each merge to main, pulled live from GitHub Releases.">
 <meta property="og:url" content="https://bks-lab.github.io/open-bridge/changelog.html">
 <meta property="og:image" content="https://bks-lab.github.io/open-bridge/social-preview.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="BKS open-bridge — Changelog">
-<meta name="twitter:description" content="The BKS open-bridge changelog — every release, generated automatically on each merge to main, pulled live from GitHub Releases.">
+<meta name="twitter:title" content="BKS open-bridge: Changelog">
+<meta name="twitter:description" content="The BKS open-bridge changelog: every release, generated automatically on each merge to main, pulled live from GitHub Releases.">
 
 <!-- Anti-FOUC pre-paint: theme + language set BEFORE the stylesheet paints. -->
 <script>
@@ -53,10 +53,10 @@
 <noscript><style>.reveal,.reset-line{opacity:1!important;transform:none!important}</style></noscript>
 <style>
 /* ============================================================
-   BKS open-bridge shared shell — single file, fully offline.
+   BKS open-bridge shared shell: single file, fully offline.
    Colour / type / space tokens lifted from DESIGN.md (Editorial
    Minimalism) via landing/tokens.css. AA-correct text tokens
-   (--accent-text, --code-bg, --ok-text …) layered on top — these
+   (--accent-text, --code-bg, --ok-text …) layered on top. These
    are NOT in tokens.css and must be preserved.
    No external fonts, no CDN, no network calls.
    ============================================================ */
@@ -89,7 +89,7 @@
   --feature-indigo-from:#4F46E5; --feature-indigo-to:#9333EA;
   --mono:var(--font-mono);
 
-  /* shadows — whisper quiet */
+  /* shadows: whisper quiet */
   --shadow-soft:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
   --shadow-hover:0 20px 25px -5px rgba(0,0,0,.08),0 10px 10px -5px rgba(0,0,0,.04);
 
@@ -297,8 +297,8 @@ header.nav{
   <div class="foot-grid">
     <div class="foot-blurb">
       <a class="wordmark" href="index.html">open<span class="text-gradient">-bridge</span></a>
-      <span data-lang="en">Built at BKS-Lab — a small team — and used daily to run it. Present tense, no hero arc: this is method and substrate.</span>
-      <span data-lang="de">Gebaut bei BKS-Lab — einem kleinen Team — und täglich genutzt, um genau diese Firma zu betreiben. Präsens, kein Heldenbogen: das ist Methode und Substrat.</span>
+      <span data-lang="en">Built at BKS-Lab (a small team) and used daily to run it. Present tense, no hero arc: this is method and substrate.</span>
+      <span data-lang="de">Gebaut bei BKS-Lab (einem kleinen Team) und täglich genutzt, um genau diese Firma zu betreiben. Präsens, kein Heldenbogen: das ist Methode und Substrat.</span>
       <table class="license-table">
         <tr><td><span data-lang="en">Code &amp; content</span><span data-lang="de">Code &amp; Inhalt</span></td><td>MIT</td><td><a href="https://github.com/bks-lab/open-bridge/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a></td></tr>
         <tr><td><span data-lang="en">Brand</span><span data-lang="de">Marke</span></td><td><span data-lang="en">Trademark policy</span><span data-lang="de">Markenrichtlinie</span></td><td><a href="https://github.com/bks-lab/open-bridge/blob/main/TRADEMARK.md" target="_blank" rel="noopener">TRADEMARK.md</a></td></tr>
@@ -583,8 +583,8 @@ header.nav{
       })
       .catch(function(){
         root.innerHTML = stateBox(
-          "The changelog couldn't be loaded right now — GitHub may be rate-limiting anonymous requests. Please try again shortly.",
-          "Das Changelog ließ sich gerade nicht laden — GitHub limitiert evtl. anonyme Anfragen. Bitte gleich erneut versuchen.",
+          "The changelog couldn't be loaded right now. GitHub may be rate-limiting anonymous requests. Please try again shortly.",
+          "Das Changelog ließ sich gerade nicht laden. GitHub limitiert evtl. anonyme Anfragen. Bitte gleich erneut versuchen.",
           true
         );
       });
