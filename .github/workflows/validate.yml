@@ -123,6 +123,9 @@ jobs:
       - name: Run context-index test suite
         run: bash scripts/tests/test-context-index.sh
 
+      - name: Run memory-location test suite
+        run: bash scripts/tests/test-memory-location.sh
+
       - name: Run reachability test suite
         run: bash scripts/tests/test-reachability.sh
 
@@ -515,6 +518,9 @@ jobs:
 
       - name: Push-guard unit contract
         run: bash scripts/tests/test-push-guard.sh
+
+      - name: Push-guard commit-set contract (private-remote-already-has-it net)
+        run: sh scripts/tests/test-push-guard-commit-set.sh
 
       - name: System-discovery scope-consent backstop
         run: bash scripts/tests/test-system-discovery.sh

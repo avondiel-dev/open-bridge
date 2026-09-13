@@ -163,6 +163,7 @@ Some files inherently contain references that look like leaks but aren't:
 | `rules/promote-safety.md` | All blocklist strings | Documents the blocklist by example |
 | `skills/<X>/SKILL.md` (description / triggers) | Aliases for renamed concepts | Backwards-compat triggers |
 | `MEMORY.md` (auto-memory) | All personal references | This is private memory, not committed in OSS |
+| `work/memory/**` (auto-memory kept in-repo, one fact per file) | All personal references, in every file under the directory, not only `MEMORY.md` | Same exemption as the row above, widened to the whole directory: `work/` never promotes, so no fact file here reaches an upstream regardless of scope |
 
 ## --target-dir mode (post-merge verify)
 

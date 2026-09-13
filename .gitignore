@@ -11,7 +11,7 @@
 # contacts and config. So they stay local unless you deliberately opt in.
 #
 # OPT-IN (GitHub-as-offsite-backup, like the maintainer's private seed does):
-# ONLY if your fork is PRIVATE, comment out the five PII blocks below. Then
+# ONLY if your fork is PRIVATE, comment out the PII blocks below. Then
 # your USER-layer files get versioned + backed up. NEVER do this on a public
 # fork — it publishes personal data irreversibly.
 
@@ -69,6 +69,9 @@ infra/remotes/*.yaml
 rules/org/**
 /ecosystem.*.yaml
 !/ecosystem.example.yaml
+# Auto memory kept inside the repo (autoMemoryDirectory → work/memory/) holds
+# personal facts and names (see docs/memory.md).
+/work/memory/
 # ---------------------------------------------------------------------------
 
 # Coverage artifacts. `coverage run` writes `.coverage` into the repo root, and

@@ -12,7 +12,10 @@ Scan tracked files only (`git ls-files`); findings are advisory unless `--fix` r
 - `README.md`: shields.io License badge (regex `License%3A-([A-Za-z0-9.+-]+)`) + footer line near end (`Apache 2.0 — see LICENSE`, `MIT — see LICENSE`)
 - `LICENSE`: first 3 lines (Apache header / MIT header)
 - `CLAUDE.md`: any "License: " claim
-- `~/.claude/projects/*/memory/MEMORY.md` (if available): any `MIT`/`Apache`/`license` mention
+- The resolved memory base's `MEMORY.md` (if available): any `MIT`/`Apache`/`license`
+  mention. Resolve the directory with `python3 scripts/memory-location.py status
+  --json` (field `memory_dir`); if that script is absent, fall back to the legacy
+  glob `~/.claude/projects/*/memory/MEMORY.md`.
 
 **Algorithm:**
 1. Extract license-name from each source
@@ -268,8 +271,11 @@ is trapped where only this instance can see it. It should be **promoted** to
 backstop for `rules/knowledge-growth.md` (where new knowledge belongs).
 
 **Sources:**
-- `~/.claude/projects/*/memory/*.md` (the active memory dir for this repo;
-  resolve via the harness path, skip `MEMORY.md` itself — it is the index)
+- The resolved memory base's `*.md` files (the active memory dir for this repo;
+  skip `MEMORY.md` itself, it is the index). Resolve the directory with
+  `python3 scripts/memory-location.py status --json` (field `memory_dir`); if
+  that script is absent, fall back to the legacy glob
+  `~/.claude/projects/*/memory/*.md`.
 - `rules/*.md`, `rules/bks/**/*.md`, `rules/user/**/*.md` — the rule corpus
 
 **Gate-language heuristic (a memory body is "gate-shaped" if):**
@@ -286,6 +292,13 @@ backstop for `rules/knowledge-growth.md` (where new knowledge belongs).
    observation records **what is/was true once**.
 
 **Algorithm:**
+0. Run `python3 scripts/memory-location.py check` against the resolved memory
+   base and report each violation it lists (index over 200 lines or 25 KB, a
+   hook longer than 120 characters, a linked file that does not exist) as its
+   own **P1** finding: an oversized or malformed index degrades recall for
+   every session. Skip this step (no finding) if the script exits 0 because
+   the directory or `MEMORY.md` is missing. This is the mechanical lint pass;
+   steps 1-4 below are the separate semantic gate-language scan.
 1. For each memory file (excluding `MEMORY.md`): score the body against the
    gate-language heuristic. Need at least one strong signal (cap-lock
    always/never, or an explicit `→`/"when X do Y" mapping) — a lone lowercase

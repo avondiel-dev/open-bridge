@@ -24,7 +24,7 @@ PUBLIC=https://github.com/bks-lab/open-bridge.git
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 fail() { echo "FAIL: $1" >&2; exit 1; }
 
-setup() {  # $1 = extra content ("pii" or "core")
+setup() {  # $1 = extra content ("pii" or "core" or "memory")
   rm -rf "$TMP/w"; mkdir -p "$TMP/w"; cd "$TMP/w"
   git init -q --bare private.git; git init -q --bare public.git
   git init -q a; cd a
@@ -35,6 +35,9 @@ setup() {  # $1 = extra content ("pii" or "core")
   if [ "$1" = pii ]; then
     mkdir -p identity/personas; echo "steuer_id: 1" > identity/personas/p.yaml
     git add -A; git commit -qm pii
+  elif [ "$1" = memory ]; then
+    mkdir -p work/memory; echo "name: test" > work/memory/feedback_example.md
+    git add -A; git commit -qm memory
   fi
   # THE CRITICAL STEP: the private remote already has everything.
   git push -q origin main
@@ -63,4 +66,9 @@ printf 'refs/heads/promote-x %s refs/heads/promote-x %s\n' \
   | sh "$HOOK" pub "$PUBLIC" >/dev/null 2>&1 \
   && fail "an unreadable remote sha let the push through; a net that cannot see is not a net"
 
-echo "test-push-guard-commit-set: 3 assertions pass"
+# 4. work/memory/ (auto memory kept inside the repo: personal facts, names)
+#    already on the private remote must still BLOCK on the public one, same as pii.
+setup memory
+[ "$(probe)" = 1 ] || fail "work/memory content reached a public remote: memory/ missing from USER_PATHS"
+
+echo "test-push-guard-commit-set: 4 assertions pass"
