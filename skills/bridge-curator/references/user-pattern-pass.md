@@ -98,7 +98,8 @@ quickly. Newest entries at the bottom (append).
 ## Strong-pattern escalation to MEMORY.md
 
 For each observation with `Strength: strong`: emit a separate proposal
-with target.type=memory:
+with target.type=memory. `<memory-dir>` below is the resolved memory base
+(`python3 scripts/memory-location.py status --json`, field `memory_dir`):
 
 ```yaml
 source:
@@ -112,7 +113,7 @@ scope: user
 
 target:
   type: memory
-  path: ~/.claude/projects/<this-project>/memory/<suggested-name>.md
+  path: <memory-dir>/<suggested-name>.md
   action: create
 proposal_type: structured
 
@@ -195,5 +196,6 @@ trade documented in `rules/learning-autonomy.md`.
 
 - `rules/learning-autonomy.md` § Layer C — design rationale
 - `work/_learning/user-patterns.md` — output file
-- `~/.claude/projects/<project>/memory/MEMORY.md` — escalation target
+- The resolved memory base's `MEMORY.md` (`python3 scripts/memory-location.py
+  status --json`, field `memory_dir`): escalation target
 - `bridge-config.yaml.learning.curator.user_patterns` — config block
