@@ -270,11 +270,15 @@ boundary, not a cosmetic filter:
 ## Memory
 
 In `user` scope the exporter also walks the instance's **auto-memory**
-directory — the harness's per-project store of durable facts, which lives
-*outside* the repo at `~/.claude/projects/<encoded-root>/memory` (the
-absolute repo path with `/` replaced by `-`). The default derivation can be
-overridden with `--memory-dir`; a missing directory is skipped with a
-notice, never an error (fresh instances legitimately have none).
+directory, the harness's per-project store of durable facts. Its default is
+resolved via `scripts/memory-location.py`: a configured `autoMemoryDirectory`
+(e.g. an in-repo `work/memory/`) wins when one is set, otherwise the
+harness's own legacy default applies, *outside* the repo at
+`~/.claude/projects/<encoded-root>/memory` (the absolute repo path with `/`
+replaced by `-`). Either way the default can be overridden with
+`--memory-dir`; a missing directory is skipped with a notice, never an error
+(fresh instances legitimately have none). See [`docs/memory.md`](memory.md)
+for the full resolution model.
 
 A file qualifies as a memory fact when it carries frontmatter with a
 `name:` key; that kebab-case name becomes the concept slug — which is

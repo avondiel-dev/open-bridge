@@ -46,10 +46,12 @@ Concept mapping (source -> OKF `type`):
   <memory-dir>/*.md fact files         -> memory   (user scope only)
 
 Memory facts are the instance's auto-memory files (frontmatter with a
-`name:` key); the directory usually lives OUTSIDE the repo and defaults to
-`~/.claude/projects/<encoded-root>/memory` (override with --memory-dir).
-Every concept carries a `resource:` field pointing at its source (repo-
-relative path, or `memory/<filename>` for memory facts).
+`name:` key). The directory defaults to whatever `scripts/memory-location.py`
+resolves for the instance root: a configured `autoMemoryDirectory` when one
+exists, otherwise the harness's own legacy default,
+`~/.claude/projects/<encoded-root>/memory` (override either way with
+--memory-dir). Every concept carries a `resource:` field pointing at its
+source (repo-relative path, or `memory/<filename>` for memory facts).
 
 What v0.2 emits, and what it deliberately does not:
 
@@ -151,6 +153,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import re
 import shutil
 import sys
@@ -886,16 +889,46 @@ def build_concept(path: Path, root: Path) -> dict:
     }
 
 
-def default_memory_dir(root: Path) -> Path:
-    """Derive the instance's auto-memory directory from its root path.
+def default_memory_dir(root: Path, home: Path | None = None) -> Path:
+    """Resolve the instance's auto-memory directory for ``root``.
 
-    The harness stores per-project memory under
-    ``~/.claude/projects/<encoded>/memory`` where ``<encoded>`` is the
-    absolute project path with every ``/`` replaced by ``-`` (the leading
-    slash becomes a leading dash).
+    Delegates to ``scripts/memory-location.py``'s ``resolve_memory_dir()``:
+    a configured ``autoMemoryDirectory`` (``root/.claude/settings.local.json``,
+    then ``root/.claude/settings.json``, then ``home/.claude/settings.json``)
+    wins; with nothing configured, the result is the same legacy derivation
+    this function used to compute directly, ``~/.claude/projects/<encoded>/
+    memory`` where ``<encoded>`` is the absolute project path with every
+    ``/`` replaced by ``-`` (the leading slash becomes a leading dash).
+
+    Loaded by file path (``importlib``) because the sibling script's filename
+    has a dash and cannot be a normal import. If that load fails for any
+    reason (missing file, syntax error), falls back to the legacy derivation
+    itself, with a stderr notice, rather than raising. For a plain checkout
+    with nothing configured that matches the resolver; the fallback ignores
+    the settings files and does not map a linked worktree to its main checkout.
+
+    ``home`` overrides ``Path.home()``, for hermetic testing.
     """
+    home = Path(home) if home is not None else Path.home()
     encoded = str(Path(root).resolve()).replace("/", "-")
-    return Path.home() / ".claude" / "projects" / encoded / "memory"
+    legacy = home / ".claude" / "projects" / encoded / "memory"
+
+    resolver_path = Path(__file__).resolve().parent / "memory-location.py"
+    try:
+        spec = importlib.util.spec_from_file_location("_bridge_memory_location", resolver_path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"cannot load {resolver_path}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    except Exception as exc:  # pragma: no cover - defensive
+        sys.stderr.write(
+            f"NOTICE: could not load {resolver_path} ({exc}); falling back to "
+            "the legacy memory-directory derivation\n"
+        )
+        return legacy
+
+    memory_dir, _source, _warnings = module.resolve_memory_dir(root, home)
+    return memory_dir
 
 
 def discover_memory(memory_dir: Path) -> list[Path]:
@@ -1563,8 +1596,10 @@ def main(argv: list[str] | None = None) -> int:
         "--memory-dir",
         default=None,
         help="auto-memory directory to export as memory concepts (user scope "
-        "only; default: derived as ~/.claude/projects/<encoded-root>/memory, "
-        "silently skipped when absent)",
+        "only; default: resolved via scripts/memory-location.py, i.e. a "
+        "configured autoMemoryDirectory, else the legacy "
+        "~/.claude/projects/<encoded-root>/memory; silently skipped when "
+        "absent)",
     )
     parser.add_argument(
         "--generated-by",

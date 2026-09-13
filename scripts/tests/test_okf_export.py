@@ -377,8 +377,10 @@ repo already uses). scripts/okf-export.py implements this exact surface:
         clear, instead of one the exporter refuses for good.
 
     default_memory_dir(root: Path) -> Path
-        `~/.claude/projects/<encoded-root>/memory`, the auto-memory store's
-        conventional location. Pure: no environment read.
+        Delegates to `scripts/memory-location.py`'s `resolve_memory_dir()`,
+        which reads settings files and shells out to git; falls back to the
+        legacy `~/.claude/projects/<encoded-root>/memory` derivation directly
+        only if loading that sibling script itself fails.
 
     discover_memory(memory_dir: Path) -> list[Path]
         The `*.md` fact files under memory_dir, sorted by filename, skipping
@@ -1175,10 +1177,40 @@ def test_unsafe_memory_name_falls_back_to_the_filename_slug(okf_export, tmp_path
 
 
 def test_default_memory_dir_derives_encoded_path_under_home(okf_export, tmp_path):
-    derived = okf_export.default_memory_dir(tmp_path / "acme-instance")
+    fake_home = tmp_path / "fake-home"
+    derived = okf_export.default_memory_dir(tmp_path / "acme-instance", home=fake_home)
     encoded = str((tmp_path / "acme-instance").resolve()).replace("/", "-")
-    assert derived == Path.home() / ".claude" / "projects" / encoded / "memory"
+    assert derived == fake_home / ".claude" / "projects" / encoded / "memory"
     assert encoded.startswith("-")  # leading slash of the abs path becomes a leading dash
+
+
+def test_default_memory_dir_prefers_a_configured_setting(okf_export, tmp_path):
+    # Resolved up front (not just under tmp_path) so the path this test writes
+    # settings.local.json to is byte-identical to the one resolve_memory_dir()
+    # looks under. Some platforms put pytest's tmp_path behind a symlink
+    # (macOS /var -> /private/var), and resolving only inside the function
+    # under test would silently look somewhere this test never wrote to.
+    root = (tmp_path / "acme-instance").resolve()
+    fake_home = tmp_path / "fake-home"
+    configured = root / "work" / "memory"
+    _write(
+        root / ".claude" / "settings.local.json",
+        '{\n  "autoMemoryDirectory": "%s"\n}\n' % configured,
+    )
+    derived = okf_export.default_memory_dir(root, home=fake_home)
+    assert derived == configured
+
+
+def test_default_memory_dir_falls_back_to_legacy_on_a_relative_setting(okf_export, tmp_path):
+    root = (tmp_path / "acme-instance").resolve()  # see comment above
+    fake_home = tmp_path / "fake-home"
+    _write(
+        root / ".claude" / "settings.local.json",
+        '{\n  "autoMemoryDirectory": "work/memory"\n}\n',
+    )
+    derived = okf_export.default_memory_dir(root, home=fake_home)
+    encoded = str(root).replace("/", "-")
+    assert derived == fake_home / ".claude" / "projects" / encoded / "memory"
 
 
 def _bundle_digest(out: Path) -> dict:

@@ -201,13 +201,20 @@ upstream repos are not public yet.
    2. re-arm the guard (`git config core.hooksPath scripts/hooks`, belt-and-suspenders to Step 0);
    3. `git checkout -b user/{name}` from the core/default branch;
    4. write the `bridge-config.yaml` skeleton (identity, `purpose.*`, `discovery.mode`);
-   5. route: **Broader → Phase B** · **Confined → Phase D** (skip B + C). On the `[go]`
+   5. only when the private-home decision from step 6 above ("Resolve the private
+      home") resolved to a private repo or local-only, offer
+      `python3 scripts/memory-location.py enable`: recommended,
+      one sentence, because it keeps the instance's memory versioned and reviewable
+      inside the repo instead of scattered under `~/.claude`. Skip the offer
+      entirely on a public or unknown origin, since the repo is not yet a safe
+      place for personal facts;
+   6. route: **Broader → Phase B** · **Confined → Phase D** (skip B + C). On the `[go]`
       path Phase D **never re-asks work-system** (approved right here) and **derives the
       first task from `purpose.statement`** without asking — *with one exception:* the
       empty-purpose path (`[1]` demo / "not sure yet"), where D1b still asks the one-line
       first-task question because there is nothing to derive. Apart from that empty-purpose
       ask, Phase D re-prompts only on `[adjust]→customize`;
-   6. the step-9 workspace + step-10 resource advisories fire here (the branch now exists).
+   7. the step-9 workspace + step-10 resource advisories fire here (the branch now exists).
 
    `[adjust]` reopens any line — the gathered fields **and** the defaults shown on this
    screen (work-system on, theme) — nothing has executed, so there is nothing to roll
