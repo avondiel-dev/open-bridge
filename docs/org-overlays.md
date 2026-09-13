@@ -407,8 +407,10 @@ load-bearing order, condensed:
     per-file `[y]` at first materialize; config and rule files batch-confirm.
 12. **Write a COPY atomically** (never a symlink); `materialized_sha256 = hash
     as written`.
-13. **Ecosystem fragment** — copy `ecosystem.<org>.yaml` to root and idempotently
-    ensure its `@import` line in `CLAUDE.md`; never block-merge.
+13. **Ecosystem fragment**: `ecosystem.<org>.yaml` goes through Steps 4 to 12
+    like any managed file (lock entry, 3-way merge on a local edit, listed by
+    `diff`), copied verbatim from the overlay root; then idempotently ensure its
+    `@import` line in `CLAUDE.md`. Never block-merge.
 14. **Prune** files in the lock but absent from the new plan (delete if clean,
     prompt if modified).
 15. **Write the lockfile** (resolved SHA, manifest digest, timestamp, per-file

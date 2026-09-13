@@ -44,6 +44,16 @@
 #     disk touched), interactive gates it behind one explicit confirmation
 #     that can decline (kept) or confirm (deletes) — a lone real orphan below
 #     the threshold is unaffected either way (§24)
+#   - the ecosystem fragment is a managed file (§25): the lock records it, diff
+#     and --dry-run list it, a local edit survives a sync AND the next one that
+#     carries an upstream change (a merged edit is never laundered into
+#     materialized_sha256, for tree files too), a conflict keeps the local side,
+#     remove keeps an edited fragment, a lock from the pre-fix engine is adopted
+#     without clobbering (also with its pinned blob gone), a consumer's own
+#     registry from before the subscription is never merged into or removed, a
+#     fragment also shipped under tree/ still gets its @import, and a fragment
+#     the overlay stops shipping is pruned
+#     together with its @import
 #
 # Run:  bash scripts/tests/test-overlay.sh        (exits non-zero on any failure)
 set -u
@@ -229,7 +239,8 @@ cp "$CON/overlays.lock.yaml" "$TMP/lock.after2"
 if cmp -s "$TMP/lock.after1" "$TMP/lock.after2"; then pass "lock byte-identical across re-applies"; else fail "lock changed across re-applies" "$(diff "$TMP/lock.after1" "$TMP/lock.after2")"; fi
 # second apply must write nothing new — all 7 managed files report skipped, and
 # the per-write counters (clean=/conflict=/upstream-ahead=) never appear.
-assert_out "re-apply writes nothing (all 7 skipped)" "skipped=7"
+# 7 tree files plus the ecosystem fragment, which is a managed file (§25).
+assert_out "re-apply writes nothing (7 files + the fragment skipped)" "skipped=8"
 if printf '%s' "$OUT" | grep -qE 'clean=[0-9]|conflict=[0-9]|upstream-ahead=[0-9]'; then
   fail "re-apply recorded a fresh write" "$OUT"
 else
@@ -927,7 +938,9 @@ assert_rc "24b: non-interactive sync (narrowed select) still succeeds" 0
 assert_out "24b: engine reports the batch as blocked" "BLOCKED"
 for d in $EX_DESTS; do assert_file "24b: non-interactive sync kept $d (not deleted)" "$CON/$d"; done
 lockcount="$(python3 -c 'import yaml,sys;d=yaml.safe_load(open(sys.argv[1]));print(len((d.get("overlays") or {}).get("example-org",{}).get("files") or []))' "$CON/overlays.lock.yaml")"
-assert_eq "24b: lock still carries all 7 file entries (identity preserved)" "$lockcount" 7
+# 7 tree files plus the ecosystem fragment: `select:` narrows the tree, not the
+# fragment, so its entry stays alongside the six blocked orphans (§25).
+assert_eq "24b: lock still carries all 7 file entries + the fragment (identity preserved)" "$lockcount" 8
 
 # 24c. interactive + decline ("n") — same as 24b, nothing deleted.
 OUT="$(printf 'n\n' | python3 "$OVERLAY" --repo-root "$CON" sync example-org 2>&1)"; RC=$?
@@ -945,6 +958,244 @@ for d in $EX_DESTS; do
     *) assert_absent "24d: confirmed prune removed $d" "$CON/$d" ;;
   esac
 done
+
+# ───────────────────────────────────────────────────────────────────
+echo
+echo "── 25. ecosystem fragment is a managed file, local edits survive ──"
+# Codifies a live loss: a consumer had added one repo to its
+# ecosystem.<org>.yaml by hand, and the next routine sync rewrote the file from
+# the overlay. Step 13 copied the fragment verbatim on every run, with no lock
+# entry, no 3-way merge and no line in diff or --dry-run, and `remove` deleted it
+# without a hash check. The fragment now runs through the same plan as every
+# other managed file.
+FRAG="ecosystem.example-org.yaml"
+sha_of() { python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$1"; }
+lock_sha() {  # <consumer> <dest> → materialized_sha256 in the example-org lock entry, NONE, or ABSENT
+  python3 - "$1/overlays.lock.yaml" "$2" <<'PY'
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1])) or {}
+files = (d.get("overlays") or {}).get("example-org", {}).get("files") or []
+f = next((f for f in files if f.get("dest") == sys.argv[2]), None)
+print("NONE" if f is None else (f.get("materialized_sha256") or "ABSENT"))
+PY
+}
+plan_line() { printf '%s\n' "$OUT" | grep -F " $1" | head -1; }   # <dest> → its line in a rendered plan
+commit_ov() { git -C "$1" add -A; git -C "$1" -c user.email=t@t -c user.name=t commit -qm "$2" >/dev/null 2>&1; }
+drop_frag_from_lock() {  # <consumer>: rewrite the lock the way the pre-fix engine left it
+  python3 - "$1/overlays.lock.yaml" "$FRAG" <<'PY'
+import sys, yaml
+p, frag = sys.argv[1], sys.argv[2]
+d = yaml.safe_load(open(p))
+e = d["overlays"]["example-org"]
+e.pop("fragment_managed", None)
+e["files"] = [f for f in e["files"] if f.get("dest") != frag]
+yaml.safe_dump(d, open(p, "w"), sort_keys=False, allow_unicode=True)
+PY
+}
+LOCAL_OLD='display_name: "Example Org"'
+LOCAL_NEW='display_name: "Example Org"  # LOCAL-FRAGMENT-EDIT'
+UP_OLD='description: "Example storefront"'
+UP_NEW='description: "UPSTREAM-FRAGMENT-EDIT"'
+
+# 25a. add copies the fragment byte for byte and records it in the lock. The
+# example's header mentions `scope: org`, which would hide an injected scope
+# line from this check, so that mention is stripped from the source first.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+edit_line "$OV/$FRAG" "(scope: org)" ""; commit_ov "$OV" frag-no-scope-mention
+run_overlay "$CON" add "file://$OV" --name example-org
+assert_rc "25a: add succeeds" 0
+assert_eq "25a: the fragment arrives byte for byte (no scope tripwire, no prompt-fields)" "$(sha_of "$CON/$FRAG")" "$(sha_of "$OV/$FRAG")"
+assert_eq "25a: the lock carries the fragment with the hash as written" "$(lock_sha "$CON" "$FRAG")" "$(sha_of "$CON/$FRAG")"
+
+# 25b. a local edit is visible to diff and --dry-run, and a sync keeps it.
+edit_line "$CON/$FRAG" "$LOCAL_OLD" "$LOCAL_NEW"
+OUT="$(python3 "$OVERLAY" --repo-root "$CON" diff example-org 2>&1)"
+case "$(plan_line "$FRAG")" in *local-edit*) pass "25b: diff lists the edited fragment as local-edit" ;; *) fail "25b: diff does not list the edited fragment as local-edit" "$OUT" ;; esac
+OUT="$(python3 "$OVERLAY" --repo-root "$CON" sync example-org --dry-run 2>&1)"
+case "$(plan_line "$FRAG")" in *local-edit*) pass "25b: sync --dry-run lists it as well" ;; *) fail "25b: sync --dry-run does not list the edited fragment" "$OUT" ;; esac
+touch -t 202001010000 "$CON/$FRAG"
+run_overlay "$CON" sync example-org --yes
+assert_rc "25b: sync over an edited fragment succeeds" 0
+assert_grep "25b: the local fragment edit survives the sync" "$CON/$FRAG" "LOCAL-FRAGMENT-EDIT"
+# The merge changed nothing, so the file must not be rewritten: an untouched
+# mtime is the observable difference between "kept" and "written again".
+fmtime="$(python3 -c 'import os,sys,time;print(time.strftime("%Y",time.localtime(os.stat(sys.argv[1]).st_mtime)))' "$CON/$FRAG")"
+assert_eq "25b: a merge that changes nothing does not rewrite the file" "$fmtime" "2020"
+
+# 25c. ... and the NEXT sync, when the overlay changes a different line. The
+# trap: recording the merged bytes as `materialized_sha256` makes the edited
+# file look pristine, so the next upstream change lands as a clean overwrite.
+# NONE/ABSENT count as failures: a fragment missing from the lock is not
+# "not laundered", it is not tracked at all, and must not pass this row.
+fl_sha="$(lock_sha "$CON" "$FRAG")"; live_sha="$(sha_of "$CON/$FRAG")"
+if [ "$fl_sha" = "NONE" ] || [ "$fl_sha" = "ABSENT" ]; then fail "25c: the fragment has no lock hash to compare ($fl_sha)"
+elif [ "$fl_sha" = "$live_sha" ]; then fail "25c: the merged edit was laundered into the lock"
+else pass "25c: the merged edit is not laundered into the lock"; fi
+edit_line "$OV/$FRAG" "$UP_OLD" "$UP_NEW"; commit_ov "$OV" frag-v2
+run_overlay "$CON" sync example-org --yes
+assert_rc "25c: sync with an upstream fragment change succeeds" 0
+assert_grep "25c: the local edit survives the second sync" "$CON/$FRAG" "LOCAL-FRAGMENT-EDIT"
+assert_grep "25c: the upstream change is merged in" "$CON/$FRAG" "UPSTREAM-FRAGMENT-EDIT"
+
+# 25d. the same rule for a tree file: a merged edit survives the next upstream change.
+TARGET="$CON/workflow/contexts/example-docs.yaml"
+edit_line "$TARGET" "default_mandant: example-team" "default_mandant: example-team  # TREE-LOCAL"
+run_overlay "$CON" sync example-org --yes
+edit_line "$OV/tree/workflow/contexts/example-docs.yaml" 'description: "Documentation + routing context for the example-org engagement"' 'description: "TREE-UPSTREAM"'
+commit_ov "$OV" tree-v2
+run_overlay "$CON" sync example-org --yes
+assert_rc "25d: second sync over a merged tree edit succeeds" 0
+assert_grep "25d: a tree file's local edit survives two syncs" "$TARGET" "TREE-LOCAL"
+assert_grep "25d: and the later upstream change is merged in" "$TARGET" "TREE-UPSTREAM"
+
+# 25e. a same-line conflict keeps the local side, without markers.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+edit_line "$CON/$FRAG" "$UP_OLD" 'description: "LOCAL-FRAGMENT-CONFLICT"'
+edit_line "$OV/$FRAG" "$UP_OLD" 'description: "UPSTREAM-FRAGMENT-CONFLICT"'; commit_ov "$OV" frag-conflict
+run_overlay "$CON" sync example-org --yes
+assert_rc "25e: sync with a conflicting fragment change succeeds" 0
+assert_out "25e: the conflict is reported" "conflict"
+assert_grep "25e: the local side of the fragment is kept" "$CON/$FRAG" "LOCAL-FRAGMENT-CONFLICT"
+assert_nogrep "25e: no merge markers land in the fragment" "$CON/$FRAG" "<<<<<<<"
+
+# 25f. remove keeps an edited fragment (a clean one is deleted, §7).
+run_overlay "$CON" remove example-org
+assert_rc "25f: remove succeeds" 0
+assert_grep "25f: remove keeps a locally-edited fragment" "$CON/$FRAG" "LOCAL-FRAGMENT-CONFLICT"
+
+# 25g. a lock written by the pre-fix engine has no fragment entry. The first
+# sync adopts the fragment without clobbering an edit made under that lock.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+drop_frag_from_lock "$CON"
+edit_line "$CON/$FRAG" "$LOCAL_OLD" "$LOCAL_NEW"
+edit_line "$OV/$FRAG" "$UP_OLD" "$UP_NEW"; commit_ov "$OV" frag-v2
+run_overlay "$CON" sync example-org --yes
+assert_rc "25g: sync over a pre-fix lock succeeds" 0
+assert_grep "25g: an edit under the pre-fix lock survives adoption" "$CON/$FRAG" "LOCAL-FRAGMENT-EDIT"
+assert_grep "25g: the upstream change still arrives" "$CON/$FRAG" "UPSTREAM-FRAGMENT-EDIT"
+assert_neq "25g: the fragment is in the lock afterwards" "$(lock_sha "$CON" "$FRAG")" "NONE"
+
+# 25h. an untouched fragment under a pre-fix lock simply takes the upstream change.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+drop_frag_from_lock "$CON"
+edit_line "$OV/$FRAG" "$UP_OLD" "$UP_NEW"; commit_ov "$OV" frag-v2
+OUT="$(python3 "$OVERLAY" --repo-root "$CON" sync example-org --dry-run 2>&1)"
+case "$(plan_line "$FRAG")" in *upstream-ahead*) pass "25h: the adopted fragment plans as upstream-ahead" ;; *) fail "25h: the adopted fragment does not plan as upstream-ahead" "$OUT" ;; esac
+run_overlay "$CON" sync example-org --yes
+assert_rc "25h: sync over a pre-fix lock (untouched fragment) succeeds" 0
+assert_grep "25h: an untouched fragment takes the upstream change" "$CON/$FRAG" "UPSTREAM-FRAGMENT-EDIT"
+
+# 25i. remove under a pre-fix lock keeps an edited fragment as well.
+edit_line "$CON/$FRAG" "$LOCAL_OLD" "$LOCAL_NEW"
+drop_frag_from_lock "$CON"
+run_overlay "$CON" remove example-org
+assert_rc "25i: remove under a pre-fix lock succeeds" 0
+assert_grep "25i: remove under a pre-fix lock keeps an edited fragment" "$CON/$FRAG" "LOCAL-FRAGMENT-EDIT"
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+drop_frag_from_lock "$CON"
+run_overlay "$CON" remove example-org
+assert_rc "25i: remove under a pre-fix lock (clean fragment) succeeds" 0
+assert_absent "25i: remove under a pre-fix lock deletes a clean fragment" "$CON/$FRAG"
+
+# 25k. the pinned blob can be gone (a force-pushed overlay, a re-cloned cache).
+# Adoption must still not fall back to user-owned, which a non-interactive sync
+# skips on every run, so the fragment would never be updated again.
+zero_pin() {  # <consumer>: point the lock at a commit the cache does not have
+  python3 - "$1/overlays.lock.yaml" <<'PY'
+import sys, yaml
+p = sys.argv[1]
+d = yaml.safe_load(open(p))
+d["overlays"]["example-org"]["resolved_sha"] = "0" * 40
+yaml.safe_dump(d, open(p, "w"), sort_keys=False, allow_unicode=True)
+PY
+}
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+drop_frag_from_lock "$CON"; zero_pin "$CON"
+OUT="$(python3 "$OVERLAY" --repo-root "$CON" sync example-org --dry-run 2>&1)"
+case "$(plan_line "$FRAG")" in *" skip "*) pass "25k: an untouched fragment plans as skip without the pinned blob" ;; *) fail "25k: an untouched fragment does not plan as skip without the pinned blob" "$OUT" ;; esac
+run_overlay "$CON" sync example-org --yes
+assert_rc "25k: sync with the pinned blob gone succeeds" 0
+assert_neq "25k: and it is in the lock afterwards" "$(lock_sha "$CON" "$FRAG")" "NONE"
+drop_frag_from_lock "$CON"; zero_pin "$CON"
+edit_line "$CON/$FRAG" "$LOCAL_OLD" "$LOCAL_NEW"
+edit_line "$OV/$FRAG" "$UP_OLD" "$UP_NEW"; commit_ov "$OV" frag-v2
+OUT="$(python3 "$OVERLAY" --repo-root "$CON" sync example-org --dry-run 2>&1)"
+case "$(plan_line "$FRAG")" in *local-edit*) pass "25k: an edited fragment plans as local-edit without the pinned blob" ;; *) fail "25k: an edited fragment does not plan as local-edit without the pinned blob" "$OUT" ;; esac
+run_overlay "$CON" sync example-org --yes
+assert_rc "25k: sync over an edited fragment without the pinned blob succeeds" 0
+assert_out "25k: and the unresolvable merge is reported" "conflict"
+assert_grep "25k: the edit is kept, never overwritten" "$CON/$FRAG" "LOCAL-FRAGMENT-EDIT"
+# The kept fragment needs a hash in the lock (the schema requires one), and it
+# must not be the live file's, or the edit would read as pristine.
+fl_sha="$(lock_sha "$CON" "$FRAG")"; live_sha="$(sha_of "$CON/$FRAG")"
+if [ "$fl_sha" = "NONE" ] || [ "$fl_sha" = "ABSENT" ]; then fail "25k: the kept fragment has no lock hash ($fl_sha)"
+elif [ "$fl_sha" = "$live_sha" ]; then fail "25k: the kept fragment was laundered into the lock"
+else pass "25k: the kept fragment carries a lock hash that is not the live file's"; fi
+OUT="$(check-jsonschema --schemafile "$ROOT/docs/schemas/overlays-lock.schema.yaml" "$CON/overlays.lock.yaml" 2>&1)"; RC=$?
+assert_rc "25k: the lock after adoption schema-validates" 0
+# Not stuck: a later upstream change on another line merges in, the edit stays.
+edit_line "$OV/$FRAG" "number: 1" "number: 7  # UPSTREAM-THIRD-EDIT"; commit_ov "$OV" frag-v3
+run_overlay "$CON" sync example-org --yes
+assert_rc "25k: the next sync after adoption succeeds" 0
+assert_grep "25k: the next upstream change arrives" "$CON/$FRAG" "UPSTREAM-THIRD-EDIT"
+assert_grep "25k: and the edit is still kept" "$CON/$FRAG" "LOCAL-FRAGMENT-EDIT"
+
+# 25j. an overlay that stops shipping its fragment prunes a clean copy and drops
+# the @import, so CLAUDE.md never points at a file that is gone.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+python3 - "$OV/overlay.manifest.yaml" <<'PY'
+import sys, yaml
+p = sys.argv[1]
+d = yaml.safe_load(open(p))
+d.pop("ecosystem_fragment", None)
+yaml.safe_dump(d, open(p, "w"), sort_keys=False, allow_unicode=True)
+PY
+git -C "$OV" rm -q "$FRAG"; commit_ov "$OV" drop-fragment
+run_overlay "$CON" sync example-org --yes
+assert_rc "25j: sync after the overlay drops its fragment succeeds" 0
+assert_absent "25j: the clean fragment is pruned" "$CON/$FRAG"
+assert_nogrep "25j: and its @import is dropped from CLAUDE.md" "$CON/CLAUDE.md" "@$FRAG"
+
+# 25l. a registry the consumer had before subscribing stays the consumer's. The
+# lock then has no fragment entry, exactly like a pre-fix lock, and adopting it
+# would merge overlay lines into the consumer's own file. The overlay says
+# on_conflict: skip, so add leaves the existing file alone (run_overlay answers
+# every prompt with y, which would otherwise take the overlay's copy).
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+edit_line "$OV/overlay.manifest.yaml" "on_conflict: prompt" "on_conflict: skip"; commit_ov "$OV" skip-policy
+printf 'own_registry:\n  note: OWN-REGISTRY\n' > "$CON/$FRAG"
+own_sha="$(sha_of "$CON/$FRAG")"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+edit_line "$OV/$FRAG" "$UP_OLD" "$UP_NEW"; commit_ov "$OV" frag-v2
+OUT="$(python3 "$OVERLAY" --repo-root "$CON" sync example-org --dry-run 2>&1)"
+case "$(plan_line "$FRAG")" in *user-owned*) pass "25l: the consumer's own registry plans as user-owned" ;; *) fail "25l: the consumer's own registry does not plan as user-owned" "$OUT" ;; esac
+run_overlay "$CON" sync example-org --yes
+assert_rc "25l: sync over the consumer's own registry succeeds" 0
+assert_eq "25l: the consumer's own registry is untouched by the sync" "$(sha_of "$CON/$FRAG")" "$own_sha"
+run_overlay "$CON" remove example-org
+assert_rc "25l: remove succeeds" 0
+assert_eq "25l: remove leaves the consumer's own registry alone" "$(sha_of "$CON/$FRAG")" "$own_sha"
+# an own copy identical to the overlay's is still the consumer's: remove keeps it
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+edit_line "$OV/overlay.manifest.yaml" "on_conflict: prompt" "on_conflict: skip"; commit_ov "$OV" skip-policy
+cp "$OV/$FRAG" "$CON/$FRAG"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+run_overlay "$CON" remove example-org
+assert_file "25l: remove leaves an own copy identical to the overlay's alone" "$CON/$FRAG"
+
+# 25m. an overlay that also ships the fragment under tree/ plans it as a tree
+# file, and the @import must still be wired.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+cp "$OV/$FRAG" "$OV/tree/$FRAG"; commit_ov "$OV" frag-in-tree
+run_overlay "$CON" add "file://$OV" --name example-org
+assert_rc "25m: add with the fragment also under tree/ succeeds" 0
+assert_grep "25m: the @import is wired" "$CON/CLAUDE.md" "@$FRAG"
 
 # ───────────────────────────────────────────────────────────────────
 echo

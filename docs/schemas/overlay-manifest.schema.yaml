@@ -104,7 +104,8 @@ properties:
     pattern: "^ecosystem\\.[a-z][a-z0-9-]*\\.yaml$"
     description: |
       Filename of the overlay's ecosystem fragment (ecosystem.<org>.yaml).
-      Copied verbatim to the consumer root and registered as an @import —
+      Materialized verbatim to the consumer root as a managed file (lock
+      entry, 3-way merge on a local edit) and registered as an @import,
       NEVER block-merged into ecosystem.yaml.
 
   files:
