@@ -21,7 +21,7 @@ engine implements). Schemas are authoritative:
 | Overlay cache (sparse clone) | `.bridge/overlays/<name>/` | engine | **no** (gitignored) |
 | Lockfile (audit + drift) | `overlays.lock.yaml` (repo root) | engine (generated) | scope:user — gitignored in public forks |
 | Materialized files | their real dest paths (e.g. `workflow/contexts/example-org-billing.yaml`) | engine, written as COPIES | yes (they're your USER files now) |
-| Ecosystem fragment | `ecosystem.<org>.yaml` at root + an `@import` line in `CLAUDE.md` | engine copies / wires | yes |
+| Ecosystem fragment | `ecosystem.<org>.yaml` at root (a managed file, in the lock) + an `@import` line in `CLAUDE.md` | engine materializes / wires | yes |
 | Fleet record | `infra/instances/<this-instance>.yaml` `subscribes_overlays` | engine updates | yes |
 
 The subscription entry (representative shape — schema-light; the engine owns
@@ -192,12 +192,38 @@ Write a **COPY** (never a symlink) atomically (temp + `os.replace`). Record
 prompt-fields were injected — that's the clean-copy vs prompt-injected
 signal in the lock).
 
+After a clean Step-7 merge of a local edit, `materialized_sha256` stays the
+overlay's own version, not the merged bytes. The file therefore keeps reporting
+as `locally-modified` on every later sync, and that is what sends the next
+upstream change through the merge instead of overwriting the edit.
+
 ### 13 — Ecosystem fragment
 
-If the manifest declares `ecosystem_fragment`, copy `ecosystem.<org>.yaml`
-verbatim to the repo root and **idempotently** ensure the
-`@ecosystem.<org>.yaml` `@import` line exists in `CLAUDE.md`. **Never
-block-merge** into `ecosystem.yaml`.
+If the manifest declares `ecosystem_fragment`, `ecosystem.<org>.yaml` is
+planned like any other managed file (Steps 4 to 12): it has a lock entry, a
+local edit goes through the Step-7 3-way merge, `diff` and `--dry-run` list it,
+and `remove` deletes it only while it is clean. Two differences: the source
+lives at the overlay **root** (not under `source_root`), and it is copied
+**verbatim** (no scope tripwire, no prompt-fields) and never narrowed by
+`select:`. Then **idempotently** ensure the `@ecosystem.<org>.yaml` `@import`
+line exists in `CLAUDE.md`, also when the overlay ships the same file under
+`source_root` as well. **Never block-merge** into `ecosystem.yaml`.
+
+The engine marks every lock entry it writes with `fragment_managed: true`.
+Under that marker a fragment with no `files[]` entry is the consumer's own
+(`user-owned`, typically a registry that was there before the subscription) and
+is never merged into or removed.
+
+A lock from before the fragment was managed has neither the marker nor an entry.
+That engine wrote the fragment verbatim at the pinned `resolved_sha`, so the
+first sync compares the live file against that blob: equal is untouched (take
+the upstream change), different is a local edit (3-way merge). If that blob is
+gone (a force-pushed overlay, a re-cloned cache), a fragment equal to the new
+source is adopted as is. Anything else is kept, reported as a conflict and
+recorded with the overlay's current version as its base; an upstream change that
+landed while the base was unknown is therefore not replayed into it, later ones
+merge normally. If the overlay stops shipping its fragment, a clean copy is
+pruned (Step 14) and its `@import` is dropped with it.
 
 ### 14 — Prune upstream-deleted
 
@@ -306,7 +332,8 @@ remove example-org
     - drop upstreams[] materialize: block (and the entry if pull-only otherwise)
     - drop the example-org entry from overlays.lock.yaml
     - remove the @ecosystem.example-org.yaml @import line from CLAUDE.md
-      and (offer to) delete ecosystem.example-org.yaml
+      (ecosystem.example-org.yaml is a lock-recorded file: deleted if clean,
+      kept if locally modified)
     - update infra/instances/<this>.yaml subscribes_overlays
 ```
 

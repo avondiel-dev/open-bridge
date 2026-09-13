@@ -1096,6 +1096,10 @@ def inject_prompt_fields(content: bytes, prompt_fields: list[dict],
 # File plan (steps 4–7)
 # ---------------------------------------------------------------------------
 
+#: The overlay's ecosystem fragment, planned like a tree file (step 13).
+FRAGMENT_KIND = "ecosystem-fragment"
+
+
 class PlanItem:
     __slots__ = ("src", "dest", "kind", "prompt_fields", "on_conflict",
                  "source_bytes", "source_sha", "state", "reason",
@@ -1210,15 +1214,36 @@ def build_plan(consumer: Consumer, cache: str, manifest: dict, defaults: dict,
     scope = defaults.get("scope", "org")
     items = expand_selection(cache, source_root, manifest, materialize_select)
 
+    # Step 13, the ecosystem fragment, is a managed file like any other: lock
+    # entry, 3-way merge on a local edit, a line in diff and --dry-run, a
+    # clean-only delete. It lives at the overlay ROOT rather than under
+    # source_root, is copied verbatim and is not narrowed by `select:`. It used
+    # to be copied outside the plan on every run, which silently dropped a
+    # consumer's own registry entries.
+    fragment = manifest.get("ecosystem_fragment")
+    if (fragment and valid_fragment_name(fragment)
+            and os.path.isfile(os.path.join(cache, fragment))
+            and not any(it.dest == fragment for it in items)):
+        items.append(PlanItem(src=fragment, dest=fragment, kind=FRAGMENT_KIND,
+                              prompt_fields=[], on_conflict=None))
+
     lock_entry = (lock.get("overlays") or {}).get(overlay_name, {})
     lock_files = {f["dest"]: f for f in lock_entry.get("files", [])
                   if isinstance(f, dict) and f.get("dest")}
+    # A lock written by an engine that plans the fragment says so. Without that
+    # marker a missing fragment entry is ambiguous: a pre-fix lock (whose engine
+    # wrote the fragment on every run) and a consumer's own registry that this
+    # engine skipped as user-owned look exactly the same.
+    legacy_fragment_lock = (bool(old_resolved_sha)
+                            and not lock_entry.get("fragment_managed"))
 
     planned_dests: set[str] = set()
 
     for it in items:
-        abs_src = os.path.join(cache, source_root.rstrip("/"),
-                               it.dest)
+        if it.kind == FRAGMENT_KIND:
+            abs_src = os.path.join(cache, it.src)   # overlay root, not source_root
+        else:
+            abs_src = os.path.join(cache, source_root.rstrip("/"), it.dest)
         try:
             with open(abs_src, "rb") as fh:
                 it.source_bytes = fh.read()
@@ -1240,10 +1265,14 @@ def build_plan(consumer: Consumer, cache: str, manifest: dict, defaults: dict,
                     existing = fh.read()
             except OSError:
                 existing = None
-        # Stage: scope tripwire + prompt-field injection.
-        staged = inject_scope_tripwire(it.dest, it.source_bytes, it.kind, scope)
-        staged, prompted = inject_prompt_fields(staged, it.prompt_fields,
-                                                interactive, existing)
+        # Stage: scope tripwire + prompt-field injection. The fragment stays
+        # verbatim, as it always was: it is a registry, not a tiered config file.
+        if it.kind == FRAGMENT_KIND:
+            staged, prompted = it.source_bytes, []
+        else:
+            staged = inject_scope_tripwire(it.dest, it.source_bytes, it.kind, scope)
+            staged, prompted = inject_prompt_fields(staged, it.prompt_fields,
+                                                    interactive, existing)
         it.staged_bytes = staged
         it.materialized_sha = sha256_bytes(staged)
         it.prompted_fields = prompted
@@ -1272,6 +1301,31 @@ def build_plan(consumer: Consumer, cache: str, manifest: dict, defaults: dict,
         in_lock = it.dest in lock_files
 
         if not in_lock:
+            if (on_disk and it.kind == FRAGMENT_KIND and legacy_fragment_lock
+                    and old_resolved_sha):
+                # A lock from before the fragment was managed has no entry for
+                # it, but that engine wrote the overlay's fragment verbatim at
+                # the pinned SHA on every run. That blob is therefore the last
+                # copy the overlay wrote: equal means untouched, different means
+                # the consumer edited it. Adopt it on that basis instead of
+                # treating the file as user-owned (which a non-interactive sync
+                # would skip forever) or overwriting it (the original loss).
+                base = git_show_blob(cache, old_resolved_sha, it.src)
+                live_sha = sha256_file(dest_abs)
+                if base is None:
+                    # The pinned blob is gone (a force-pushed overlay, a
+                    # re-cloned cache). Equal to the new source is untouched;
+                    # anything else goes the local-edit way: with no base the
+                    # 3-way step keeps the file and reports a conflict, and the
+                    # lock takes the overlay's current version as the base.
+                    it.state = "skip" if live_sha == it.source_sha else "local-edit"
+                elif live_sha != sha256_bytes(base):
+                    it.state = "local-edit"
+                elif it.source_sha == sha256_bytes(base):
+                    it.state = "skip"
+                else:
+                    it.state = "upstream-ahead"
+                continue
             it.state = "user-owned" if on_disk else "clean-new"
             continue
 
@@ -1415,6 +1469,13 @@ def materialize(consumer: Consumer, cache: str, manifest: dict, defaults: dict,
                 counts["locally-modified" if "kept" in st else "conflict"] += 1
                 prev = prev_files.get(it.dest, {})
                 prev_mat_sha = prev.get("materialized_sha256")
+                if not prev_mat_sha and it.dest not in prev_files:
+                    # A fragment adopted from a pre-fix lock has no earlier
+                    # entry. The schema requires the field, and the overlay's
+                    # current version is the only base there is. The live file
+                    # differs from it, so it keeps reading as a local edit and
+                    # `remove` keeps it.
+                    prev_mat_sha = it.materialized_sha
                 file_locks.append({
                     "src": it.src, "dest": it.dest,
                     "source_sha256": it.source_sha,
@@ -1466,15 +1527,24 @@ def materialize(consumer: Consumer, cache: str, manifest: dict, defaults: dict,
                 sys.stderr.write(f"  SKIP   {it.dest}: declined at behavioural gate\n")
                 continue
 
-        # Write (step 12) — atomic COPY.
+        # Write (step 12): atomic COPY. Bytes identical to the file on disk
+        # (a clean merge of an edit whose upstream did not move) are not
+        # rewritten, so an unchanged file is not touched on every sync.
         counts[record_state] += 1
         dest_abs = os.path.join(consumer.root, it.dest)
-        if not dry:
+        if not dry and not (os.path.exists(dest_abs)
+                            and sha256_file(dest_abs) == sha256_bytes(write_bytes)):
             atomic_write_bytes(dest_abs, write_bytes)
         file_locks.append({
             "src": it.src, "dest": it.dest,
             "source_sha256": it.source_sha,
-            "materialized_sha256": sha256_bytes(write_bytes),
+            # What the OVERLAY wrote. A clean 3-way merge writes the consumer's
+            # edit plus the upstream change; recording those merged bytes made
+            # the edited file compare equal on the next run, so the next
+            # upstream change landed as a plain overwrite (step 6c) and the edit
+            # was gone. The overlay's staged bytes keep it reading as an edit.
+            "materialized_sha256": (it.materialized_sha if it.state == "local-edit"
+                                    else sha256_bytes(write_bytes)),
             **({"prompted_fields": it.prompted_fields}
                if it.prompted_fields else {}),
         })
@@ -1535,39 +1605,44 @@ def materialize(consumer: Consumer, cache: str, manifest: dict, defaults: dict,
             counts["orphan"] += 1
             if not dry:
                 os.remove(os.path.join(consumer.root, pr["dest"]))
+                if valid_fragment_name(pr["dest"]):
+                    consumer.drop_ecosystem_import(pr["dest"])
         else:
             if interactive and prompt_yes(
                     f"  upstream removed {pr['dest']} but it is modified. Delete?"):
                 counts["orphan"] += 1
                 if not dry:
                     os.remove(os.path.join(consumer.root, pr["dest"]))
+                    if valid_fragment_name(pr["dest"]):
+                        consumer.drop_ecosystem_import(pr["dest"])
             else:
                 sys.stderr.write(f"  KEEP   {pr['dest']}: orphan but modified\n")
 
-    # Ecosystem fragment (step 13).
+    # Ecosystem fragment (step 13). Its bytes went through the plan above like
+    # any managed file; what is left here is the @import wiring, and a warning
+    # for a declared fragment the plan could not carry.
     fragment = manifest.get("ecosystem_fragment")
     if fragment and not valid_fragment_name(fragment):
-        # Defense-in-depth: validate_manifest already rejects this at add, but
-        # guard the actual write so sync/apply can never land an out-of-name
-        # fragment (traversal / arbitrary name / CLAUDE.md @import).
+        # Defense-in-depth: validate_manifest already rejects this at add, and
+        # build_plan never plans it, but guard the @import too so sync/apply can
+        # never wire an out-of-name fragment (traversal / arbitrary name).
         sys.stderr.write(
             f"  REFUSE ecosystem_fragment '{fragment}': not a valid "
             f"ecosystem.<org>.yaml name\n")
         fragment = None
     if fragment:
-        frag_src = os.path.join(cache, fragment)
-        if os.path.exists(frag_src):
-            if not dry:
-                with open(frag_src, "rb") as fh:
-                    atomic_write_bytes(os.path.join(consumer.root, fragment),
-                                       fh.read())
-            wired = consumer.ensure_ecosystem_import(fragment, dry)
-            if wired:
-                print(f"  @import {fragment} → CLAUDE.md")
-        else:
+        # By dest, not by kind: an overlay that also ships the file under
+        # source_root plans it as a tree file, and the @import is still due.
+        frag_item = next((it for it in items if it.dest == fragment), None)
+        if frag_item is None:
             sys.stderr.write(
                 f"  WARN   manifest declares ecosystem_fragment '{fragment}' "
                 f"but it is absent from the overlay\n")
+        elif frag_item.state not in ("core-refused", "leak-refused", "error") and (
+                dry or os.path.exists(os.path.join(consumer.root, fragment))):
+            wired = consumer.ensure_ecosystem_import(fragment, dry)
+            if wired:
+                print(f"  @import {fragment} → CLAUDE.md")
 
     # Git-exclude guard (step 14): keep overlay-materialized org content OUT of
     # git (via the LOCAL .git/info/exclude, never tracked .gitignore) so a fork
@@ -1578,7 +1653,7 @@ def materialize(consumer: Consumer, cache: str, manifest: dict, defaults: dict,
     # bridge-config.yaml — the dests then become normal, `git add`-able tracked
     # files instead. Never auto-derived from the consumer repo's visibility.
     ig_dests = [fl["dest"] for fl in file_locks]
-    if fragment:
+    if fragment and fragment not in ig_dests:
         ig_dests.append(fragment)
     if track_managed_dests:
         # Clean up a block a prior run may have written (e.g. the switch was
@@ -1595,7 +1670,11 @@ def materialize(consumer: Consumer, cache: str, manifest: dict, defaults: dict,
         new_entry = {
             "url": url, "ref": ref, "resolved_sha": resolved,
             "manifest_sha256": manifest_sha, "precedence": precedence,
-            "last_synced": now_iso(), "files": file_locks,
+            "last_synced": now_iso(),
+            # This engine plans the fragment (build_plan), so a fragment with
+            # no files[] entry is the consumer's own, never a pre-fix lock.
+            "fragment_managed": True,
+            "files": file_locks,
         }
         # Idempotency: if nothing materially changed (same files, same pins),
         # preserve the prior last_synced so a clean re-apply leaves the lock
@@ -1967,11 +2046,28 @@ def cmd_remove(consumer: Consumer, args) -> int:
             try:
                 manifest, _ = read_manifest(cache)
                 frag = manifest.get("ecosystem_fragment")
-                if frag and not args.keep_files:
+                if frag and valid_fragment_name(frag) and not args.keep_files:
                     consumer.drop_ecosystem_import(frag)
                     fp = os.path.join(consumer.root, frag)
-                    if os.path.exists(fp):
-                        os.remove(fp)
+                    managed = any(f.get("dest") == frag
+                                  for f in entry.get("files", []))
+                    if (not managed and not entry.get("fragment_managed")
+                            and os.path.exists(fp)):
+                        # A lock from before the fragment was managed: the files
+                        # loop above never saw it. The last copy the overlay
+                        # wrote is the blob at the pinned SHA, so delete only
+                        # when the file still matches it. The old code deleted
+                        # the fragment unconditionally, edits included. Under a
+                        # lock that plans the fragment, a missing entry means
+                        # the consumer's own file, which remove never touches.
+                        pinned = entry.get("resolved_sha")
+                        base = git_show_blob(cache, pinned, frag) if pinned else None
+                        if base is not None and sha256_file(fp) == sha256_bytes(base):
+                            os.remove(fp)
+                            deleted += 1
+                        else:
+                            kept += 1
+                            sys.stderr.write(f"  KEEP   {frag}: locally-modified\n")
             except OverlayError:
                 pass
         # Drop the git-exclude guard block (files are being removed).

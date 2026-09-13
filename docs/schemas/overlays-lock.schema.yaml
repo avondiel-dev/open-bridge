@@ -76,6 +76,13 @@ $defs:
       last_synced:
         $ref: "#/$defs/Iso8601Utc"
         description: "When this overlay was last materialized (ISO-8601 UTC)."
+      fragment_managed:
+        type: boolean
+        description: |
+          Written by an engine that plans the ecosystem fragment as a managed
+          file. Absent on a lock from before that: the first sync adopts the
+          fragment through the blob at resolved_sha. Present, a fragment with
+          no files[] entry is the consumer's own and is never merged or removed.
       files:
         type: array
         description: "Every file this overlay materialized into the consumer."
@@ -90,7 +97,7 @@ $defs:
       src:
         type: string
         minLength: 1
-        description: "Source path inside the overlay repo (under source_root)."
+        description: "Source path inside the overlay repo: under source_root, or the repo root for the ecosystem fragment."
       dest:
         type: string
         minLength: 1
@@ -101,8 +108,11 @@ $defs:
       materialized_sha256:
         $ref: "#/$defs/Sha256"
         description: |
-          SHA-256 of the file as written into the consumer. Equal to
-          source_sha256 ⇒ clean copy; differing ⇒ prompt-fields injected.
+          SHA-256 of the overlay's own version as written into the consumer.
+          Equal to source_sha256 ⇒ clean copy; differing ⇒ prompt-fields
+          injected. After a clean 3-way merge of a local edit this stays the
+          overlay's version, never the merged bytes, so the edit keeps reading
+          as a local edit on the next sync.
       prompted_fields:
         type: array
         description: |

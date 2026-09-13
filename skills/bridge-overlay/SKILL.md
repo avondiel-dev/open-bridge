@@ -61,7 +61,7 @@ An overlay ships an org's `scope: org` building blocks as a flat `tree/` mirror 
 | Org rules | `rules/org/**` | rule | batch-confirm |
 | **Org skills (complete)** | `skills/<name>/**` | skill | **per-file `[y]`** |
 | **Org sub-agents** | `.claude/agents/<name>.md` | agent | **per-file `[y]`** |
-| Ecosystem fragment | `ecosystem.<org>.yaml` | ecosystem-fragment | `@import` |
+| Ecosystem fragment | `ecosystem.<org>.yaml` | ecosystem-fragment | batch-confirm + `@import` |
 
 **Skills ship COMPLETE.** A skill is a directory: `SKILL.md` declares the tier in
 its `metadata.scope`; the sibling `scripts/`, `references/`, `assets/` carry no
@@ -129,7 +129,9 @@ conflict/precedence model, and 3-way base recovery live in `references/workflow.
    working tree. It never pushes your branch anywhere and never opens a PR.
 7. **Never auto-merge config.** The ecosystem fragment is wired as an
    idempotent `@ecosystem.<org>.yaml` `@import` line — never block-merged into
-   `ecosystem.yaml`. No config file is structurally merged.
+   `ecosystem.yaml`. No config file is structurally merged. The fragment itself
+   is a managed file like any other: in the lock, 3-way merged on a local edit,
+   listed by `diff`, deleted by `remove` only while clean.
 8. **Exclude the managed dests from git — by default.** At materialize, the
    engine writes a marked, idempotent `# >>> overlay:<name>` block into the
    **local, untracked** `.git/info/exclude` (never the tracked `.gitignore`)
@@ -174,7 +176,7 @@ behaviour.** Run before every commit:
 bash scripts/tests/test-overlay.sh        # must end "N passed, 0 failed"
 ```
 
-The suite's 23 sections assert, among others:
+The suite's 25 sections assert, among others:
 
 - subscribe + materialize (every dest exists · inline `scope: org` · lock hashes);
   idempotent re-apply; dry-run writes nothing; `remove` restores a clean tree
@@ -192,6 +194,14 @@ The suite's 23 sections assert, among others:
   SKILL.md/agent still ships (the carve-out doesn't over-refuse)
 - **§22 ecosystem_fragment name** is enforced in-engine (flat `ecosystem.<org>.yaml`)
   even on a consumer without check-jsonschema
+- **§25 the ecosystem fragment is a managed file**: in the lock, listed by `diff`
+  and `--dry-run`, a local edit survives a sync and the next upstream change
+  (a merged edit is never laundered into `materialized_sha256`, tree files
+  included), a conflict keeps the local side, `remove` keeps an edited fragment,
+  a pre-fix lock is adopted without clobbering (also when its pinned blob is
+  gone), a consumer's own registry from before the subscription is never merged
+  into or removed, a fragment also shipped under `tree/` still gets its
+  `@import`, a dropped fragment is pruned with its `@import`
 - **§20 the default git-exclude guard** — managed dests land in
   `.git/info/exclude`, `git check-ignore` confirms them ignored, `.gitignore`
   untouched; **§23 the `track_managed_dests` opt-in** — off by default is

@@ -141,9 +141,11 @@ Notes:
 
 ### The ecosystem fragment
 
-Name it `ecosystem.<org>.yaml`. The consumer copies it **verbatim** to its root
-and adds an idempotent `@ecosystem.<org>.yaml` `@import` line to `CLAUDE.md` —
-it is **never block-merged** into the consumer's `ecosystem.yaml`. Keep it a
+Name it `ecosystem.<org>.yaml`. The consumer materializes it **verbatim** to its
+root as a managed file and adds an idempotent `@ecosystem.<org>.yaml` `@import`
+line to `CLAUDE.md`. A consumer's local edit goes through the 3-way merge on a
+re-sync, and a same-line conflict keeps the consumer's side and reports it. The
+fragment is **never block-merged** into the consumer's `ecosystem.yaml`. Keep it a
 self-contained fragment (your org's repos / workspaces / projects), generic and
 PII-free, exactly like the main `ecosystem.yaml` it sits beside.
 
