@@ -18,8 +18,17 @@
 #   3. git merge-tree predicts 0 conflicts (read from its EXIT CODE — never
 #      from its localized output; see the note at the guard itself)
 #
+# After a successful merge it also FAST-FORWARDS the mirror's core branch, so the
+# private origin keeps a copy of the CORE history this job just merged. Without
+# that step the mirror falls behind by exactly the commits this job consumes, and
+# the next `git push user/<name>` has to carry all of them: measured 1317 objects
+# against a 24-day-stale mirror, 83 once it was current. The count also makes the
+# user branch LOOK enormous — 161 commits ahead, of which 6 were the user's — and
+# that reading has cost real debugging time twice.
+#
 # Env (optional): UPSTREAM_REMOTE (default upstream) · UPSTREAM_REF (default
-# upstream/main) · SIGNAL_ACCOUNT + SIGNAL_RECIPIENT (both set → Signal push).
+# upstream/main) · MIRROR_REMOTE (default origin) · MIRROR_CORE=0 disables the
+# mirror step · SIGNAL_ACCOUNT + SIGNAL_RECIPIENT (both set → Signal push).
 set -uo pipefail
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)" || exit 1
 
@@ -34,6 +43,52 @@ notify() {  # $1 = message
 }
 report() { mkdir -p work; { echo "# Upstream Auto-Update — $(date '+%F %T')"; echo; printf '%s\n' "$@"; } > "$REPORT"; }
 is_int() { case "$1" in ''|*[!0-9]*) return 1;; *) return 0;; esac; }
+
+# mirror_core_branch — fast-forward the mirror's CORE branch to $UPSTREAM_REF.
+#
+# Echoes ONE report line and always returns 0: the merge already succeeded, so a
+# mirror that cannot be updated is a note, never a failure that masks it.
+#
+# Deliberately NOT a second push-guard. The push runs with the repo's hooks
+# ACTIVE (no core.hooksPath override), so scripts/hooks/pre-push classifies the
+# target with the one classifier there is — config push_guard.*, then the
+# .bridge-origin marker — and refuses a target it cannot vouch for. Re-deriving
+# that judgement here would be a copy that drifts.
+#
+# Three conditions, all conservative:
+#   · the mirror remote exists
+#   · the core branch ALREADY exists there — this step keeps an existing mirror
+#     current, it never creates a branch on somebody's remote
+#   · the update is a true fast-forward, checked before pushing, so no mirror
+#     history is ever rewritten
+# It pushes $UPSTREAM_REF, never HEAD and never the user branch, so only CORE
+# commits travel; USER content is not in the pushed ref by construction.
+mirror_core_branch() {
+  [ "${MIRROR_CORE:-1}" = 0 ] && { echo "- mirror: skipped (MIRROR_CORE=0)"; return 0; }
+  local remote="${MIRROR_REMOTE:-origin}" branch cur
+  git remote get-url "$remote" >/dev/null 2>&1 || { echo "- mirror: skipped (no \`$remote\` remote)"; return 0; }
+
+  # Target branch = the mirror's OWN default, never hardcoded; fall back to the
+  # branch part of UPSTREAM_REF when the remote publishes no HEAD.
+  branch=$(git symbolic-ref --quiet "refs/remotes/${remote}/HEAD" 2>/dev/null | sed "s|^refs/remotes/${remote}/||")
+  [ -n "$branch" ] || branch="${UPSTREAM_REF##*/}"
+
+  git fetch "$remote" -q "$branch" 2>/dev/null || true
+  cur=$(git rev-parse --verify --quiet "refs/remotes/${remote}/${branch}") \
+    || { echo "- mirror: skipped (\`$remote/$branch\` does not exist yet — push it once by hand)"; return 0; }
+
+  [ "$cur" = "$(git rev-parse "$UPSTREAM_REF")" ] && { echo "- mirror: \`$remote/$branch\` already current"; return 0; }
+  git merge-base --is-ancestor "$cur" "$UPSTREAM_REF" 2>/dev/null \
+    || { echo "- ⚠ mirror: \`$remote/$branch\` has diverged from \`$UPSTREAM_REF\` — NOT fast-forwardable, left alone"; return 0; }
+
+  local n; n=$(git rev-list --count "${cur}..${UPSTREAM_REF}" 2>/dev/null || echo "?")
+  if git push "$remote" "${UPSTREAM_REF}:refs/heads/${branch}" >/tmp/ob-autoupdate-mirror.log 2>&1; then
+    echo "- ✅ mirror: \`$remote/$branch\` fast-forwarded $n commit(s) ($(git rev-parse --short "$cur") → $(git rev-parse --short "$UPSTREAM_REF"))"
+  else
+    echo "- ⚠ mirror: push to \`$remote/$branch\` failed (see /tmp/ob-autoupdate-mirror.log) — merge itself is fine"
+  fi
+  return 0
+}
 
 git fetch "$UPSTREAM_REMOTE" -q 2>/dev/null || true
 
@@ -89,9 +144,12 @@ fi
 before=$(git rev-parse --short HEAD)
 if git -c core.hooksPath=/dev/null merge --no-edit "$UPSTREAM_REF" >/tmp/ob-autoupdate-merge.log 2>&1; then
   after=$(git rev-parse --short HEAD)
-  report "- ✅ auto-updated \`$before\` → \`$after\` ($behind commit(s) merged from \`$UPSTREAM_REF\`)"
+  mirror_line=$(mirror_core_branch)
+  report "- ✅ auto-updated \`$before\` → \`$after\` ($behind commit(s) merged from \`$UPSTREAM_REF\`)" \
+         "$mirror_line"
   notify "✅ open-bridge auto-updated: $behind commit(s) merged ($before→$after)"
   echo "autoupdate: merged $behind commit(s) ($before→$after)"
+  echo "autoupdate: mirror — ${mirror_line#- }"
 else
   git merge --abort 2>/dev/null || true
   report "- 🔴 auto-update merge FAILED and was aborted — $behind behind, manual merge needed"
