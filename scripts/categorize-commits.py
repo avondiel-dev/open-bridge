@@ -403,6 +403,10 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     # next change to it silently fails to promote.
     "scripts/install-upstream-autoupdate.sh",
     "scripts/upstream-autoupdate.sh",
+    # Registered with the overlay auto-sync, the ORG-layer counterpart to the
+    # CORE auto-update above: the allowlist is deliberate, so a new CORE script
+    # says so here or the next change to it silently fails to promote.
+    "scripts/overlay-autosync.sh",
 })
 
 

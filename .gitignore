@@ -157,6 +157,12 @@ work/**/*.aif
 work/dashboard.html
 docs/repo-layout/schedule.html
 work/state.json
+# Runtime reports the two currency jobs rewrite on every run. Both are
+# generated state, never content: upstream-autoupdate.sh shipped in #187
+# without its own line, so a fresh clone that runs it grows an untracked
+# file nobody put there.
+work/upstream-status.md
+work/overlay-status.md
 
 # scripts/okf-export.py output — exported bundles may contain USER PII (work/ STATUS.md, deliverables); never commit.
 dist/
