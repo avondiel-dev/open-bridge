@@ -461,6 +461,14 @@ def read_disabled(h, stamps, *, timeout_sec, runner=None, notes=None) -> dict:
         if not steps:
             continue
         key = tuple(tuple(step.argv) for step in steps)
+        if key not in seen and any(getattr(s, "requires_elevation", False) for s in steps):
+            # No sudo, ever, and the same rule `observe_host` and `provision`
+            # apply: what needs elevation is noted, not run. Raised instead, it
+            # took the whole host's report down for one entry (#179).
+            if notes is not None:
+                notes.append(f"{runtime}: the persistent off-list of {ref} "
+                             f"needs elevation to read, so it was not read")
+            seen[key] = None
         if key not in seen:
             try:
                 seen[key] = tuple(

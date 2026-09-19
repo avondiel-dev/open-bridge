@@ -330,12 +330,16 @@ class LaunchdBackend:
         # A separate, domain-wide read, because `launchctl print` does not carry
         # the persistent off-list at all. Without this step the refusal that
         # protects a deliberately stopped unit can never fire.
+        #
+        # A READ, so it never carries `requires_elevation`: on this backend that
+        # flag belongs to the write plan. `launchctl print-disabled system`
+        # answers an ordinary user, and inheriting the flag here made one
+        # root-owned unit abort the report for every run on its host (#179).
         return (
             Step(
                 argv=("launchctl", "print-disabled", self._domain_of(a)),
                 purpose=f"read the persistent off-list of {self._domain_of(a)}",
                 expect_rc=(0, 3, 113),
-                requires_elevation=self.requires_elevation,
             ),
         )
 
