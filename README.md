@@ -316,7 +316,7 @@ These are conventions the agent follows, not an OS-level sandbox — read them i
 
 BKS open-bridge runs the company that builds it — every feature exists because we needed it on a real workday. You're early: it's newly public, no external users yet. The ledger below says exactly what that means.
 
-**PROVEN — built and self-used (N=1):**
+**PROVEN: built and self-used by its two maintainers (N=2):**
 
 - The three-cluster layout (`identity/` · `infra/` · `workflow/`), the Task-Management system (board, log, per-task STATUS), the CORE/USER branch split, personas, standing orders, and the skills layer all run from a fresh clone today.
 - Scope-routing works in practice: each file carries a scope (`core` / `org` / `user`); `/promote` routes per scope — demonstrated, not theoretical.
