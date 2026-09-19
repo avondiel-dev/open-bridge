@@ -129,6 +129,9 @@ jobs:
       - name: Run reachability test suite
         run: bash scripts/tests/test-reachability.sh
 
+      - name: Data model contract (every family once, renderings generated)
+        run: bash scripts/tests/test-data-model.sh
+
       - name: Run edge-guard test suite
         run: bash scripts/tests/test-edges.sh
 
@@ -185,6 +188,17 @@ jobs:
       # demand a finding: a needle that matches nothing softens nothing.
       - name: Prove every reachability needle bites
         run: python3 scripts/check-reachability.py --mutate
+
+      # One picture of the data model, held to the tree: every config family
+      # is described exactly once in docs/data-model.yaml, and the tables in
+      # docs/data-model.md and the ring on the landing page are generated from
+      # it. The landing page said "the agent reads every ring" for weeks after
+      # that stopped being true, because nothing compared it with anything.
+      - name: The data model covers every family, and its renderings match it
+        run: python3 scripts/data-model.py
+
+      - name: Prove every data-model needle bites
+        run: python3 scripts/data-model.py --mutate
 
       # The third layer. Entries reference each other in ordinary fields —
       # a customer names its mandant, an account names the task that
