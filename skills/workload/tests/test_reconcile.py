@@ -9,8 +9,10 @@ once wrongly declared overdue).
 from __future__ import annotations
 
 import dataclasses
+import json
 import shlex
 import unittest
+from unittest import mock
 
 from tests.conftest import (
     CORPUS,
@@ -2930,6 +2932,114 @@ class TheOffListIsAskedOncePerQUESTION(ReconcileBase):
         self.assertEqual(dict(getattr(obs, "disabled", {})),
                          {"gui/4242/bridge.calendar-export": False},
                          "the machine answered and the answer went nowhere")
+
+
+class OneRootOwnedUnitDoesNotBlindTheHost(ReconcileBase):
+    """Issue #179: one `launchd-system` stamp took down the view of every run.
+
+    The read of the persistent off-list inherited `requires_elevation` from the
+    backend, and on the system backend that flag is there for the WRITE plan.
+    The runner refused, as it must, and the refusal was not caught, so
+    `observe_host` raised and `reconcile`, `view` and `publish` printed nothing
+    for the host at all. Measured on a host with 57 declarations: two system
+    domain entries, zero output for the other 55, and a page that went stale
+    rather than red.
+
+    Reading a domain's off-list answers unprivileged, the system domain
+    included: `launchctl print-disabled system` returned 0 as an ordinary user
+    on the two machines it was asked on. So the read carries no elevation, and a
+    read that ever does need it degrades to ONE unanswered entry with a note,
+    the way an unreachable host already degrades to `unknown`.
+    """
+
+    MINE = f"gui/{FIXTURE_UID}/bridge.calendar-export"
+    ROOTS = "system/com.example.mesh"
+
+    class RefusesLikeTheRealExecutor(RecordingRunner):
+        """RecordingRunner, plus the one refusal `exec.run_step` makes before anything runs.
+
+        Every other runner in this suite answers an elevated step as if it had run.
+        So a READ that asked for elevation passed here and aborted on a machine:
+        nothing in the suite could see the difference between the two.
+        """
+
+        def __call__(self, argv=None, *args, step=None, **kwargs):
+            real = step if step is not None else (argv if hasattr(argv, "argv") else None)
+            if getattr(real, "requires_elevation", False):
+                raise errors.ElevationRequired(step=" ".join(str(a) for a in real.argv),
+                                               purpose=real.purpose)
+            return super().__call__(argv, *args, step=step, **kwargs)
+
+
+    class ReadsOnlyWithElevation:
+        """A backend whose off-list genuinely cannot be read without a person."""
+
+        name = "elevated-read"
+        platforms = ()
+
+        def disabled_list_steps(self, a, h):
+            return (model.Step(argv=("read-root-only-off-list",),
+                               purpose="read an off-list only root may read",
+                               requires_elevation=True),)
+
+        def parse_disabled(self, outs, unit_ref):
+            return False
+
+    def system_stamp(self):
+        raw = json.loads(stamp_json())
+        raw.update(workload_id="mesh", runtime="launchd-system", unit_ref=self.ROOTS,
+                   declaration="workflow/workloads/mesh.yaml",
+                   files=["/Library/LaunchDaemons/com.example.mesh.plist"])
+        return json.dumps(raw)
+
+    def test_every_other_entry_on_the_host_is_still_reported(self):
+        runner = self.RefusesLikeTheRealExecutor()
+        runner.add("print-disabled", completed_from("launchctl-print-disabled.txt"))
+        runner.add("launchctl list", FakeCompleted(
+            stdout="uid=4242\n" + read_output("launchctl-list.txt")))
+        runner.add("kern.boottime", FakeCompleted(stdout="1787577316\n"))
+        runner.add("cat", FakeCompleted(stdout=stamp_json() + "\n" + self.system_stamp()))
+        cfg = config.load_config(make_repo(self.tmpdir()))
+        obs = reconcile.observe_host(self.host(), cfg, timeout_sec=10, runner=runner)
+        self.assertTrue(obs.reachable)
+        self.assertIn(self.MINE, obs.stamps,
+                      "a root-owned neighbour erased the ordinary run from the report")
+        self.assertIs(dict(obs.disabled).get(self.MINE), False)
+        self.assertIs(dict(obs.disabled).get(self.ROOTS), False,
+                      "the system domain's off-list was not read, so the one "
+                      "root-owned run is judged on less than the machine said")
+
+    def test_reading_the_system_off_list_asks_for_no_elevation(self):
+        system = mod("engine.backends").BACKENDS["launchd-system"]
+        steps = system.disabled_list_steps(reconcile._Claim(unit_ref=self.ROOTS), self.host())
+        self.assertTrue(steps, "no off-list read at all is not a fix")
+        self.assertEqual([s.argv for s in steps if s.requires_elevation], [],
+                         "a read inherited the flag that belongs to the write plan")
+        self.assertTrue(system.requires_elevation,
+                        "the counterweight: CHANGING the system domain still "
+                        "needs a person, and that must not have moved")
+
+    def test_a_read_that_does_need_elevation_is_one_gap_not_a_dead_host(self):
+        backends = mod("engine.backends")
+        stamps = {"calendar-export": self.stamp("calendar-export", unit_ref=self.MINE),
+                  "guarded": self.stamp("guarded", unit_ref="guarded/unit",
+                                        runtime="elevated-read")}
+        runner = self.RefusesLikeTheRealExecutor()
+        runner.add("print-disabled", completed_from("launchctl-print-disabled.txt"))
+        notes = []
+        with mock.patch.dict(backends.BACKENDS, {"elevated-read": self.ReadsOnlyWithElevation()}):
+            out = reconcile.read_disabled(self.host(), stamps, timeout_sec=10,
+                                          runner=runner, notes=notes)
+        self.assertIs(out.get(self.MINE), False, "the answerable entry lost its answer")
+        self.assertNotIn("guarded/unit", out,
+                         "not asked is not absent: an unread list is no answer")
+        said = " ".join(notes)
+        self.assertIn("guarded/unit", said)
+        self.assertIn("elevation", said,
+                      "`nothing can be judged` and `nothing is wrong` must never "
+                      "print the same")
+        self.assertNotIn("read-root-only-off-list", runner.joined_calls,
+                         "an elevated step reached the runner")
 
 
 class WhereARunSaysWhatItSaid(MachineGuard):

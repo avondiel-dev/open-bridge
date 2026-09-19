@@ -3847,4 +3847,28 @@ MUTATIONS = (
         scar="a fragment compared against the whole page, reporting a delivery "
              "that had not happened yet",
     ),
+    Mutation(
+        name="the-off-list-read-inherits-the-write-flag",
+        file="engine/backends/launchd.py",
+        search="                purpose=f\"read the persistent off-list of {self._domain_of(a)}\",\n"
+               "                expect_rc=(0, 3, 113),\n",
+        replace="                purpose=f\"read the persistent off-list of {self._domain_of(a)}\",\n"
+                "                expect_rc=(0, 3, 113),\n"
+                "                requires_elevation=self.requires_elevation,\n",
+        test="tests.test_reconcile.OneRootOwnedUnitDoesNotBlindTheHost"
+             ".test_reading_the_system_off_list_asks_for_no_elevation",
+        scar="issue #179: two root-owned units on a host of 57 declarations, "
+             "and the page for all 57 went stale instead of red",
+    ),
+    Mutation(
+        name="an-elevated-off-list-read-reaches-the-runner",
+        file="engine/reconcile.py",
+        search="        if key not in seen and any(getattr(s, \"requires_elevation\", False) "
+               "for s in steps):\n",
+        replace="        if False:\n",
+        test="tests.test_reconcile.OneRootOwnedUnitDoesNotBlindTheHost"
+             ".test_a_read_that_does_need_elevation_is_one_gap_not_a_dead_host",
+        scar="issue #179: the runner's refusal was raised through observe_host, "
+             "so one unreadable entry took the report for the whole host with it",
+    ),
 )
