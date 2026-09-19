@@ -182,7 +182,8 @@ families:
     object: "one declared run on one machine"
     island: "core: template, schema, contract tests; user: entries"
     lives: [core, private]
-    references: ["placement.host → infra/remotes/", "persona_ref → identity/personas/"]
+    references: ["placement.host → infra/remotes/", "persona_ref → identity/personas/",
+                 "response.recipients → identity/mandants/", "response.notify_via → infra/channels/"]
     writer: "/workload"
     read: named
 

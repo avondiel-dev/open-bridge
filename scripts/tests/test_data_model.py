@@ -125,3 +125,13 @@ def test_every_needle_bites():
     done = subprocess.run([sys.executable, str(CLI), "--mutate"], cwd=REPO_ROOT,
                           capture_output=True, text=True)
     assert done.returncode == 0, done.stderr
+
+
+def test_an_instance_file_in_the_core_repo_is_a_finding(tmp_path):
+    """A CORE family described only in work/ would pass once-each and vanish from
+    both renderings. A checkout without bridge-config.yaml is the CORE repo."""
+    root = _tree(tmp_path, ["identity/personas", "work"], [_row("work/")],
+                 local_rows=[_row("identity/personas/")])
+    assert any("without bridge-config.yaml" in p for p in dm.check_instance_file(root))
+    (root / "bridge-config.yaml").write_text("identity: {}\n", encoding="utf-8")
+    assert dm.check_instance_file(root) == [], "an instance may describe its own families"

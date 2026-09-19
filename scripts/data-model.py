@@ -134,9 +134,30 @@ def check_rendered(root: Path, model: dict) -> list[str]:
     return problems
 
 
+def is_core_checkout(root: Path) -> bool:
+    """No bridge-config.yaml, no user tier: the test the scope-router suite uses too."""
+    return not (root / "bridge-config.yaml").exists()
+
+
+def check_instance_file(root: Path) -> list[str]:
+    """In the CORE repo there is no instance, so there is no instance file.
+
+    Without this, a CORE family described only in work/data-model.yaml would
+    pass the once-each check and still be missing from both renderings, which
+    leave instance rows out on purpose. The scope-router suite exempts work/,
+    so nothing else would notice.
+    """
+    if is_core_checkout(root) and (root / INSTANCE_MODEL).is_file():
+        return [f"{INSTANCE_MODEL} exists in a checkout without bridge-config.yaml: in the "
+                f"CORE repo every family is described in {CORE_MODEL}, where the tables "
+                f"and the ring can see it"]
+    return []
+
+
 def check(root: Path) -> list[str]:
     model = load_model(root)
-    return check_rows(model, tree_families(root)) + check_rendered(root, model)
+    return (check_instance_file(root) + check_rows(model, tree_families(root))
+            + check_rendered(root, model))
 
 
 # ------------------------------------------------------------- rendering --
@@ -409,8 +430,12 @@ def main(argv=None) -> int:
         for p in problems:
             print(f"  - {p}", file=sys.stderr)
         return 1
-    n = len(load_model(root)["families"])
-    print(f"data-model: {n} families, each described once; table and ring match {CORE_MODEL}")
+    rows = load_model(root)["families"]
+    local = sorted(_norm(r["path"]) for r in rows if r.get("origin") == INSTANCE_MODEL)
+    note = (f" ({len(local)} described in {INSTANCE_MODEL} and left out of both renderings: "
+            f"{', '.join(local)})") if local else ""
+    print(f"data-model: {len(rows)} families, each described once{note}; "
+          f"table and ring match {CORE_MODEL}")
     return 0
 
 
