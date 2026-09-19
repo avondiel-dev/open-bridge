@@ -383,7 +383,9 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     # validate.yml runs the suite, the check and its mutation battery.
     "scripts/check-reachability.py",
     "scripts/data-model.py",
+    "scripts/tests/test-data-model.sh",
     "scripts/tests/test-reachability.sh",
+    "scripts/tests/test_data_model.py",
     "scripts/tests/test_reachability.py",
     # Registered 2026-08-30 with the edge guard. validate.yml runs both.
     "scripts/check-edges.py",
