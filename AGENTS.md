@@ -187,7 +187,7 @@ one hop both ways, `--fix` rewrites a reference whose task merely moved KIND).
 | `identity/personas/` | an identity the user HOLDS: signature, tax data, filing paths |
 | `identity/mandants/` | who RECEIVES an outgoing message |
 | `identity/accounts/` | a cloud tenant, subscription or vault reference |
-| `identity/contracts/` | a customer contract: term, rate, notice |
+| `identity/contracts/` | a recurring obligation: utility, telco, insurance, SaaS |
 | `identity/vehicles/` | a vehicle the user owns or leases: plate, VIN, the persona that bears it |
 | `identity/agent/` | this orchestrator's own name, role and voice |
 | `infra/remotes/` | a machine: ssh, wake, services, "which PC" |
