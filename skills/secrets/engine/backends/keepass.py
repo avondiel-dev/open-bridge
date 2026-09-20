@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import os
 
-from ..errors import BackendUnavailable, ReferenceError_, SecretsError
+from ..errors import BackendUnavailable, ReferenceError_, Refused, SecretsError
 from ..refs import Ref
 from ..values import Reading, Secret
 from .base import Backend
@@ -166,14 +166,73 @@ class KeePassBackend(Backend):
             )
 
         # `--attributes` prints the value and nothing else, one trailing newline.
-        raw = (done.stdout or "")
-        if raw.endswith("\n"):
-            raw = raw[:-1]
+        raw = _strip_one_newline(done.stdout or "")
         secret = Secret(raw, origin=ref.canonical)
         if secret.is_empty():
             return Reading(ref=ref.canonical, present=False, secret=secret, store=ref.store,
                            note=(note + "; " if note else "") + "the attribute exists and is empty")
         return Reading(ref=ref.canonical, present=True, secret=secret, store=ref.store, note=note)
+
+    # -- write --------------------------------------------------------------
+
+    def argv_write(self, ref: Ref, *, replace: bool) -> list:
+        verb = "edit" if replace else "add"
+        argv = [str(self.binary), verb, "--quiet", "--password-prompt"]
+        if self.key_file:
+            argv += ["--key-file", self.key_file]
+        argv += [self.database_path(ref), self.entry_path(ref)]
+        return argv
+
+    def stdin_for_write(self, secret: Secret) -> bytes:
+        """The two lines the tool reads, in the order it asks for them.
+
+        First the master password to open the database, then the value for the
+        entry, because `--password-prompt` asks for the entry's password after
+        the database is open. Both arrive on stdin and neither in argv. The
+        order IS the contract: swap the lines and the database refuses to open
+        with the secret as its master password, which is a failure that looks
+        like a wrong master password and is not.
+        """
+        master = b"" if self.password is None else self.password.expose()
+        return master + b"\n" + secret.expose() + b"\n"
+
+    def write(self, ref: Ref, secret: Secret, *, replace: bool = False) -> Reading:
+        self.require_available(ref)
+        ok, why = self.readable_here(ref)
+        if not ok:
+            raise BackendUnavailable(why, ref=ref.canonical)
+        if self.locked(ref):
+            # A save rewrites the whole file: KDBX has no journal, and the merge
+            # KeePassXC offers happens in the GUI, on reload, with a person
+            # present. Writing under a lock is how one of the two versions
+            # quietly wins. Across a WSL mount the lock is not even reliably
+            # visible, so the absence of one is weaker evidence than it looks.
+            raise Refused(
+                "the database is open in another client",
+                ref=ref.canonical,
+                hint=(f"close it, or write it there. The lock is {self.lock_file(ref)}. "
+                      f"On a WSL mount the lock of the Windows side may not be visible here at "
+                      f"all, so a write can still collide."),
+            )
+        if ref.field and ref.field.lower() not in ("password", "") :
+            raise Refused(
+                "this Bridge writes the password field only",
+                ref=ref.canonical,
+                hint=f"the reference names the field {ref.field!r}; write it in KeePassXC itself",
+            )
+        from .. import exec as exec_mod
+
+        done = exec_mod.run(self.argv_write(ref, replace=replace),
+                            stdin_bytes=self.stdin_for_write(secret), runner=self.runner,
+                            timeout_sec=120)
+        if done.rc != 0:
+            lowered = (done.stderr or "").lower()
+            if "already exists" in lowered:
+                raise Refused("an entry of that name is already there", ref=ref.canonical,
+                              hint="pass --replace to edit it instead")
+            raise SecretsError(f"keepassxc-cli exited {done.rc}", ref=ref.canonical,
+                               hint=_first_line(done.stderr) or "no message on stderr")
+        return self.read(ref)
 
     # -- description --------------------------------------------------------
 
@@ -188,3 +247,12 @@ def _first_line(text: str) -> str:
         if line:
             return line
     return ""
+
+
+def _strip_one_newline(text: str) -> str:
+    """Exactly one, never every trailing newline: a PEM key ends with one."""
+    if text.endswith("\r\n"):
+        return text[:-2]
+    if text.endswith("\n") or text.endswith("\r"):
+        return text[:-1]
+    return text

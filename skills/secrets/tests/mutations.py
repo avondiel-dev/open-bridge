@@ -29,6 +29,30 @@ Three needles do not name an engine source.
   and a negative cannot be softened by deletion. The only way to find out
   whether anything is watching is to put a value where it must not be.
 
+Two more needles add a line for that same reason, one on each of the paths in
+this slice that carry a value INTO a store: the keychain write and the Key Vault
+write. `argv_carried()` returning False is also what a suite that never ran
+anything at all would report, and on a write path that is the difference between
+a value on stdin and a value in `ps`.
+
+A third addition is not about argv. The Key Vault metadata needle SPLITS one
+call into two rather than deleting anything, because the property is "in the
+same call" and a second `set` is what the engine is there to avoid, not the
+absence of a flag.
+
+Several needles share one anchor and differ only in what they put there. That is
+deliberate and it is not duplication: `_escape` has three ways to be wrong and
+each one arrives at the far end as a different length of value, so each gets its
+own entry with its own named case. A single needle over that line would be
+satisfied by a suite that noticed any one of the three.
+
+A needle may only name a test that RUNS AND PASSES in the scratch copy. A test
+that is red before the mutation is applied scores red afterwards for a reason
+that has nothing to do with the mutation, which is the same lie as a skip with
+the sign flipped. The deliberate reds of this slice are named in
+`test_file_backend.TheRedCasesAreNamedRatherThanCounted`, and none of them is
+named here.
+
 A needle may only name a test that RUNS in the scratch copy, because a skip
 scores as a pass. Four cases in this suite can skip: the real keychain tier
 (macOS plus the `security` binary), two cases that ask git a question, and one
@@ -65,6 +89,15 @@ RESOLVE = "engine/resolve.py"
 DISCOVER = "engine/discover.py"
 CHECK = "engine/check.py"
 CONFTEST = "tests/conftest.py"
+FILE_BACKEND = "engine/backends/file.py"
+AZURE = "engine/backends/azure_keyvault.py"
+ONEPASSWORD = "engine/backends/onepassword.py"
+STORES = "engine/stores.py"
+
+#: The line `_escape` really is, kept in one place because three needles soften
+#: it three different ways and a copy that drifted would silently stop applying.
+#: A raw string, so the backslashes here are the backslashes in the source.
+ESCAPE_LINE = r"""    return text.replace("\\", "\\\\").replace('"', '\\"')"""
 
 
 MUTATIONS = (
@@ -458,5 +491,610 @@ MUTATIONS = (
         scar="a denylist that only reads argv[0] is walked past by one layer of "
              "shell, and the shim this skill ships is a shell script, so that "
              "layer is not hypothetical here",
+    ),
+
+    # -- the keychain write line, character by character ---------------------
+    #
+    # Three ways for `_escape` to be wrong, three lengths of value at the far
+    # end, one anchor. Measured on 2026-09-04 against `security -i`.
+    Mutation(
+        name="the-backslash-in-the-write-line-stops-being-doubled",
+        file=KEYCHAIN,
+        search=ESCAPE_LINE,
+        replace=r"""    return text.replace('"', '\\"')""",
+        test="tests.test_write_keychain.TheQuotingIsExactlyOneBackslashPerCharacter"
+             ".test_a_backslash_gets_one_backslash_and_not_three",
+        scar="`security -i` reads the line the way a shell reads one, so a lone "
+             "backslash inside the quotes escapes whatever follows it instead of "
+             "being stored. The value arrives short by one character per "
+             "backslash, the entry exists, every existence check is green, and "
+             "the far end rejects a credential that looks right",
+    ),
+    Mutation(
+        name="the-double-quote-in-the-write-line-stops-being-escaped",
+        file=KEYCHAIN,
+        search=ESCAPE_LINE,
+        replace=r"""    return text.replace("\\", "\\\\")""",
+        test="tests.test_write_keychain.TheQuotingIsExactlyOneBackslashPerCharacter"
+             ".test_a_double_quote_gets_one_backslash_and_not_two",
+        scar="the other half, and the louder one: an unescaped quote closes the "
+             "operand early, so the rest of the value becomes further operands "
+             "of `add-generic-password`. Measured, the command either stores a "
+             "truncated value or exits 2, and which of the two happens depends "
+             "on what the value contains",
+    ),
+    Mutation(
+        name="the-two-escapes-of-the-write-line-run-in-the-wrong-order",
+        file=KEYCHAIN,
+        search=ESCAPE_LINE,
+        replace=r"""    return text.replace('"', '\\"').replace("\\", "\\\\")""",
+        test="tests.test_write_keychain.TheQuotingIsExactlyOneBackslashPerCharacter"
+             ".test_a_backslash_in_front_of_a_quote_keeps_both_escapes_apart",
+        scar="both replacements are present and the value still arrives wrong. "
+             "Escaping the quote first puts a backslash in front of it, and the "
+             "second replacement then doubles the backslash it just added, so a "
+             "value holding a backslash next to a quote arrives LONG. The needle "
+             "exists because the two entries above both stay red over an order "
+             "that is correct, and neither says anything about this one",
+    ),
+    Mutation(
+        name="the-hex-branch-of-the-write-is-never-taken",
+        file=KEYCHAIN,
+        search="        if _needs_hex(raw):",
+        replace="        if False:",
+        test="tests.test_write_keychain.AControlCharacterGoesAsHexAndStaysOutOfArgv"
+             ".test_a_newline_value_uses_the_x_flag_and_not_the_w_flag",
+        scar="the quoted form cannot carry a newline at all: `security -i` reads "
+             "whole command LINES from stdin, so a value with a newline in it "
+             "ends the command halfway through and the second half is read as "
+             "the next command. A PEM key and a service account JSON are both "
+             "this case, and both are values somebody will hand to `store`",
+    ),
+    Mutation(
+        name="a-control-character-is-no-longer-recognised-as-one",
+        file=KEYCHAIN,
+        search="    return any(ord(ch) < 32 or ord(ch) == 127 for ch in text)",
+        replace="    return False",
+        test="tests.test_write_keychain.AControlCharacterGoesAsHexAndStaysOutOfArgv"
+             ".test_a_tab_is_a_control_character_too",
+        scar="the predicate under the branch above, and it fails differently: "
+             "the branch is still there, it simply answers no. A tab and a "
+             "carriage return are the two that get forgotten, because the "
+             "newline is the one everybody thinks of. The needle names the tab "
+             "for that reason, and the non-utf8 case stays green over it, which "
+             "is how the two halves of `_needs_hex` are told apart",
+    ),
+    Mutation(
+        name="the-accessor-flag-is-dropped-from-the-write-line",
+        file=KEYCHAIN,
+        search='        parts.append("-A")',
+        replace="        parts.extend([])",
+        test="tests.test_write_keychain.TheAccessorFlagIsOnEveryWrite"
+             ".test_a_plain_write_carries_the_accessor_flag",
+        scar="without `-A` the item is written with no accessor at all, and the "
+             "read that follows blocks on a dialog nobody can answer. In a "
+             "launchd context that is ten seconds and then nothing, reported as "
+             "a missing secret, which is the one answer that sends somebody to "
+             "rotate a credential that was never gone",
+    ),
+    Mutation(
+        name="the-keychain-write-hands-the-value-over-in-an-argv",
+        file=KEYCHAIN,
+        search='        line = self.write_line(ref, secret, replace=replace) + "\\n"',
+        replace='        line = self.write_line(ref, secret, replace=replace) + "\\n"\n'
+                '        exec_mod.run(["security", "add-generic-password", "-s", ref.store,\n'
+                '                      "-w", secret.expose_text()], runner=self.runner)',
+        test="tests.test_write_keychain.NoValueEverTravelsInArgvOnTheWritePath"
+             ".test_a_plain_value_is_never_in_argv",
+        scar="the whole reason `security -i` is used instead of the obvious "
+             "`add-generic-password -w`. This needle adds the obvious call "
+             "rather than removing anything, because the property is a NEGATIVE "
+             "and a negative cannot be softened by deletion: with the line gone "
+             "the case is green, and it is equally green for a backend that was "
+             "never called at all",
+    ),
+
+    # -- a write is believed only after it has been read back ---------------
+    Mutation(
+        name="the-read-back-no-longer-compares-what-came-back",
+        file=RESOLVE,
+        search="        if reading.secret != secret:",
+        replace="        if False:",
+        test="tests.test_store_cli.AWriteIsNotBelievedUntilItHasBeenReadBack"
+             ".test_a_value_that_reads_back_different_is_a_failure",
+        scar="the read-back is not ceremony. A value that lost two characters to "
+             "a quoting rule reads back with present=True and a plausible "
+             "length, and the only thing that tells it from a correct write is "
+             "the comparison. Without it the verb reports success over an entry "
+             "holding something else, and the failure surfaces at the far end as "
+             "a rejected credential",
+    ),
+    Mutation(
+        name="an-entry-that-reads-back-empty-is-reported-as-a-write-that-landed",
+        file=RESOLVE,
+        search="        self._readings.pop(parsed.canonical, None)\n"
+               "        if not reading.present or reading.secret is None:",
+        replace="        self._readings.pop(parsed.canonical, None)\n"
+                "        if False:",
+        test="tests.test_store_cli.AWriteIsNotBelievedUntilItHasBeenReadBack"
+             ".test_an_entry_that_reads_back_empty_is_a_failure_too",
+        scar="every tool in this chain exits 0 for an entry that holds nothing, "
+             "which is how an empty value once travelled three layers. The two "
+             "failures need different words and different exit codes: an entry "
+             "holding the wrong bytes is 70, an entry holding none is 3, and a "
+             "wrapper reads the code rather than the prose",
+    ),
+    Mutation(
+        name="the-read-back-is-answered-from-the-cache-instead-of-the-store",
+        file=RESOLVE,
+        search="        self._readings.pop(parsed.canonical, None)",
+        replace="        pass",
+        test="tests.test_resolve.AWriteEmptiesTheReadingTheSameRunWasHolding"
+             ".test_a_later_read_after_a_mismatched_write_asks_the_store_again",
+        scar="one resolver serves a whole command, and the reference being "
+             "written has usually been read by it already. On the failure paths "
+             "the stale reading is the damage: the refusal says in as many "
+             "words that nothing was rolled back and the entry is worth looking "
+             "at, and a cached read then reports it exactly as it stood before "
+             "the write. The success path is green either way, because a write "
+             "that lands installs its own read-back on the way out, which is "
+             "why this line went unguarded until a needle asked",
+    ),
+
+    # -- the policy is read at the moment of the write ----------------------
+    Mutation(
+        name="a-store-accepts-a-kind-it-does-not-declare",
+        file=CLI,
+        search="    if kind not in declared:",
+        replace="    if False:",
+        test="tests.test_store_cli"
+             ".AKindTheTargetStoreDoesNotHoldIsRefusedAndTheMessageSaysWhereItBelongs"
+             ".test_the_exit_code_is_the_refusal_code",
+        scar="a policy nothing reads at the moment of the write is "
+             "documentation. The loose token file gets written anyway, next to "
+             "a file that says it should not be, and that is how credentials "
+             "ended up in working folders on two machines in this fleet",
+    ),
+    Mutation(
+        name="what-identifies-rather-than-authenticates-is-accepted-into-a-store",
+        file=CLI,
+        search="    if kind in stores_mod.NOT_A_KIND:",
+        replace="    if False:",
+        test="tests.test_store_cli.WhatIdentifiesRatherThanAuthenticatesIsNotStored"
+             ".test_the_reason_is_printed",
+        scar="an IBAN is on every invoice the user writes, so moving it into a "
+             "vault makes it useless for the thing it is for and buys nothing, "
+             "because knowing it grants nothing. The needle names the case that "
+             "reads the REASON, because the exit code alone cannot tell the two "
+             "refusals apart: without this branch the word falls through to the "
+             "unknown-kind refusal one line down, with the same code and nothing "
+             "written, so four of that class's five cases stay green over it",
+    ),
+    Mutation(
+        name="a-pipe-is-no-longer-the-default-source-of-a-value",
+        file=CLI,
+        search='        source = "stdin" if not sys_mod.stdin.isatty() else "prompt"',
+        replace='        source = "prompt"',
+        test="tests.test_store_cli.AValuePipedInIsWrittenWithoutEverStandingInArgv"
+             ".test_a_pipe_is_the_default_source_when_stdin_is_not_a_terminal",
+        scar="a prompt in a pipeline is a process waiting on a terminal that is "
+             "not there. It does not fail, it hangs, and in a provisioning "
+             "script that is a job nobody notices until the timeout",
+    ),
+    Mutation(
+        name="the-newline-the-pipe-added-is-stored-as-part-of-the-value",
+        file=CLI,
+        search="        if raw.endswith(b\"\\r\\n\"):\n"
+               "            raw = raw[:-2]\n"
+               "        elif raw.endswith(b\"\\n\") or raw.endswith(b\"\\r\"):\n"
+               "            raw = raw[:-1]\n"
+               "        return Secret(raw)",
+        replace="        return Secret(raw)",
+        test="tests.test_store_cli.AValuePipedInIsWrittenWithoutEverStandingInArgv"
+             ".test_a_trailing_newline_from_the_pipe_is_not_part_of_the_value",
+        scar="`echo $TOKEN | secrets store ...` sends the value and the newline "
+             "the shell added. A token with a trailing newline fails an "
+             "Authorization header while looking right in every report, because "
+             "the byte does not render",
+    ),
+    Mutation(
+        name="an-empty-pipe-is-written-into-the-store-as-a-secret",
+        file=CLI,
+        search="    if secret.is_empty():",
+        replace="    if False:",
+        test="tests.test_store_cli.AnEmptyValueIsAUsageErrorAndNothingIsWritten"
+             ".test_the_exit_code_is_the_usage_code",
+        scar="a pipe that produced nothing is the ordinary shape of a command "
+             "that failed upstream, and writing its result overwrites a working "
+             "credential with zero bytes. The store then holds an entry that "
+             "exists, so the next `check` is green and the next use is not",
+    ),
+
+    # -- the file backend, where the locator IS the value -------------------
+    Mutation(
+        name="the-mode-of-a-secret-file-comes-from-the-umask",
+        file=FILE_BACKEND,
+        search="            return os.open(name, flags | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)",
+        replace="            return os.open(name, flags | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o666)",
+        test="tests.test_file_backend.TheModeIsSetWhenTheFileIsCreatedAndNotAfterwards"
+             ".test_the_open_is_what_sets_the_mode_and_not_the_chmod_afterwards",
+        scar="the mode belongs to the open. A file created wide and narrowed by "
+             "the chmod two lines later stands readable, with the secret already "
+             "in it, for the length of the write. The needle names the case that "
+             "neutralises the chmod, because every other case in that class is "
+             "green over this mutation: the chmod repairs the mode before "
+             "anybody looks",
+    ),
+    Mutation(
+        name="a-file-every-account-can-read-is-handed-over-anyway",
+        file=FILE_BACKEND,
+        search="        if mode not in ALLOWED_MODES:",
+        replace="        if False:",
+        test="tests.test_file_backend.AFileAnotherAccountCanReadIsNotASecretAnyMore"
+             ".test_a_mode_0644_file_is_refused_on_read",
+        scar="refused on READ and not merely reported, because a value every "
+             "account on the machine can already read has to be treated as "
+             "disclosed. Handing it over with a warning attached lets a wrapper "
+             "carry on using it, and the warning lands in a log nobody opens "
+             "until the credential turns up somewhere it should not have been",
+    ),
+    Mutation(
+        name="a-group-readable-mode-is-added-to-the-allowed-list",
+        file=FILE_BACKEND,
+        search="ALLOWED_MODES = (0o600, 0o400)",
+        replace="ALLOWED_MODES = (0o600, 0o400, 0o640, 0o644)",
+        test="tests.test_file_backend.AFileAnotherAccountCanReadIsNotASecretAnyMore"
+             ".test_a_group_readable_file_is_refused_too",
+        scar="the list is the policy, and 0o640 is the mode somebody reaches for "
+             "when a second service account needs the file. It is also the mode "
+             "that makes the value readable by every member of that group, which "
+             "on a shared machine is not a list anybody audits",
+    ),
+    Mutation(
+        name="a-write-outside-every-declared-store-goes-through",
+        file=FILE_BACKEND,
+        search="        if not self.inside_a_store(ref):",
+        replace="        if False:",
+        test="tests.test_file_backend.AWriteOutsideEveryDeclaredStoreIsRefused"
+             ".test_a_path_outside_the_declared_root_is_refused",
+        scar="without this rule the backend is `write the token wherever`, which "
+             "is the habit the whole skill exists to end: small text files with "
+             "credentials in working folders and temp directories, on two "
+             "machines, found by a scan rather than by anybody noticing",
+    ),
+    Mutation(
+        name="a-neighbour-directory-is-read-as-being-inside-the-store",
+        file=FILE_BACKEND,
+        search='        return any(path == root or path.startswith(root.rstrip("/") + "/")',
+        replace='        return any(path == root or path.startswith(root.rstrip("/"))',
+        test="tests.test_file_backend.AWriteOutsideEveryDeclaredStoreIsRefused"
+             ".test_a_neighbour_whose_name_starts_with_the_root_is_still_outside",
+        scar="a prefix test without the separator declares `/home/opuser/"
+             "secrets-old/token` to be inside `/home/opuser/secrets`, and "
+             "`secrets-old` is exactly the directory somebody made while "
+             "rotating. The containment check then sanctions the one place a "
+             "stale copy was always going to land",
+    ),
+    Mutation(
+        name="a-symlink-carries-the-value-out-of-the-declared-store",
+        file=FILE_BACKEND,
+        search="        return os.path.realpath(os.path.expanduser(ref.store))",
+        replace="        return os.path.abspath(os.path.expanduser(ref.store))",
+        test="tests.test_file_backend.ASymlinkInsideTheStoreDoesNotCarryTheValueOutOfIt"
+             ".test_a_write_through_the_link_is_refused",
+        scar="containment is measured on the resolved path or it is not measured "
+             "at all: `<store>/escape/token` passes a lexical prefix test "
+             "whatever `escape` turns out to be, and the value then lands "
+             "outside every declaration while the guard reports it as inside. "
+             "Nobody has to plant the link on purpose, a store directory that is "
+             "itself a convenience link to a synced folder is the ordinary way",
+    ),
+    Mutation(
+        name="the-parent-directory-of-a-secret-file-is-created-world-listable",
+        file=FILE_BACKEND,
+        search="        os.mkdir(path, 0o700)",
+        replace="        os.mkdir(path, 0o755)",
+        test="tests.test_file_backend.TheParentDirectoryIsCreatedOwnerOnly"
+             ".test_the_created_parent_is_owner_only",
+        scar="the mode of the file is not the whole story: a directory every "
+             "account can list gives away the NAMES of the secret files under "
+             "it, which on a per-customer subtree is a customer list. The "
+             "content stays at 0600 throughout, so nothing else in this suite "
+             "would notice",
+    ),
+
+    # -- Key Vault: the value goes in a file, the metadata in the same call --
+    Mutation(
+        name="the-key-vault-write-puts-the-value-on-the-command-line",
+        file=AZURE,
+        search='        argv = ["az", "keyvault", "secret", "set", *self._common(ref), "--file", path]',
+        replace='        argv = ["az", "keyvault", "secret", "set", *self._common(ref), "--value", path]',
+        test="tests.test_azure_keyvault.NoValueEverTravelsInArgvOnTheWayIntoTheVault"
+             ".test_the_value_flag_is_never_used",
+        scar="`az keyvault secret set --value <token>` is the single most common "
+             "way a credential leaves a shell in this fleet: it stands in `ps` "
+             "for every process of the same user for as long as the call runs, "
+             "and it lands in the shell history of whoever typed it. `--file` is "
+             "the whole reason this backend exists rather than a two line "
+             "wrapper",
+    ),
+    Mutation(
+        name="the-key-vault-write-also-sends-the-value-in-an-argv",
+        file=AZURE,
+        search="            done = exec_mod.run(self.argv_write(ref, path, merged), runner=self.runner,\n"
+               "                                timeout_sec=120)",
+        replace='            exec_mod.run(["az", "keyvault", "secret", "set", *self._common(ref),\n'
+                '                          "--value", secret.expose_text()], runner=self.runner,\n'
+                "                         timeout_sec=120)\n"
+                "            done = exec_mod.run(self.argv_write(ref, path, merged), runner=self.runner,\n"
+                "                                timeout_sec=120)",
+        test="tests.test_azure_keyvault.NoValueEverTravelsInArgvOnTheWayIntoTheVault"
+             ".test_no_recorded_call_carries_the_value_in_argv",
+        scar="the negative property on the Key Vault path, and it is added "
+             "rather than removed for the same reason as the keychain one: the "
+             "flag needle above only says that ONE argv is clean, and a second "
+             "call beside it discloses the value just as completely. `ps` does "
+             "not care which call it was",
+    ),
+    Mutation(
+        name="the-key-vault-metadata-travels-in-a-second-call",
+        file=AZURE,
+        search="            done = exec_mod.run(self.argv_write(ref, path, merged), runner=self.runner,\n"
+               "                                timeout_sec=120)",
+        replace="            done = exec_mod.run(self.argv_write(ref, path, {}), runner=self.runner,\n"
+                "                                timeout_sec=120)\n"
+                '            exec_mod.run(["az", "keyvault", "secret", "set", *self._common(ref),\n'
+                '                          "--tags",\n'
+                '                          *[f"{key}={value}" for key, value in sorted(merged.items())],\n'
+                '                          "-o", "none"], runner=self.runner, timeout_sec=120)',
+        test="tests.test_azure_keyvault.TheMetadataTravelsInTheSameCallAsTheValue"
+             ".test_the_tags_are_set_in_the_call_that_writes",
+        scar="`az keyvault secret set` appends a NEW VERSION, and the metadata of "
+             "the previous one does not come along. A second call that repairs "
+             "it is the one people forget, and a failure between the two leaves "
+             "the version there for good: an entry with no owner, no purpose and "
+             "no date, in a vault holding forty of them",
+    ),
+    Mutation(
+        name="the-subscription-of-the-vault-is-left-to-the-default",
+        file=AZURE,
+        search="        if self.subscription:",
+        replace="        if False:",
+        test="tests.test_azure_keyvault.TheReadArgvIsWhatTheMeasuredCommandTakes"
+             ".test_the_subscription_is_named_when_the_store_declares_one",
+        scar="the default subscription of a machine is not the tenant of the "
+             "vault, and `az` answers for the wrong one without a word. What "
+             "comes back is `SecretNotFound`, which this backend reports as a "
+             "miss, so the reader is sent to the vault that does hold the "
+             "secret to look for the secret that is in it",
+    ),
+    Mutation(
+        name="the-file-the-value-travels-in-is-widened-after-it-is-created",
+        file=AZURE,
+        search="                return os.open(name, flags | os.O_CREAT | os.O_TRUNC, 0o600)",
+        replace="                handle = os.open(name, flags | os.O_CREAT | os.O_TRUNC, 0o600)\n"
+                "                os.fchmod(handle, 0o644)\n"
+                "                return handle",
+        test="tests.test_azure_keyvault.TheFileTheValueTravelsThroughIsPrivateAndTemporary"
+             ".test_the_file_is_created_with_mode_0600",
+        scar="a file is the safe channel only while it is unreadable. The "
+             "mutation widens it instead of changing the creation mode, because "
+             "a creation mode is filtered by the umask and a needle whose bite "
+             "depends on the umask of whoever runs the suite proves nothing on "
+             "the machine where it matters",
+    ),
+    Mutation(
+        name="the-file-the-value-travelled-in-is-left-on-disk",
+        file=AZURE,
+        search="        finally:\n            try:\n                os.remove(path)",
+        replace="        finally:\n            try:\n                pass",
+        test="tests.test_azure_keyvault.TheFileTheValueTravelsThroughIsPrivateAndTemporary"
+             ".test_the_file_is_gone_when_the_write_returns",
+        scar="the removal sits in a `finally` so that a tool which failed does "
+             "not leave a token in a temporary directory. On a Mac that does not "
+             "reboot nothing cleans that directory up, and the file outlives "
+             "every rotation of the value it holds",
+    ),
+
+    # -- KeePass: two lines on stdin, in one order, and never under a lock --
+    Mutation(
+        name="the-two-lines-of-the-keepass-write-are-swapped",
+        file=KEEPASS,
+        search='        return master + b"\\n" + secret.expose() + b"\\n"',
+        replace='        return secret.expose() + b"\\n" + master + b"\\n"',
+        test="tests.test_keepass_write.TheMasterPasswordAndTheValueBothTravelOnStdinInThatOrder"
+             ".test_the_master_password_is_the_first_line",
+        scar="`--password-prompt` asks twice: first for the password that opens "
+             "the database, then for the password of the entry. Swapped, the "
+             "tool tries to open the database with the VALUE as its master "
+             "password. It fails, the failure reads exactly like a wrong master "
+             "password, and the value has been offered at an unlock prompt on "
+             "the way. Nothing in the output says which of the two happened",
+    ),
+    Mutation(
+        name="the-second-line-of-the-keepass-write-loses-its-newline",
+        file=KEEPASS,
+        search='        return master + b"\\n" + secret.expose() + b"\\n"',
+        replace='        return master + b"\\n" + secret.expose()',
+        test="tests.test_keepass_write.TheMasterPasswordAndTheValueBothTravelOnStdinInThatOrder"
+             ".test_each_line_ends_in_a_newline_so_the_tool_reads_a_whole_line",
+        scar="the same missing byte as on the read path, one line further down. "
+             "Without it the tool waits for the rest of the line and the write "
+             "hangs until the deadline, which reads like a broken database "
+             "rather than like a newline nobody sent",
+    ),
+    Mutation(
+        name="a-keepass-write-goes-ahead-while-the-database-is-open-elsewhere",
+        file=KEEPASS,
+        search="        if self.locked(ref):",
+        replace="        if False:",
+        test="tests.test_keepass_write.ALockFileRefusesTheWriteAlthoughAReadWouldStillWork"
+             ".test_the_write_is_refused",
+        scar="KDBX has no journal: a save rewrites the whole encrypted file. Two "
+             "writers are a real conflict and not a transaction, and the merge "
+             "KeePassXC offers happens in the GUI, on reload, with a person "
+             "present. A wrapper that writes under a lock is how one of the two "
+             "versions quietly wins",
+    ),
+    Mutation(
+        name="a-keepass-replace-adds-a-second-entry-instead-of-editing-the-first",
+        file=KEEPASS,
+        search='        verb = "edit" if replace else "add"',
+        replace='        verb = "add"',
+        test="tests.test_keepass_write.TheReplaceIsAVerbAndNotAFlag"
+             ".test_a_write_with_replace_uses_the_edit_verb",
+        scar="replace is a VERB here and not a flag, unlike every other backend "
+             "in this skill. `add` against a name that exists does not overwrite "
+             "it, so a rotation leaves two entries of the same name and the read "
+             "that follows picks one of them",
+    ),
+    Mutation(
+        name="a-keepass-write-is-allowed-to-address-a-field-it-cannot-write",
+        file=KEEPASS,
+        search='        if ref.field and ref.field.lower() not in ("password", "") :',
+        replace="        if False:",
+        test="tests.test_keepass_write.OnlyThePasswordFieldIsWritten"
+             ".test_a_reference_naming_another_field_is_refused",
+        scar="`keepassxc-cli add --password-prompt` writes the password field "
+             "and nothing else, whatever the reference names. A write addressed "
+             "at `/notes` or a custom attribute therefore lands in the password "
+             "field instead, silently, and the read that proves it asks for the "
+             "field the reference named and finds the old value there",
+    ),
+
+    # -- 1Password: the refusal IS the feature ------------------------------
+    Mutation(
+        name="the-one-password-write-stops-being-refused",
+        file=ONEPASSWORD,
+        search="    def write(self, ref: Ref, secret: Secret, *, replace: bool = False) -> Reading:\n"
+               "        raise Refused(",
+        replace="    def write(self, ref: Ref, secret: Secret, *, replace: bool = False) -> Reading:\n"
+                "        return Reading(ref=ref.canonical, present=True, secret=secret,\n"
+                "                       store=ref.store)\n"
+                "        raise Refused(",
+        test="tests.test_onepassword.WritingIsRefusedBecauseTheCliTakesTheValueInArgv"
+             ".test_a_write_is_refused",
+        scar="the refusal is the feature and not a gap. `op item create` and `op "
+             "item edit` take the value as `field=value` in argv, and the "
+             "template form reads it from a file, which is the thing this skill "
+             "exists to stop creating. A backend that implements the write "
+             "either discloses the value or writes the file; saying what to do "
+             "instead is the only third answer",
+    ),
+
+    # -- the store declarations, and what they route ------------------------
+    Mutation(
+        name="the-lone-star-address-stops-answering",
+        file=STORES,
+        search='    if pattern == "*":\n        return True',
+        replace='    if pattern == "*":\n        return False',
+        test="tests.test_stores.AnAddressMatchesExactlyOrByPrefixOrByStar"
+             ".test_the_lone_star_answers_anything_of_its_own_scheme",
+        scar="`addresses: [\"*\"]` is how the login keychain declares itself, and "
+             "a store that answers nothing contributes no options to its "
+             "backend. The keychain file, the database path and the unlock "
+             "reference all quietly go missing, and the failure surfaces three "
+             "layers down as a tool that cannot find an entry",
+    ),
+    Mutation(
+        name="a-prefix-address-matches-only-its-own-stem",
+        file=STORES,
+        search='    if pattern.endswith("*"):\n        return value.startswith(pattern[:-1])',
+        replace='    if pattern.endswith("*"):\n        return value == pattern[:-1]',
+        test="tests.test_stores.AnAddressMatchesExactlyOrByPrefixOrByStar"
+             ".test_a_trailing_star_answers_everything_under_it",
+        scar="`cf-*` is the shape in use here, and it exists so that one "
+             "declaration covers every Cloudflare token without listing them. A "
+             "prefix that matches only the stem routes every real reference to "
+             "no store at all",
+    ),
+    Mutation(
+        name="a-prefix-address-matches-anywhere-in-the-name",
+        file=STORES,
+        search='    if pattern.endswith("*"):\n        return value.startswith(pattern[:-1])',
+        replace='    if pattern.endswith("*"):\n        return pattern[:-1] in value',
+        test="tests.test_stores.AnAddressMatchesExactlyOrByPrefixOrByStar"
+             ".test_a_trailing_star_does_not_match_in_the_middle",
+        scar="the same line, the other way round, and this one is silent rather "
+             "than loud: `cf-*` would then answer `keychain://my-cf-token/...` as "
+             "well, so a reference belonging to one store is resolved with "
+             "another store's keychain file and unlock reference. The needle "
+             "above stays red over a match that is too WIDE, and says nothing "
+             "about it",
+    ),
+    Mutation(
+        name="an-exact-address-starts-matching-by-prefix",
+        file=STORES,
+        search="    return pattern == value",
+        replace="    return value.startswith(pattern)",
+        test="tests.test_stores.AnAddressMatchesExactlyOrByPrefixOrByStar"
+             ".test_an_exact_address_is_not_a_prefix_by_accident",
+        scar="an address without a star is a name and not a stem. `github` "
+             "silently swallowing `github-actions` puts a personal token and a "
+             "CI credential in one store, which is precisely the distinction the "
+             "`holds:` policy of that store exists to make",
+    ),
+    Mutation(
+        name="a-store-answers-a-reference-of-another-scheme",
+        file=STORES,
+        search="        if ref.scheme != self.backend:\n            return False",
+        replace="        if False:\n            return False",
+        test="tests.test_stores.AReferenceOfAnotherSchemeIsNotAnsweredHere"
+             ".test_a_catch_all_keychain_store_does_not_answer_a_keepass_reference",
+        scar="the scheme is checked before the address, and a catch-all keychain "
+             "store would otherwise answer every reference in the tree because "
+             "`*` matches every address. The keepass reference is then resolved "
+             "with the keychain store's options, and the database path it needed "
+             "is not among them",
+    ),
+    Mutation(
+        name="a-store-whose-password-lives-inside-itself-is-no-longer-reported",
+        file=STORES,
+        search="            if parsed is not None and parsed.scheme == store.backend and store.answers(parsed):",
+        replace="            if False:",
+        test="tests.test_stores.CheckDeclarationsNamesWhatAReaderHasToFix"
+             ".test_a_store_whose_own_password_lives_inside_itself_is_reported",
+        scar="the loop: opening the store requires the credential that is inside "
+             "it. Nothing about the file says so, and without this check the "
+             "failure arrives later, as an unlock asking for a secret that is "
+             "behind the unlock, with a message naming whatever gave way first",
+    ),
+    Mutation(
+        name="the-line-that-names-an-owner-loses-its-place-at-the-front",
+        file=STORES,
+        search="    matches.sort(key=lambda placement: (0 if placement.owner else 1, placement.store.name))",
+        replace="    matches.sort(key=lambda placement: placement.store.name)",
+        test="tests.test_stores.PlacementsForNamesEveryPlaceAKindMayGo"
+             ".test_a_line_that_names_an_owner_sorts_before_a_generic_one",
+        scar="`where` answers a question that had no answer at all, and the "
+             "order of the answer is half of it: the first line is the one a "
+             "reader pastes. A generic store at the top sends a customer "
+             "credential into the catch-all store while the line naming that "
+             "customer sits underneath it, unread",
+    ),
+    Mutation(
+        name="the-owner-filter-stops-dropping-another-owners-line",
+        file=STORES,
+        search="            if owner and placement.owner and placement.owner != owner:",
+        replace="            if False:",
+        test="tests.test_stores.PlacementsForNamesEveryPlaceAKindMayGo"
+             ".test_asking_for_one_owner_drops_the_line_of_another",
+        scar="asking where a credential for one customer belongs and being shown "
+             "another customer's subtree is worse than being shown nothing: the "
+             "shape is right, the path is plausible, and a customer credential "
+             "in the wrong customer's tree is the one placement error that "
+             "cannot be undone by moving the file",
+    ),
+    Mutation(
+        name="a-store-declares-a-session-it-cannot-be-reached-from-and-is-believed",
+        file=STORES,
+        search='        if not contexts or "any" in contexts:\n            return True, ""',
+        replace='        if True:\n            return True, ""',
+        test="tests.test_stores.AStoreSaysWhetherThisSessionCanReachIt"
+             ".test_the_same_store_refuses_a_desktop_session",
+        scar="`reachable_from:` is what lets a report say `not readable from "
+             "here` instead of `missing`, before anything runs. The two answers "
+             "send a reader to two different places, and a daemon that could not "
+             "tell them apart rotated a credential that was sitting right there",
     ),
 )

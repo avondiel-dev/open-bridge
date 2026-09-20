@@ -45,7 +45,7 @@ items:
     note: The entry file. Thin by design; it routes, it does not explain.
 
   AGENTS.md:
-    max_bytes: 33100
+    max_bytes: 33200
     note: >-
       The operating manual, and still the largest single always-on item. It
       routes; it does not restate. Every load-bearing pointer in it is a
@@ -64,6 +64,13 @@ items:
       family can be named. 32 bytes of headroom before, 32 after, on purpose.
       The next family row needs its own argument in its own diff, which is
       what the tightness is for.
+      RAISED from 33100 on 2026-09-20 by 100 bytes, the cost of the
+      `infra/secret-stores/` row. The family carries the placement policy the
+      `secrets` skill reads: which kind of secret belongs in which store. It
+      has to be named here because `check-reachability.py` accepts no other
+      always-on place, and because the question it answers, "where does this
+      token go", is one a session asks before it has read anything else.
+      16 bytes of headroom before, 16 after, again on purpose.
 
   ecosystem.yaml:
     optional: true

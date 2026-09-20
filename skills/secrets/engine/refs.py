@@ -152,6 +152,22 @@ class Ref:
         return tail if self.field in (None, self.spec.default_field) else f"{tail}#{self.field}"
 
 
+def describe_unparsed(uri) -> str:
+    """What to say about something that is not a reference, without quoting it.
+
+    A length and a fingerprint are enough to recognise which of two mistakes
+    was made, and to compare a report with what was typed, and they disclose
+    nothing. Used for operator input only: a string found in a tracked FILE is
+    a locator by construction and is printed as it stands, because the point of
+    that report is to say which line to go and fix.
+    """
+    import hashlib
+
+    text = uri if isinstance(uri, str) else repr(type(uri).__name__)
+    digest = hashlib.sha256(text.encode("utf-8", errors="surrogateescape")).hexdigest()[:8]
+    return f"<{len(text)} characters, sha256 {digest}>"
+
+
 def _encode(segment: str) -> str:
     """Put back the three characters that would change the shape of the URI.
 
@@ -176,9 +192,15 @@ def parse(uri: str) -> Ref:
     person who has just written the URI by hand into a YAML file.
     """
     if not isinstance(uri, str) or "://" not in uri:
+        # NOT `ref=uri`. The likeliest thing a person types where a reference
+        # belongs is the value itself, the `docker run -e` habit:
+        # `--env TOKEN=hunter2`. Echoing the argument back would put that value
+        # in the error message, on stderr, in the transcript and in whatever
+        # log the harness keeps, which is the one thing this skill exists to
+        # prevent. So the message describes the input instead of quoting it.
         raise ReferenceError_(
             "not a secret reference",
-            ref=str(uri),
+            ref=describe_unparsed(uri),
             hint="expected <scheme>://…, one of: " + ", ".join(sorted(set(SCHEME_NAMES) | set(ALIASES))),
         )
 
@@ -216,6 +238,20 @@ def parse(uri: str) -> Ref:
         return Ref(scheme, path, (), None, uri)
 
     segments = [unquote(s) for s in rest.split("/") if s != ""]
+    for segment in segments:
+        # A percent-encoded newline survives `unquote` and, in the keychain
+        # write path, would split the command line that goes to `security -i`
+        # on stdin: everything after it becomes a SECOND command, with a name
+        # the reference author chose. References arrive from YAML that an
+        # overlay or a workload declaration supplies, so this is not only a
+        # local typo. No store addresses anything with a control character in
+        # it, so refusing costs nothing.
+        if any(ord(ch) < 32 or ord(ch) == 127 for ch in segment):
+            raise ReferenceError_(
+                "a control character in a reference",
+                ref=describe_unparsed(uri),
+                hint="a newline or a tab in a segment would end up in a command line",
+            )
     if len(segments) < spec.min_segments:
         raise ReferenceError_(
             f"{scheme}:// needs at least {spec.min_segments} segments, got {len(segments)}",

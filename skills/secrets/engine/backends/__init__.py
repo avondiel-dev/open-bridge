@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from .. import refs as refs_mod
 from ..errors import BackendUnavailable, ReferenceError_
+from .azure_keyvault import AzureKeyVaultBackend
 from .base import Backend, Context
+from .file import FileBackend
 from .keychain import KeychainBackend
 from .keepass import KeePassBackend
+from .onepassword import OnePasswordBackend
 
 #: Only the schemes this Bridge can actually reach are listed. A scheme that the
 #: grammar knows and no backend answers is a clear error at resolve time, not a
@@ -15,6 +18,9 @@ from .keepass import KeePassBackend
 REGISTRY = {
     KeychainBackend.scheme: KeychainBackend,
     KeePassBackend.scheme: KeePassBackend,
+    AzureKeyVaultBackend.scheme: AzureKeyVaultBackend,
+    OnePasswordBackend.scheme: OnePasswordBackend,
+    FileBackend.scheme: FileBackend,
 }
 
 IMPLEMENTED = tuple(sorted(REGISTRY))
@@ -41,5 +47,6 @@ def backend_for(scheme: str, **kwargs) -> Backend:
     return cls(**kwargs)
 
 
-__all__ = ["Backend", "Context", "KeychainBackend", "KeePassBackend",
+__all__ = ["Backend", "Context", "AzureKeyVaultBackend", "FileBackend",
+           "KeychainBackend", "KeePassBackend", "OnePasswordBackend",
            "REGISTRY", "IMPLEMENTED", "backend_for"]

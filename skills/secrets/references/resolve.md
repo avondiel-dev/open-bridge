@@ -1,8 +1,9 @@
 # resolve: from a reference to a value
 
-The mechanics behind the three verbs. Read this when a row does not say what
-you expected, when a database has to be reached for the first time, or when the
-question is which tool actually runs underneath.
+The mechanics behind the reading verbs, `refs`, `check` and `run`. Read this
+when a row does not say what you expected, when a database has to be reached for
+the first time, or when the question is which tool actually runs underneath.
+The writing verbs, `store` and `where`, are [`store.md`](store.md).
 
 Nothing here prints a value. The examples below are real runs against a
 throwaway keychain, and the one place a value would have appeared is the place
@@ -37,15 +38,120 @@ keepass://work/customers/acme/api-token#password   entry: api-token, field: pass
 itself uses, and it is canonicalised to `1password://` on the way out. A report
 therefore never shows both spellings for one secret.
 
-**Two backends answer today: `keychain://` and `keepass://`.** The other four
-parse and then report `bad reference`, naming what this Bridge resolves. That
-is a missing backend rather than a broken URI, and the difference matters
-before somebody edits a correct reference to make the message go away.
+**Five backends answer today: `keychain://`, `keepass://`, `azure-keyvault://`,
+`1password://` and `file://`.** `vault://` parses and then reports that this
+Bridge cannot reach it yet, naming what it does reach. That is a missing backend
+rather than a broken URI, and the difference matters before somebody edits a
+correct reference to make the message go away. Four of the five also write;
+`1password://` is read only, and [`store.md`](store.md) says why.
 
 A reference with a placeholder in it (`<`, `>`, `{`, `}`, `$`, an ellipsis) is
 read as an EXAMPLE in prose and never checked. Documentation is full of them:
 measured on this repo, 21 of the 40 distinct references in the tree are
 examples, and a scan that reported those as broken would bury the real ones.
+
+## The declarations
+
+A reference says WHICH secret. It deliberately does not say where that store
+sits on this machine, what opens it, or from where it can be reached, because
+those are properties of the machine and the session rather than of the secret.
+Until this slice the answers came from flags on every invocation. They now come
+from `infra/secret-stores/<slug>.yaml`, one file per store, discovered by the
+glob `infra/secret-stores/*.yaml` with `_`-prefixed files excluded, relative to
+`--root`.
+
+### Which declaration answers a reference
+
+Two conditions, both of them: the reference's scheme equals the store's
+`backend:`, and the reference's first segment matches one of its `addresses:`.
+A pattern is an exact name, a prefix ending in `*`, or the bare `*`:
+
+| `addresses:` | Answers |
+|---|---|
+| `["*"]` | every reference of that backend |
+| `["cf-*"]` | `keychain://cf-bks-lab-agent/agent`, not `keychain://mail/smtp` |
+| `["work"]` | `keepass://work/...` only |
+
+First match in file order wins, and a reference that matches nothing is not an
+error: it simply carries no declared options, and the backend runs with what the
+command line gave it. `stores` prints the declarations and flags a store whose
+`addresses:` is empty, since that store answers nothing at all.
+
+### What a declaration contributes
+
+Each backend reads a different part of `location:`, and nothing else in the file
+reaches it:
+
+| Backend | Takes from the declaration |
+|---|---|
+| `keychain` | `location.keychain_path`, a keychain file instead of the search list |
+| `keepass` | `location.path` as the path of every name in `addresses:`, plus `unlock.key_file` |
+| `azure-keyvault` | `location.subscription` and `location.vault_url` |
+| `1password` | `location.account` |
+| `file` | the `location.path` of EVERY declared file store, together, as the directories a value may be written into |
+
+**The command line wins over a declaration.** `--keychain`, `--db`,
+`--key-file` and `--db-password-ref` are what somebody typed just now, usually
+to work around the very thing a declaration got wrong, so they override it
+rather than merging with it. The one exception is `--db`, which merges: a
+declaration can name three databases and a flag add a fourth.
+
+### Unlocking, and the loop the checker looks for
+
+`unlock.password_ref` is a REFERENCE, never a value, and the resolver resolves
+it before it opens the store, exactly as `--db-password-ref` is resolved. The
+same two rules apply (§ The bootstrap), and one failure is worth catching in the
+file rather than at run time:
+
+```
+$ secrets stores
+work-kdbx              keepass          work
+                       holds: org-credential
+
+1 problem(s):
+  - infra/secret-stores/work-vault.yaml: its own password is stored in itself, so nothing can open it
+```
+
+A store whose credential lives inside that same store cannot be opened by
+anything. Without that line the failure arrives much later, as a resolver
+refusing a reference for a reason that sounds like a bug in the resolver.
+
+### Where a store can be read
+
+`reachable_from.contexts` is the declared half of § Context: `interactive`,
+`launchd-gui`, `ssh`, `ci`, or `any`. A store that lists contexts and does not
+list this one is reported as unreachable BEFORE any tool runs, naming both
+sides:
+
+```
+work-kdbx declares itself reachable from interactive, and this session is launchd-gui
+```
+
+An empty list, or `any`, means the declaration says nothing and the backend's
+own judgement decides. That is the safer default: a wrong "yes" is corrected by
+the read itself, and a wrong "no" would hide a working path.
+
+### Two things a declaration also carries
+
+`holds:` is the placement policy, which `where` and `store` read and this file
+does not: [`store.md`](store.md) works it through. `recovery:` is documentation
+for a person, so a store nobody can restore is visible as such.
+
+### When PyYAML is missing
+
+Declarations are YAML, and this engine is otherwise standard library only. The
+loader is therefore the one place that imports `yaml`, and it says so plainly
+when the import fails.
+
+`where` and `stores` load the declarations directly, so on such a machine they
+report the missing parser and the install line. The resolver does not: it falls
+back to an empty list, so `check` and `run` keep working from what the command
+line names, which is what they did before this slice.
+
+That fallback has a consequence on the write side worth knowing: a `store` run
+on a machine with no parser sees no declaration, so the kind check has no policy
+to check against and a `file://` write has no declared directory to be inside.
+Install PyYAML there rather than working around it.
 
 ## What each backend calls
 
@@ -90,12 +196,11 @@ with zero bytes in it, so a check that tested existence passed while the caller
 got an empty string and failed one layer later, where it looked like a
 permission problem.
 
-**The write path, which lands in the next slice:** `security
-add-generic-password -w` does NOT read from stdin. It takes the next argument,
-so a piped value is silently discarded and the flag that follows it is stored
-instead. The way to keep a value out of argv is `security -i`, which reads
-whole command lines from stdin. That is measured, and it is the reason `store`
-is a separate slice rather than a one line addition.
+**The write path goes somewhere else entirely, and
+[`store.md`](store.md) has it:** `security add-generic-password -w` does NOT
+read from stdin. It takes the next argument, so a piped value is silently
+discarded and the flag that follows it is stored instead. The way to keep a
+value out of argv is `security -i`, which reads whole command lines from stdin.
 
 ### keepass
 
@@ -133,8 +238,9 @@ the same for all of them:
 
 **The database is addressed by its LOGICAL name, never by a path.**
 `keepass://work/customers/acme/api-token` says which database; where that
-database lives is a property of the machine, not of the reference. Until the
-store declarations land, the mapping is passed in with `--db work=/path/to.kdbx`.
+database lives is a property of the machine, not of the reference. The mapping
+comes from the store declaration (§ The declarations) or from
+`--db work=/path/to.kdbx` on the command line.
 A reference naming a database this machine has no path for reports `no backend
 here` with the databases it does know, which is a machine problem and not a
 rotation.
@@ -145,8 +251,8 @@ tracker rather than assumed:
 - **There is no journal.** A save rewrites the whole encrypted file. Two
   writers are a real conflict, not a transaction.
 - **A `.lock` file next to the database marks that a client has it open.** A
-  read taken under one carries that as a note on its row, and the write path
-  that lands in the next slice refuses outright while one is present.
+  read taken under one carries that as a note on its row, and a write refuses
+  outright while one is present.
 - **Reading under a lock is safe.** The file is opened read only and the GUI is
   not disturbed, so a `check` never has to wait for somebody to close KeePassXC.
 - **Across a WSL mount (`/mnt/c/...`) the lock is not reliably visible to both

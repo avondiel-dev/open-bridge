@@ -1,0 +1,228 @@
+# Secret Store Schema — JSON Schema Draft 2020-12 in YAML
+#
+# A secret store is a place secrets actually live, plus the policy that says
+# which kind of secret belongs in it. The reference in an account file answers
+# "which secret"; this file answers "where is that store, who can read it from
+# where, and what belongs in it".
+#
+# Validation:
+#   check-jsonschema --schemafile infra/secret-stores/_schema.yaml \
+#                    infra/secret-stores/*.yaml
+#
+# IDE support: add this hint to a store file:
+#   # yaml-language-server: $schema=./_schema.yaml
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://bks-lab.github.io/open-bridge/schemas/secret-store.yaml"
+title: SecretStore
+description: |
+  One place secrets live, with the placement policy for the kinds it holds.
+
+type: object
+required: [name, scope, backend, addresses, holds]
+additionalProperties: true      # stores differ per backend; the required core is small
+
+properties:
+
+  name:
+    type: string
+    pattern: "^[a-z][a-z0-9-]*$"
+    description: "Slug, matching the filename"
+
+  scope:
+    enum: [core, org, user, private]
+    description: |
+      Promote-routing scope, REQUIRED as a tripwire. A store declaration names
+      a machine, a vault or a tenant, so it is `user` or `private` and never
+      travels upstream. The template and this schema are the only CORE files here.
+
+  backend:
+    enum: [keychain, keepass, azure-keyvault, 1password, vault, file]
+    description: |
+      Which scheme this store answers. The list is the one in
+      rules/secret-placement.md, and scripts/check-secret-grammar.py holds the
+      two together, so a store cannot declare a backend no reference can name.
+
+  summary:
+    type: string
+    description: "One line, for a report a human reads"
+
+  addresses:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      minLength: 1
+    description: |
+      The `<store>` segments of the references this store answers, with `*` as
+      the wildcard and a trailing `*` allowed (`cf-*`). Matched in order, first
+      hit wins, so a specific store listed before a wildcard one keeps its
+      entries. The segment means the service for keychain, the logical database
+      name for keepass, and the vault name for the others.
+
+  location:
+    type: object
+    additionalProperties: true
+    description: |
+      Where the store physically is. One key per backend, and only the keys the
+      backend needs: keychain_path, path, vault_url, subscription, account.
+      A path may use ${variable} from bridge-config and a leading ~.
+    properties:
+      keychain_path:
+        type: string
+        description: "A keychain file, or empty for the login keychain"
+      path:
+        type: string
+        description: "The .kdbx file, or the directory of a file store"
+      vault_url:
+        type: string
+        description: "https://<vault>.vault.azure.net/"
+      subscription:
+        type: string
+        description: |
+          Azure subscription id or name. Named rather than defaulted, because
+          the default tenant of a machine is not always the tenant of the vault
+          and `az` answers the wrong one without a word.
+      account:
+        type: string
+        description: "1Password account, when more than one is signed in"
+
+  unlock:
+    type: object
+    additionalProperties: false
+    required: [method]
+    description: |
+      How the store itself is opened. `password_ref` is a REFERENCE and never a
+      value, and it may not point into this same store: a database whose master
+      password lives in that database cannot be opened, and the skill refuses
+      that declaration rather than recursing.
+    properties:
+      method:
+        enum: [session, password-ref, key-file, cli-login, none]
+        description: |
+          session      the logged-in session already holds it (login keychain)
+          password-ref another reference supplies it (the usual KeePass case)
+          key-file     a key file on disk, alone or beside a password
+          cli-login    the backend's own CLI holds a session (az login, op signin)
+          none         no credential needed (a file store at mode 0600)
+      password_ref:
+        type: string
+        pattern: "^(azure-keyvault|keychain|1password|keepass|op|vault|file)://\\S+$"
+        description: "A locator, never a value"
+      key_file:
+        type: string
+
+  reachable_from:
+    type: object
+    additionalProperties: false
+    description: |
+      Where a read actually works. Without this, a report says `missing` for a
+      store that is simply not addressable from this session, which is how a
+      rotation that never happened gets scheduled.
+    properties:
+      machines:
+        type: array
+        items:
+          type: string
+          pattern: "^[a-z][a-z0-9-]*$"
+        description: "infra/remotes slugs; empty means the local machine"
+      contexts:
+        type: array
+        minItems: 1
+        items:
+          enum: [interactive, launchd-gui, ssh, ci, any]
+        description: |
+          interactive  a terminal with a person at it
+          launchd-gui  a launchd agent in the logged-in gui domain
+          ssh          a remote shell, which has no unlocked login keychain
+          ci           a pipeline runner
+          any          reachable from all of them
+
+  holds:
+    type: array
+    minItems: 1
+    description: |
+      The placement policy: which kinds of secret belong here. This is the half
+      of the secrets model that did not exist. An agent that was handed a token
+      decided for itself where to keep it, and small text files with
+      credentials appeared in working folders. `where <kind>` reads this list.
+    items:
+      type: object
+      required: [kind]
+      additionalProperties: false
+      properties:
+        kind:
+          enum:
+            - personal-token
+            - org-credential
+            - customer-credential
+            - service-runtime
+            - ci-secret
+            - household-shared
+            - break-glass
+          description: |
+            personal-token      created under one person's identity, so the
+                                provider's audit log shows that person. It
+                                belongs in that person's own store, never in a
+                                shared org vault where a second reader could
+                                act as them.
+            org-credential      the organisation holds it: a service principal,
+                                a shared API account.
+            customer-credential belongs to one customer's systems and stays in
+                                that customer's subtree, never mixed into a
+                                shared group.
+            service-runtime     a daemon on one machine needs it at start, so
+                                it must be readable without a person present.
+            ci-secret           belongs in the CI provider's own store. The
+                                Bridge holds a pointer, not a copy.
+            household-shared    a shared everyday login. Locking it into one
+                                person's vault is not security, it is a broken
+                                household.
+            break-glass         a dated copy for recovery. Never the source,
+                                and never what a script reads.
+        owner:
+          type: string
+          description: |
+            Which persona, org or customer this line is for, when the store
+            serves several. A customer store names the customer here.
+        naming:
+          type: string
+          description: |
+            The entry-name convention for this kind, written as a shape:
+            `<provider>-<tenant>-<role>` for a flat store,
+            `<org>/<customer>/<role>` for one with groups. `where` renders a
+            reference from it, so a name is proposed rather than invented.
+        note:
+          type: string
+
+  recovery:
+    type: object
+    additionalProperties: false
+    description: |
+      Whether this store survives the loss of the machine it sits on. A store
+      with no copy is not a fault by itself; a store whose only copy is on the
+      same desk and which nobody has written down IS one, and this block is
+      what makes that visible.
+    properties:
+      backed_up:
+        type: boolean
+      offsite:
+        type: boolean
+      break_glass:
+        type: string
+        description: "Where a human finds a copy in an emergency, described, never a path to a value"
+      last_verified:
+        type: string
+        format: date
+      note:
+        type: string
+
+  remote_ref:
+    type: string
+    pattern: "^[a-z][a-z0-9-]*$"
+    description: "infra/remotes slug this store lives on"
+
+  account_ref:
+    type: string
+    pattern: "^[a-z][a-z0-9-]*$"
+    description: "identity/accounts entry that owns the tenant behind this store"

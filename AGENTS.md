@@ -195,6 +195,7 @@ one hop both ways, `--fix` rewrites a reference whose task merely moved KIND).
 | `infra/backups/` | what is backed up where, and whether it is fresh |
 | `infra/instances/` | another Bridge this one should know about |
 | `infra/transcriptions/` | recording → transcript topology |
+| `infra/secret-stores/` | where a secret lives, who reaches it, and which kind belongs in it |
 | `infra/utilities/` | a supply contract at a location: power, gas, water, heat |
 | `workflow/calendars/` | a scheduled outbound action |
 | `workflow/contexts/` | where a piece of work gets documented |

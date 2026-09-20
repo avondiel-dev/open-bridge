@@ -197,19 +197,48 @@ class NoValueEverTravelsInArgv(KeychainCase):
         self.assertIsNone(runner.calls[0]["stdin_bytes"])
         self.assertIsNone(runner.calls[0]["env"])
 
-    def test_there_is_no_write_path_that_could_put_a_value_in_argv(self):
+    def test_the_write_path_carries_the_value_on_stdin_and_never_in_argv(self):
         # `security add-generic-password -w` takes the value as an ARGUMENT, so
-        # a write implemented the obvious way discloses it to the machine. Until
-        # this backend writes through `security -i` on stdin it writes not at
-        # all, and the refusal has to be loud rather than a no-op.
-        runner = FakeRunner()
-        backend = self.backend(runner)
+        # a write implemented the obvious way discloses it to every process of
+        # the same user. This backend feeds the whole command line to
+        # `security -i` on stdin instead, and this case is what holds it there.
         token = synthetic_token("keychain-write")
         secret = mod("engine.values").Secret(token)
-        with self.assertRaises(NotImplementedError):
-            backend.write(self.ref(), secret)
-        self.assertEqual(runner.calls, [], "nothing may run on the way to a refusal")
-        self.assertFalse(runner.argv_carried(token))
+        runner = FakeRunner()
+        runner.add("security -i", completed(rc=0))
+        runner.add("find-generic-password", completed(stderr=keychain_report(value=token)))
+        backend = self.backend(runner)
+
+        reading = backend.write(self.ref(), secret)
+
+        self.assertFalse(runner.argv_carried(token),
+                         "the value stood in a command line: " + runner.joined_calls)
+        written = runner.calls[0]
+        self.assertIn("security -i", written["joined"])
+        self.assertIsNotNone(written["stdin_bytes"])
+        self.assertIn(token.encode(), written["stdin_bytes"])
+        # And the write is proved by reading it back, not by an exit code: an
+        # entry can exist, be empty, and still exit 0.
+        self.assertTrue(reading.present)
+        self.assertEqual(reading.fingerprint, mod("engine.values").fingerprint(token))
+
+    def test_a_value_with_a_newline_goes_as_hex_and_still_not_in_argv(self):
+        # The quoted form cannot carry a control character. `-X <hex>` can, and
+        # it travels on the same stdin line, so the property holds for a PEM
+        # key as well as for a token.
+        secret = mod("engine.values").Secret("line1\nline2")
+        runner = FakeRunner()
+        runner.add("security -i", completed(rc=0))
+        runner.add("find-generic-password",
+                   completed(stderr=keychain_report(hex_value=b"line1\nline2")))
+        backend = self.backend(runner)
+
+        backend.write(self.ref(), secret)
+
+        line = runner.calls[0]["stdin_bytes"].decode()
+        self.assertIn(" -X ", line)
+        self.assertNotIn("line1", line.split(" -X ")[0])
+        self.assertFalse(runner.argv_carried("line1"))
 
 
 class TheMeasuredParseShapes(KeychainCase):

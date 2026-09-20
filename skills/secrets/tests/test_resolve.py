@@ -38,6 +38,7 @@ resolve = mod("engine.resolve")
 errors = mod("engine.errors")
 backends = mod("engine.backends")
 base = mod("engine.backends.base")
+values = mod("engine.values")
 
 #: What `security` writes to stderr when there is no such item. rc 44 is the
 #: code that means it, and the text is here so a case reads like the terminal.
@@ -160,6 +161,113 @@ class AReadingIsFetchedOnceAndThenRemembered(ResolverCase):
         self.resolver.read("keychain://github/token")
         self.resolver.read("keychain://gitlab/token")
         self.assertEqual(len(self.runner.calls), 2, self.runner.joined_calls)
+
+
+class AWriteEmptiesTheReadingTheSameRunWasHolding(ResolverCase):
+    """The other side of the cache above: a write makes the remembered reading wrong.
+
+    One resolver serves a whole command, and the reference being written has
+    usually been read by that same resolver already: `check` before `store` is
+    the ordinary sequence, and `where` reads one too. The reading from BEFORE
+    the write is still in the cache when the write returns.
+
+    It matters on the failure paths and nowhere else, which is why nothing
+    noticed for a while. A write that lands overwrites the cache entry with the
+    read-back on its way out, so the success path is correct either way. A write
+    that read back a different value raises instead, and the message tells the
+    caller in as many words that nothing was rolled back and the entry is worth
+    looking at. If the next read in that same process answers from the cache,
+    what it reports is the state from before the write: the entry looks
+    untouched, and the one thing the caller was told to go and check is the one
+    thing they cannot see.
+    """
+
+    REF = "keychain://github/token"
+
+    def setUp(self):
+        super().setUp()
+        self.tool_is_here("security")
+        self.stored = synthetic_token("kc-in-the-store")
+        self.sending = synthetic_token("kc-being-written")
+
+    def runner_for(self, report):
+        """A fake process: the write answers, and every read answers `report`."""
+        fake = FakeRunner()
+        fake.add("security -i", completed())
+        fake.add("find-generic-password",
+                 completed(stdout=keychain_attributes("github", "token"),
+                           stderr=report))
+        return fake
+
+    def reads(self, fake):
+        return [call for call in fake.calls if "find-generic-password" in call["joined"]]
+
+    def after_a_refused_write(self, report, expected):
+        """Read, write, be refused, read again. Returns the runner.
+
+        The two reads are the measurement and the write is what is supposed to
+        invalidate the first of them.
+        """
+        fake = self.runner_for(report)
+        resolver = resolve.Resolver(resolve.Options(), runner=fake,
+                                    context=self.context(), stores=[])
+        resolver.read(self.REF)
+        with self.assertRaises(expected):
+            resolver.store(self.REF, values.Secret(self.sending))
+        resolver.read(self.REF)
+        return fake
+
+    def test_a_later_read_after_a_mismatched_write_asks_the_store_again(self):
+        fake = self.after_a_refused_write(
+            keychain_report(value=self.stored), errors.Refused)
+        self.assertEqual(
+            len(self.reads(fake)), 3,
+            "the read after the write was answered from the cache, so it "
+            "reported the entry as it stood BEFORE a write that is documented "
+            "as having rolled nothing back:\n" + fake.joined_calls)
+
+    def test_a_later_read_after_an_empty_read_back_asks_the_store_again(self):
+        # The same invalidation on the other failure path. An entry that reads
+        # back with no bytes in it is the failure that travelled three layers
+        # before this skill existed, and a cache that still holds the old value
+        # hides it for the rest of the run.
+        fake = self.after_a_refused_write(
+            keychain_report(empty=True), errors.SecretMissing)
+        self.assertEqual(len(self.reads(fake)), 3, fake.joined_calls)
+
+    def test_the_refused_write_did_reach_the_store_before_it_refused(self):
+        # Otherwise the two cases above would also pass for a resolver that
+        # refused before writing anything, which is a different behaviour with
+        # a different repair.
+        fake = self.after_a_refused_write(
+            keychain_report(value=self.stored), errors.Refused)
+        self.assertTrue(fake.called_with("security -i"), fake.joined_calls)
+
+    def test_after_a_write_that_landed_the_next_read_is_the_value_that_was_written(self):
+        # The positive control, and it is green whether or not the cache is
+        # emptied: a write that lands installs its own read-back on the way
+        # out. It is here so that the two cases above cannot be satisfied by a
+        # resolver that simply stopped caching.
+        fake = self.runner_for(keychain_report(value=self.sending))
+        resolver = resolve.Resolver(resolve.Options(), runner=fake,
+                                    context=self.context(), stores=[])
+        resolver.read(self.REF)
+        resolver.store(self.REF, values.Secret(self.sending))
+        self.assertEqual(resolver.read(self.REF).secret.expose_text(), self.sending)
+
+    def test_the_write_leaves_the_reading_of_another_reference_alone(self):
+        # Only the reference that was written is forgotten. Dropping the whole
+        # cache would make every other value in the command another chance for
+        # the session to refuse a read it had already answered.
+        fake = self.runner_for(keychain_report(value=self.sending))
+        resolver = resolve.Resolver(resolve.Options(), runner=fake,
+                                    context=self.context(), stores=[])
+        resolver.read("keychain://gitlab/token")
+        resolver.store(self.REF, values.Secret(self.sending))
+        resolver.read("keychain://gitlab/token")
+        self.assertEqual(
+            len([call for call in fake.calls if "gitlab" in call["joined"]]), 1,
+            fake.joined_calls)
 
 
 # ---------------------------------------------------------------------------
