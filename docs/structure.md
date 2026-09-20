@@ -97,6 +97,9 @@ Every config type lives in **`<wrapper>/<types>/`** — a plural folder with tem
 | `infra/backups/_state.yaml` | USER (written by skill) | Last-run state |
 | `infra/backups/volumes/` | USER | Volume inventory |
 | `infra/backups/launchd/` | USER | Scheduled-backup launchd plists |
+| `infra/secret-stores/_template.yaml` | CORE | Secret-store template |
+| `infra/secret-stores/_schema.yaml` | CORE | Secret-store schema |
+| `infra/secret-stores/<slug>.yaml` | USER | One store: where it is, who reaches it, which kind of secret belongs in it |
 | `infra/transcriptions/_template.yaml` | CORE | Transcription topology template |
 | `infra/transcriptions/_schema.yaml` | CORE | Transcription topology schema |
 | `infra/transcriptions/topology.yaml` | USER | Pipeline placement (mode local/remote, worker host) |

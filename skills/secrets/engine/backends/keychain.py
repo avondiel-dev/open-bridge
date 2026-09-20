@@ -25,9 +25,10 @@ reads whole command lines from stdin.
 
 from __future__ import annotations
 
+import os
 import re
 
-from ..errors import NotReadableHere, SecretsError
+from ..errors import NotReadableHere, Refused, SecretsError
 from ..refs import Ref
 from ..values import Reading, Secret
 from .base import Backend
@@ -54,7 +55,13 @@ class KeychainBackend(Backend):
         #: A keychain file to address instead of the search list. The suite uses
         #: it to work in a throwaway keychain; a store declaration uses it when a
         #: machine keeps a separate keychain for service credentials.
-        self.keychain_path = keychain_path
+        #:
+        #: Absolute, always. `security` resolves a relative path against its own
+        #: working directory, so a read and a write issued from two different
+        #: directories addressed two different files, and the second one looked
+        #: like a missing item rather than like a path problem.
+        self.keychain_path = (os.path.abspath(os.path.expanduser(str(keychain_path)))
+                              if keychain_path else None)
 
     def install_hint(self) -> str:
         return "keychain:// needs macOS; on Linux use secret-service, on Windows the credential manager"
@@ -115,6 +122,73 @@ class KeychainBackend(Backend):
             return Reading(ref=ref.canonical, present=False, secret=secret,
                            store=self._store_label(), note="the item exists and holds no bytes")
         return Reading(ref=ref.canonical, present=True, secret=secret, store=self._store_label())
+
+    # -- write --------------------------------------------------------------
+
+    def write_line(self, ref: Ref, secret: Secret, *, replace: bool = False) -> str:
+        """The command line `security -i` is fed on stdin, value included.
+
+        Never argv. Measured on 2026-09-04: `add-generic-password -w` does not
+        read stdin, it takes the NEXT ARGUMENT, so a piped value is discarded in
+        silence and the following flag is stored instead. The entry then exists,
+        every existence test is green, and the failure arrives wherever the
+        secret is used. `security -i` reads whole command lines from stdin, so
+        the value reaches the process without passing the process list.
+
+        Escaping, measured the same day: a double quote and a backslash must be
+        escaped or the value arrives short by two characters, or the command
+        fails with rc 2. A value with a newline cannot be written this way at
+        all and goes as hex through `-X`, which is equally out of argv.
+        """
+        account = ref.path[0] if ref.path else "default"
+        parts = ["add-generic-password", "-s", _quote(ref.store), "-a", _quote(account)]
+        raw = secret.expose()
+        if _needs_hex(raw):
+            parts += ["-X", raw.hex()]
+        else:
+            parts += ["-w", '"' + _escape(raw.decode("utf-8")) + '"']
+        # -A, not -T: the accessor of an unattended read is the `security` binary
+        # itself, so an app trust list does not cover it and the read hangs for
+        # ten seconds in a launchd context before falling back to nothing.
+        parts.append("-A")
+        if replace:
+            parts.append("-U")
+        if self.keychain_path:
+            parts.append(_quote(self.keychain_path))
+        return " ".join(parts)
+
+    def write(self, ref: Ref, secret: Secret, *, replace: bool = False) -> Reading:
+        self.require_available(ref)
+        from .. import exec as exec_mod
+
+        line = self.write_line(ref, secret, replace=replace) + "\n"
+        done = exec_mod.run(["security", "-i"], stdin_bytes=line.encode("utf-8"),
+                            runner=self.runner)
+        if done.rc != 0:
+            if "already exists" in (done.stderr or "").lower():
+                raise Refused(
+                    "an item with this service and account is already there",
+                    ref=ref.canonical,
+                    hint=("pass --replace to overwrite it. Overwriting through `-U` can raise a "
+                          "dialog on some releases; the skill then deletes and re-adds instead."),
+                )
+            raise SecretsError(
+                f"security exited {done.rc}",
+                ref=ref.canonical,
+                hint=_first_line(done.stderr) or "no message on stderr",
+            )
+        return self.read(ref)
+
+    def delete(self, ref: Ref) -> bool:
+        """Remove an item. Used by the replace path, never on its own."""
+        from .. import exec as exec_mod
+
+        argv = ["security", "delete-generic-password", "-s", ref.store]
+        if ref.path:
+            argv += ["-a", ref.path[0]]
+        if self.keychain_path:
+            argv.append(self.keychain_path)
+        return exec_mod.run(argv, runner=self.runner).rc == 0
 
     # -- description --------------------------------------------------------
 
@@ -189,3 +263,21 @@ def _first_line(text: str) -> str:
         if line:
             return line
     return ""
+
+
+def _escape(text: str) -> str:
+    """Backslash and double quote, in that order, or the value arrives short."""
+    return text.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _quote(text: str) -> str:
+    return '"' + _escape(text) + '"'
+
+
+def _needs_hex(raw: bytes) -> bool:
+    """A value the quoted form cannot carry: a newline, or anything unprintable."""
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return True
+    return any(ord(ch) < 32 or ord(ch) == 127 for ch in text)

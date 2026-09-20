@@ -43,8 +43,12 @@ class Completed:
     """The result of one process. The attribute names are the test contract."""
 
     rc: int = 0
-    stdout: str = ""
-    stderr: str = ""
+    #: Not in the repr. For several backends the value IS `stdout`, and for the
+    #: keychain it is `stderr`. A dataclass repr reaches a log line, a debugger
+    #: frame dump and a test-runner assertion introspection, which is the same
+    #: reason `Invocation.stdin_bytes` is hidden.
+    stdout: str = field(default="", repr=False)
+    stderr: str = field(default="", repr=False)
     argv: tuple = ()
     duration_sec: float = 0.0
     timed_out: bool = False

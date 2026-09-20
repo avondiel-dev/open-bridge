@@ -138,6 +138,16 @@ families:
     writer: "/remote"
     read: named
 
+  - path: infra/secret-stores/
+    object: "where a secret lives, who reaches it, which kind belongs in it"
+    island: "core: template, schema; user: entries"
+    lives: [core, private]
+    references: ["unlock.password_ref → another store, by URI",
+                 "remote_ref → infra/remotes/",
+                 "account_ref → identity/accounts/"]
+    writer: "/secrets"
+    read: named
+
   - path: infra/transcriptions/
     object: "where recordings become transcripts, and where those land"
     island: "core: template, schema; user: topology.yaml"

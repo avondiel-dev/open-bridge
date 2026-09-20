@@ -545,8 +545,11 @@ class TheHeaderLinesGoToStandardErrorAndCarryNoValue(CliCase):
 # the property that holds across every verb
 # ---------------------------------------------------------------------------
 
-#: Every verb this file drives with a live value in play. Checked against
-#: `cli.COMMANDS` below, so a fourth verb cannot arrive without a case here.
+#: Every verb THIS file drives with a live value in play. The verbs of the
+#: second slice are driven the same way in test_where.py and test_store_cli.py,
+#: and `test_acceptance.EveryVerbIsDrivenWithALiveValueSomewhere` unions the
+#: three lists and holds them against `cli.COMMANDS`, so a new verb still
+#: cannot arrive without a case anywhere.
 COVERED_VERBS = {"refs", "check", "run"}
 
 
@@ -585,5 +588,5 @@ class NoVerbOfThisCommandLinePrintsAValue(CliCase):
             runner=answers_with_value())
         self.assertNotIn(TOKEN, out + err)
 
-    def test_every_verb_the_command_line_has_is_covered_here(self):
-        self.assertEqual(set(cli.COMMANDS), COVERED_VERBS)
+    def test_every_verb_this_file_claims_to_cover_exists(self):
+        self.assertLessEqual(COVERED_VERBS, set(cli.COMMANDS))

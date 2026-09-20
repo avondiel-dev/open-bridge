@@ -327,15 +327,40 @@ class EveryRejectionNamesWhatIsWrong(MachineGuard):
         for name in refs.SCHEME_NAMES:
             self.assertIn(name, problem.hint)
 
-    def test_every_rejection_carries_the_reference_and_a_hint(self):
+    def test_a_rejection_that_has_seen_a_scheme_names_the_reference(self):
+        # Once a `<scheme>://` prefix is proven, the string is a locator and
+        # naming it is how the reader finds the line to fix.
         for uri in ("kubernetes://ns/secret/key", "azure-keyvault://only-one",
                     "keychain://a/b/c", "keychain://a#f", "file://relative/x",
-                    "keepass://personal/entry#", "plain-text"):
+                    "keepass://personal/entry#"):
             with self.subTest(uri=uri):
                 problem = self.refuse(uri)
                 self.assertEqual(problem.ref, uri)
                 self.assertTrue(problem.hint, "a rejection without a hint teaches nothing")
                 self.assertIn(uri, problem.report())
+
+    def test_a_rejection_that_has_seen_no_scheme_describes_rather_than_quotes(self):
+        # The likeliest thing in this position is the VALUE, typed where a
+        # reference belongs: `--env TOKEN=hunter2`, the `docker run -e` habit.
+        # Echoing it would put it on stderr, in the transcript and in whatever
+        # log the harness keeps, which is the one thing this skill exists to
+        # prevent. A length and a fingerprint identify the mistake without
+        # disclosing it.
+        for uri in ("plain-text", "hunter2-not-a-reference"):
+            with self.subTest(uri=uri):
+                problem = self.refuse(uri)
+                self.assertNotIn(uri, problem.report())
+                self.assertIn(str(len(uri)), problem.ref)
+                self.assertIn("sha256", problem.ref)
+                self.assertTrue(problem.hint, "a rejection without a hint teaches nothing")
+
+    def test_a_control_character_in_a_segment_is_refused_without_an_echo(self):
+        # A percent-encoded newline survives unquoting and would split the
+        # command line that goes to `security -i` on stdin, so everything after
+        # it becomes a second command with a name the reference author chose.
+        problem = self.refuse("keychain://svc%0Aadd-generic-password -s evil/acct")
+        self.assertIn("control character", str(problem))
+        self.assertNotIn("add-generic-password", problem.report())
 
     def test_a_rejection_exits_as_a_configuration_problem(self):
         # The exit code is the contract a wrapper script reads. A malformed

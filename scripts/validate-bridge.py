@@ -108,6 +108,17 @@ SURFACES = [
         "exclude_prefixes": ["_"],
     },
     {
+        # A store declaration carries no value, only a locator and the policy
+        # that says which kind of secret belongs in it. It is validated for the
+        # same reason the remotes are: a typo in `backend:` or a kind nobody
+        # declared makes `secrets where` answer nothing, and that reads like
+        # "there is nowhere to put this" rather than like a broken file.
+        "name": "secret-store",
+        "schema": "infra/secret-stores/_schema.yaml",
+        "instances": "infra/secret-stores/*.yaml",
+        "exclude_prefixes": ["_"],
+    },
+    {
         "name": "mandant",
         "schema": "identity/mandants/_schema.yaml",
         "instances": "identity/mandants/*.yaml",

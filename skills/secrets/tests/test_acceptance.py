@@ -528,8 +528,8 @@ CASE_FLOOR = 400
 #: The cases that are allowed to skip, and what they wait for. Each entry is
 #: `module.Class.method`. A skip scores as neither green nor red, so a suite
 #: that grows skips quietly loses coverage with no line anywhere saying so.
-#: These four are honest: three ask the host for something the host may not
-#: have, and the fourth is the tier that reads a real keychain.
+#: These five are honest: three ask the host for something the host may not
+#: have, and the other two are the tiers that read and write a real keychain.
 MAY_SKIP = {
     "test_discover.InRepoAsksGitDirectlyAndHasNoSeam"
     ".test_a_temporary_directory_is_not_a_work_tree": "git is not installed",
@@ -539,6 +539,9 @@ MAY_SKIP = {
     ".test_a_tilde_in_a_declared_path_is_expanded_before_it_is_used": "this account has no home directory",
     "test_keychain.TheRealKeychainTierReadsBackWhatItStored"
     ".test_a_value_stored_through_stdin_comes_back_byte_exact": "macOS plus the security binary",
+    "test_write_keychain.TheRealKeychainTierStoresAndReadsBackWhatItWrote"
+    ".test_four_values_survive_the_write_and_the_read_byte_for_byte":
+        "macOS plus the security binary",
 }
 
 
@@ -694,10 +697,14 @@ class ARunThatMeasuredNothingIsNotAGreenRun(MachineGuard):
 # 6. The skill file and the parser say the same thing
 # ---------------------------------------------------------------------------
 
-#: The three verbs `SKILL.md` documents as NOT implemented in this slice. Typing
-#: one has to be an argparse usage error, and a parser that quietly grew one
+#: The heading of the table `SKILL.md` keeps its plans under. The verbs named
+#: there have to be an argparse usage error, and a parser that quietly grew one
 #: would leave the file describing a plan that had already shipped.
-PLANNED_BUT_ABSENT = ("store", "where", "audit")
+#:
+#: The list is READ OUT of the file rather than written down here. A frozen copy
+#: went stale the first time a planned verb shipped: the file was correct, the
+#: tuple was not, and the failure pointed at the wrong one of the two.
+PLAN_SECTION = "## What is not here yet"
 
 
 def frontmatter(text: str) -> str:
@@ -714,7 +721,20 @@ def frontmatter(text: str) -> str:
 
 def argument_rows(text: str):
     """The first cell of every row of the Arguments table, backticks stripped."""
-    block = text.split("## Arguments", 1)[1].split("\n## ", 1)[0]
+    return _first_cells(text, "## Arguments")
+
+
+def planned_verbs(text: str):
+    """The verbs the file itself calls a plan, out of its own table."""
+    return [cell.split()[0] for cell in _first_cells(text, PLAN_SECTION)
+            if cell and not cell.startswith("-")]
+
+
+def _first_cells(text: str, heading: str):
+    """The first cell of every row of the table under `heading`."""
+    if heading not in text:
+        return []
+    block = text.split(heading, 1)[1].split("\n## ", 1)[0]
     rows = []
     for line in block.splitlines():
         line = line.strip()
@@ -727,7 +747,9 @@ def argument_rows(text: str):
         cell = cell.strip("`")
         if not cell or set(cell) <= set("- "):
             continue
-        if cell == "Argument":
+        if cell in ("Argument", "Verb"):
+            # The header cell of either table. Both are read the same way, so
+            # both spellings are skipped here rather than in two callers.
             continue
         rows.append(cell)
     return rows
@@ -823,14 +845,30 @@ class TheSkillFileAndTheParserDescribeOneCommandLine(MachineGuard):
                          "mentions: " + ", ".join(undocumented))
 
     def test_the_verbs_the_file_calls_a_plan_are_not_implemented(self):
-        # `SKILL.md` says these three are the next slice. A parser that grew one
-        # without the file noticing would ship a verb nobody documented, and in
-        # this skill two of the three would touch a store.
-        for verb in PLANNED_BUT_ABSENT:
+        # A parser that grew one of these without the file noticing would ship a
+        # verb nobody documented, and in this skill a verb that shipped unread
+        # would be one that touches a store.
+        planned = planned_verbs(self.text)
+        self.assertTrue(planned,
+                        "%s names no verb. Either the section is empty and should "
+                        "go, or the table stopped parsing and this check has been "
+                        "passing on nothing" % PLAN_SECTION)
+        for verb in planned:
             with self.subTest(verb=verb):
                 self.assertNotIn(verb, self.verbs,
                                  "%s is implemented, and SKILL.md still calls it "
                                  "a plan" % verb)
+
+    def test_no_verb_is_both_documented_and_called_a_plan(self):
+        # The two tables are edited at different moments: a verb ships, its row
+        # is added, and the line that called it a plan is left behind. The file
+        # then says both, and a reader believes whichever it reads first.
+        both = sorted(set(planned_verbs(self.text))
+                      & {cell.split()[0] for cell in argument_rows(self.text)
+                         if not cell.startswith("-")})
+        self.assertEqual(both, [],
+                         "these verbs stand in the Arguments table and in %s: %s"
+                         % (PLAN_SECTION, ", ".join(both)))
 
     def test_the_referenced_files_exist(self):
         # A decision tree that points at a file nobody wrote sends a reader
@@ -843,3 +881,44 @@ class TheSkillFileAndTheParserDescribeOneCommandLine(MachineGuard):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EveryVerbIsDrivenWithALiveValueSomewhere(MachineGuard):
+    """No verb of this command line may arrive without a case that watches it.
+
+    The guard used to live in test_cli.py and compared `cli.COMMANDS` with the
+    list of that one file. The second slice added three verbs, driven in two
+    other files, and the guard read that as "three uncovered verbs". Moving it
+    here is the only way it can see every file, which is what it was for.
+    """
+
+    #: Each test module that drives verbs declares `COVERED_VERBS`.
+    SOURCES = ("test_cli.py", "test_where.py", "test_store_cli.py")
+
+    def covered(self) -> set:
+        import ast
+
+        found = set()
+        for name in self.SOURCES:
+            path = TESTS_DIR / name
+            self.assertTrue(path.exists(), f"{name} is gone, and with it its share of this guard")
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in tree.body:
+                if not isinstance(node, ast.Assign):
+                    continue
+                if not any(getattr(target, "id", "") == "COVERED_VERBS" for target in node.targets):
+                    continue
+                found |= set(ast.literal_eval(node.value))
+        return found
+
+    def test_every_verb_the_parser_registers_is_driven_in_some_file(self):
+        verbs = set(mod("engine.cli").COMMANDS)
+        missing = verbs - self.covered()
+        self.assertEqual(missing, set(),
+                         "these verbs run with a real value and nothing watches what they print: "
+                         + ", ".join(sorted(missing)))
+
+    def test_no_file_claims_a_verb_that_does_not_exist(self):
+        stale = self.covered() - set(mod("engine.cli").COMMANDS)
+        self.assertEqual(stale, set(),
+                         "a test file still claims to cover: " + ", ".join(sorted(stale)))

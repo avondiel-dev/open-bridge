@@ -55,7 +55,11 @@ TOKEN = synthetic_token("check")  # pragma: allowlist secret
 
 #: The scheme the grammar accepts and no backend in this Bridge answers. Taken
 #: from `rules/secret-placement.md`, which tells people to write exactly this.
-UNBACKED_REF = "azure-keyvault://suite-vault/suite-secret"
+# HashiCorp Vault is declared in the grammar and answered by no backend here,
+# which is the case this reference exists for. It used to be a Key Vault
+# reference, until the Key Vault backend landed and quietly made the case
+# measure nothing.
+UNBACKED_REF = "vault://suite-mount/suite-path/value"
 
 #: What `security` says when the session has no unlocked keychain. The exit code
 #: is deliberately not 44: a refusal is not a miss, and the backend has to reach

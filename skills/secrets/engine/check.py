@@ -63,12 +63,13 @@ class Row:
         }
 
 
-def check_refs(resolver: Resolver, references, places=None) -> list[Row]:
+def check_refs(resolver: Resolver, references, places=None, *, from_tree: bool = False) -> list[Row]:
     """Measure each reference. `places` maps a reference to where it is written."""
     places = places or {}
     rows = []
     for reference in references:
-        rows.append(check_one(resolver, reference, places.get(_key(reference), [])))
+        rows.append(check_one(resolver, reference, places.get(_key(reference), []),
+                              from_tree=from_tree))
     return rows
 
 
@@ -76,12 +77,18 @@ def _key(reference) -> str:
     return reference.canonical if isinstance(reference, refs_mod.Ref) else str(reference)
 
 
-def check_one(resolver: Resolver, reference, places=None) -> Row:
+def check_one(resolver: Resolver, reference, places=None, *, from_tree: bool = False) -> Row:
     places = list(places or [])
     try:
         parsed = reference if isinstance(reference, refs_mod.Ref) else refs_mod.parse(str(reference))
     except SecretsError as problem:
-        return Row(ref=str(reference), status=BAD_REFERENCE, note=str(problem), places=places)
+        # `from_tree` decides whether the unparsed string may be printed. A
+        # string that stands in a tracked file is a locator by construction and
+        # the report has to name it, otherwise nobody can go and fix the line.
+        # A string that came from the command line may be the value somebody
+        # meant to store, so it is described rather than quoted.
+        shown = str(reference) if from_tree else refs_mod.describe_unparsed(str(reference))
+        return Row(ref=shown, status=BAD_REFERENCE, note=str(problem), places=places)
 
     row = Row(ref=parsed.canonical, scheme=parsed.scheme, places=places)
     try:
@@ -133,7 +140,7 @@ def check_tree(resolver: Resolver, root: str, *, runner=None) -> tuple[list[Row]
         key: [f"{f.path}:{f.line}" for f in group]
         for key, group in grouped.items()
     }
-    rows = check_refs(resolver, discover.unique_refs(findings), places)
+    rows = check_refs(resolver, discover.unique_refs(findings), places, from_tree=True)
     # An example in prose is not a broken reference. A reference that means to
     # be real and does not parse is, and that is the row worth having. One row
     # per REFERENCE, not per occurrence: a single typo written in two files was

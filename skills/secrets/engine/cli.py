@@ -20,9 +20,10 @@ import sys
 
 from . import check as check_mod
 from . import discover
-from .errors import EX_OK, EX_USAGE, SecretsError, UsageError
+from . import stores as stores_mod
+from .errors import EX_CONFIG, EX_MISSING, EX_OK, EX_USAGE, Refused, SecretsError, UsageError
 from .resolve import Options, Resolver
-from .values import Redactor
+from .values import Redactor, Secret
 
 PROGRAM = "secrets"
 
@@ -58,6 +59,29 @@ def build_parser() -> argparse.ArgumentParser:
     running.add_argument("argv", nargs=argparse.REMAINDER,
                          help="-- followed by the command to run")
 
+    placing = sub.add_parser("where", help="where a new secret of this kind belongs")
+    _add_common(placing)
+    placing.add_argument("kind", help="one of the declared kinds; omit to list them",
+                         nargs="?", default="")
+    placing.add_argument("--owner", default="",
+                         help="the persona, org or customer this secret is for")
+
+    storing = sub.add_parser("store", help="put a value into a store, without it passing through argv")
+    _add_common(storing)
+    storing.add_argument("ref", help="the reference to write")
+    storing.add_argument("--from", dest="source", default="auto",
+                         choices=("auto", "stdin", "clipboard", "prompt"),
+                         help="where the value comes from (default: stdin when piped, else a hidden prompt)")
+    storing.add_argument("--kind", default="",
+                         help="the kind this secret is, checked against the store's policy")
+    storing.add_argument("--replace", action="store_true",
+                         help="overwrite an entry that is already there")
+    storing.add_argument("--tag", action="append", default=[], metavar="KEY=VALUE",
+                         help="metadata for backends that carry it (Key Vault)")
+
+    listing_stores = sub.add_parser("stores", help="the declared stores, and what is wrong with them")
+    _add_common(listing_stores)
+
     return parser
 
 
@@ -76,7 +100,8 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
 def options_from(args) -> Options:
     options = Options(keychain_path=getattr(args, "keychain", None),
                       db_password_ref=getattr(args, "db_password_ref", None),
-                      key_file=getattr(args, "key_file", None))
+                      key_file=getattr(args, "key_file", None),
+                      root=getattr(args, "root", "."))
     for spec in getattr(args, "db", []) or []:
         try:
             options.with_database(spec)
@@ -153,6 +178,270 @@ def check_mod_exit(rows) -> int:
     if any(row.status in (check_mod.BAD_REFERENCE, check_mod.ERROR) for row in rows):
         return EX_CONFIG
     return EX_MISSING
+
+
+# ---------------------------------------------------------------------------
+# where
+# ---------------------------------------------------------------------------
+
+def command_where(args, out, err) -> int:
+    """Answers "where does this kind of secret go", from the declarations.
+
+    The question this verb exists for is the one that had no answer at all: an
+    agent handed a token decided for itself where to put it, and small text
+    files with credentials appeared in working folders. A file answering it is
+    not cleverer than the agent, it is merely the same answer every time.
+    """
+    declared = stores_mod.load(args.root)
+    if not args.kind:
+        if args.json:
+            print(json.dumps({"kinds": {kind: stores_mod.KIND_SUMMARY[kind]
+                                        for kind in stores_mod.KINDS},
+                              "not_a_kind": stores_mod.NOT_A_KIND}, indent=2), file=out)
+            return EX_OK
+        print("kinds a store can declare:", file=out)
+        for kind in stores_mod.KINDS:
+            print(f"  {kind:20} {stores_mod.KIND_SUMMARY[kind]}", file=out)
+        print("", file=out)
+        print("not kinds, and deliberately so:", file=out)
+        for kind, why in stores_mod.NOT_A_KIND.items():
+            print(f"  {kind:20} {why}", file=out)
+        return EX_OK
+
+    placements = stores_mod.placements_for(declared, args.kind, args.owner)
+    if args.json:
+        print(json.dumps([{
+            "store": placement.store.name,
+            "backend": placement.store.backend,
+            "owner": placement.owner,
+            "naming": placement.naming,
+            "reference": placement.reference_shape(),
+            "note": placement.note,
+            "source": placement.store.source,
+        } for placement in placements], indent=2), file=out)
+        return EX_OK if placements else EX_CONFIG
+
+    print(f"{args.kind}: {stores_mod.KIND_SUMMARY[args.kind]}", file=out)
+    print("", file=out)
+    if not placements:
+        print("no store declares this kind.", file=out)
+        if not declared:
+            print(f"  There are no declarations at all under {stores_mod.FAMILY}/.", file=out)
+            print(f"  Copy {stores_mod.FAMILY}/_template.yaml and fill it in.", file=out)
+        else:
+            print(f"  {len(declared)} store(s) are declared, none of them for this kind.", file=out)
+            print(f"  Add a `holds:` line to the right one, in {stores_mod.FAMILY}/.", file=out)
+        return EX_CONFIG
+
+    for placement in placements:
+        store = placement.store
+        owner = f" for {placement.owner}" if placement.owner else ""
+        print(f"{store.name}{owner}  ({store.backend})", file=out)
+        if store.summary:
+            print(f"    {store.summary}", file=out)
+        print(f"    reference   {placement.reference_shape()}", file=out)
+        if placement.naming:
+            print(f"    naming      {placement.naming}", file=out)
+        if placement.note:
+            print(f"    note        {placement.note}", file=out)
+        reaches, why = store.reaches(Resolver(options_from(args)).context)
+        if not reaches:
+            print(f"    reachable   no, from this session: {why}", file=out)
+        print(f"    declared in {store.source}", file=out)
+    return EX_OK
+
+
+# ---------------------------------------------------------------------------
+# stores
+# ---------------------------------------------------------------------------
+
+def command_stores(args, out, err) -> int:
+    declared = stores_mod.load(args.root)
+    problems = stores_mod.check_declarations(declared)
+    if args.json:
+        print(json.dumps({"stores": [{
+            "name": store.name, "backend": store.backend,
+            "addresses": list(store.addresses), "summary": store.summary,
+            "holds": [placement.kind for placement in store.placements()],
+            "source": store.source,
+        } for store in declared], "problems": problems}, indent=2), file=out)
+        return EX_OK if not problems else EX_CONFIG
+
+    if not declared:
+        print(f"no stores declared under {stores_mod.FAMILY}/", file=out)
+        print(f"  the template is {stores_mod.FAMILY}/_template.yaml", file=out)
+        return EX_OK
+    for store in declared:
+        kinds = ", ".join(placement.kind for placement in store.placements()) or "nothing declared"
+        print(f"{store.name:22} {store.backend:16} {', '.join(store.addresses)}", file=out)
+        print(f"{'':22} holds: {kinds}", file=out)
+    print("", file=out)
+    if problems:
+        print(f"{len(problems)} problem(s):", file=out)
+        for problem in problems:
+            print(f"  - {problem}", file=out)
+        return EX_CONFIG
+    print(f"{len(declared)} store(s), no problems", file=out)
+    return EX_OK
+
+
+# ---------------------------------------------------------------------------
+# store
+# ---------------------------------------------------------------------------
+
+def command_store(args, out, err) -> int:
+    """Write a value that never passes through a command line.
+
+    Three sources, and all of them keep the value out of argv and out of this
+    program's own output: a pipe, the clipboard, or a hidden prompt. The fourth
+    way, typing it as an argument, is not offered at all. That is the way it
+    reached the process list on two machines in this fleet.
+    """
+    resolver = Resolver(options_from(args))
+    ref = resolver_parse(args.ref)
+
+    store = resolver.store_for(ref)
+    kind = args.kind or _infer_kind(store, err)
+    if kind:
+        _check_kind_against_policy(resolver, store, ref, kind, err)
+
+    secret = read_value(args.source, err)
+    if secret.is_empty():
+        raise UsageError("nothing arrived, so nothing was written",
+                         hint="an empty value is not a secret; check the pipe or the clipboard")
+
+    reading = resolver.store(ref, secret, replace=args.replace, tags=_tags_from(args))
+    where = resolver.locate(ref)
+    if args.json:
+        print(json.dumps({"ref": ref.canonical, "bytes": reading.length,
+                          "fingerprint": reading.fingerprint, "where": where,
+                          "store": store.name if store is not None else ""}, indent=2), file=out)
+    else:
+        print(f"{ref.canonical}", file=out)
+        print(f"  stored in   {where}", file=out)
+        print(f"  read back   {reading.length} bytes, sha256 {reading.fingerprint}", file=out)
+        if store is not None:
+            print(f"  store       {store.name} ({store.source})", file=out)
+        if args.source == "clipboard":
+            print("  the clipboard still holds the value; clear it when you are done", file=out)
+    return EX_OK
+
+
+def _tags_from(args) -> dict:
+    """`--tag key=value`, for the backends that carry metadata."""
+    tags = {}
+    for spec in getattr(args, "tag", []) or []:
+        key, sep, value = spec.partition("=")
+        if not sep or not key.strip():
+            raise UsageError(f"expected KEY=VALUE, got {spec!r}")
+        tags[key.strip()] = value.strip()
+    return tags
+
+
+def resolver_parse(text: str):
+    from . import refs as refs_mod
+
+    return refs_mod.parse(text)
+
+
+def _check_kind_against_policy(resolver, store, ref, kind, err) -> None:
+    """Refuse a write into a store that does not declare this kind.
+
+    The policy is only worth having if something reads it at the moment of the
+    write. Otherwise it is documentation, and the loose token file gets written
+    anyway, next to a file that says it should not be.
+    """
+    if kind in stores_mod.NOT_A_KIND:
+        raise Refused(f"{kind} is not a kind of secret",
+                      hint=stores_mod.NOT_A_KIND[kind])
+    if kind not in stores_mod.KINDS:
+        raise Refused(f"unknown kind {kind!r}", hint="declared kinds: " + ", ".join(stores_mod.KINDS))
+    if store is None:
+        print(f"{PROGRAM}: no store declares this reference, so the policy cannot be checked",
+              file=err)
+        return
+    declared = {placement.kind for placement in store.placements()}
+    if kind not in declared:
+        elsewhere = stores_mod.placements_for(resolver.stores, kind)
+        names = ", ".join(sorted({placement.store.name for placement in elsewhere})) or "nowhere yet"
+        raise Refused(
+            f"{store.name} does not hold {kind} secrets",
+            ref=ref.canonical,
+            hint=f"it declares: {', '.join(sorted(declared)) or 'nothing'}. "
+                 f"This kind belongs in: {names}. `secrets where {kind}` prints the shape.",
+        )
+
+
+def _infer_kind(store, err) -> str:
+    """What kind this is, when nobody said, so the policy is not opt-in.
+
+    A gate that only fires when the caller asks for it is documentation. The
+    rule here: a store that holds exactly one kind answers the question by
+    itself; a store that holds several cannot, and the write stops rather than
+    guessing which line of the policy it belongs under.
+    """
+    if store is None:
+        return ""
+    kinds = sorted({placement.kind for placement in store.placements()})
+    if len(kinds) == 1:
+        print(f"{PROGRAM}: {store.name} holds one kind, so this is a {kinds[0]}", file=err)
+        return kinds[0]
+    if not kinds:
+        return ""
+    raise Refused(
+        f"{store.name} holds several kinds, so this write needs to say which one",
+        hint=f"pass --kind, one of: {', '.join(kinds)}. `secrets where <kind>` prints the shape.",
+    )
+
+
+def read_value(source: str, err) -> Secret:
+    """The value, from a pipe, the clipboard or a hidden prompt. Never from argv."""
+    import sys as sys_mod
+
+    if source == "auto":
+        source = "stdin" if not sys_mod.stdin.isatty() else "prompt"
+    if source == "stdin":
+        raw = sys_mod.stdin.buffer.read()
+        # One trailing newline, the one `printf '%s\n'` or an editor adds.
+        # Stripping every trailing newline truncates a PEM key, and the
+        # read-back check cannot catch it: it compares against the value this
+        # line already changed.
+        if raw.endswith(b"\r\n"):
+            raw = raw[:-2]
+        elif raw.endswith(b"\n") or raw.endswith(b"\r"):
+            raw = raw[:-1]
+        return Secret(raw)
+    if source == "clipboard":
+        return Secret(read_clipboard())
+    import getpass
+
+    typed = getpass.getpass("value (not echoed): ")
+    return Secret(typed)
+
+
+def read_clipboard() -> bytes:
+    """The clipboard, through the platform's own tool.
+
+    The clipboard is the one channel that persists nothing: not the shell
+    history, not the transcript, not a file. It is how a value gets from a
+    person to this process without either of them writing it down.
+    """
+    from . import exec as exec_mod
+
+    candidates = (["pbpaste"], ["wl-paste", "--no-newline"], ["xclip", "-selection", "clipboard", "-o"],
+                  ["powershell.exe", "-NoProfile", "-Command", "Get-Clipboard"])
+    for argv in candidates:
+        if exec_mod.which(argv[0]) is None:
+            continue
+        done = exec_mod.run(argv, timeout_sec=15)
+        if done.rc == 0:
+            return done.stdout.rstrip("\r\n").encode("utf-8")
+        raise SecretsError(f"{argv[0]} exited {done.rc}",
+                           hint=done.stderr.strip() or "no message on stderr")
+    raise SecretsError(
+        "no clipboard tool here",
+        hint="pbpaste on macOS, wl-paste or xclip on Linux, Get-Clipboard on Windows",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -254,6 +543,9 @@ COMMANDS = {
     "refs": command_refs,
     "check": command_check,
     "run": command_run,
+    "where": command_where,
+    "stores": command_stores,
+    "store": command_store,
 }
 
 

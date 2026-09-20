@@ -298,6 +298,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The engine itself needs nothing but the standard library. The store
+      # declarations are YAML, so the suite that reads them needs a parser, and
+      # a job that relies on the runner image happening to carry one is a job
+      # that breaks on an image update with a failure that names the wrong file.
+      - name: Install PyYAML
+        run: pip install pyyaml
+
       - name: Run the secrets engine suite
         run: bash skills/secrets/run-tests.sh
 

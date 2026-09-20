@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=./_schema.yaml
+# Secret Store Declaration
+# Copy to infra/secret-stores/{slug}.yaml, one file per store.
+#
+# A store is WHERE secrets actually live: a keychain on one machine, a KeePass
+# database on a share, a Key Vault in one subscription. The reference in an
+# account file says which secret; this file says where that store is, who can
+# read it from where, and which KIND of secret belongs in it.
+#
+# The second half is the one that did not exist before. An agent handed a new
+# token used to decide for itself where to put it, and the result was small
+# text files with credentials in working folders on two machines. `holds:` is
+# the declared answer to "where does this kind of secret go", so the decision is
+# made once, here, and not per session.
+#
+# NEVER a secret value in this file. It carries locators, paths and policy.
+
+name: login-keychain           # slug, matches the filename
+scope: user                    # REQUIRED — core→open-bridge · org→your overlay · user/private→local.
+                               # A store is machine or tenant inventory: user or private,
+                               # never promoted. The field is a tripwire, not a choice.
+backend: keychain              # keychain | keepass | azure-keyvault | 1password | vault | file
+summary: "The login keychain of this laptop"
+
+# Which references this store answers. The `<store>` segment of a reference is
+# matched against this list, so `keychain://acme-cloud-agent/agent` is answered
+# by a store that lists `cf-*` or `*`.
+#
+#   keychain://<service>/<account>        → the service
+#   keepass://<db>/<group>/<entry>/<field> → the logical database name
+#   azure-keyvault://<vault>/<secret>     → the vault name
+#   1password://<vault>/<item>/<field>    → the vault name
+addresses: ["*"]
+
+# Where the store physically is. One key per backend; leave the others out.
+location:
+  keychain_path: ""            # empty = the login keychain of the logged-in user
+  # path: "${onedrive_root}/Secrets/work.kdbx"     # keepass
+  # vault_url: "https://example-vault.vault.azure.net/"   # azure-keyvault
+  # subscription: ""                                # azure-keyvault, never the default tenant
+  # account: "example.1password.com"                # 1password
+
+# How the store itself is opened, when it needs a credential of its own. This
+# is a REFERENCE, never a value, and it may not point back into this store: a
+# database whose password lives in that database cannot be opened.
+unlock:
+  # password_ref: "keychain://keepass-work/master"
+  # key_file: "~/.config/keepass/work.keyx"
+  method: session              # session | password-ref | key-file | cli-login | none
+
+# Where a read works. A store is not readable everywhere, and the difference is
+# not a property of the entry: a login keychain answers in a desktop session and
+# refuses over ssh, and a wrapper that could not tell those apart rotated a
+# secret that was never gone.
+reachable_from:
+  machines: []                 # infra/remotes slugs; empty = this machine only
+  contexts: [interactive, launchd-gui]   # interactive | launchd-gui | ssh | ci | any
+
+# The placement policy. Which kinds of secret belong here, and how their entries
+# are named. `where <kind>` reads exactly this.
+holds:
+  - kind: personal-token       # see _schema.yaml for the closed list and what each means
+    naming: "<provider>-<tenant>-<role>"
+    note: "Personal tokens stay personal: the provider's audit log shows the person, not the org."
+
+# Rotation and recovery, so a store nobody can restore is visible as such.
+recovery:
+  backed_up: false
+  offsite: false
+  break_glass: ""              # where a human finds a copy in an emergency, as a description
+  note: "Time Machine to a local volume only. Machine and disk stand on the same desk."
+
+# Cross-references (optional)
+# remote_ref: my-server         # infra/remotes slug this store lives on
+# account_ref: my-cloud-tenant # identity/accounts entry that owns the tenant
