@@ -1011,9 +1011,12 @@ class TheStoreListingSaysWhatIsDeclaredAndWhatIsWrongWithIt(StoreCase):
 # the property that holds across every verb
 # ---------------------------------------------------------------------------
 
-#: Every verb the command line has. Asserted against `cli.COMMANDS` below, so a
-#: seventh verb cannot arrive without a case here saying what it prints.
-VERBS = {"refs", "check", "run", "where", "stores", "store"}
+#: Every verb the command line has. Asserted against `cli.COMMANDS` below, so an
+#: eighth verb cannot arrive without a case saying what it prints. Six of them
+#: are driven here; `audit` has a file of its own, because it reads plaintext out
+#: of FILES rather than a value out of a store and needs a tree rather than the
+#: declarations this file is built around.
+VERBS = {"refs", "check", "run", "where", "stores", "store", "audit"}
 
 
 class NoVerbOfThisCommandLinePrintsTheValue(StoreCase):
@@ -1028,7 +1031,7 @@ class NoVerbOfThisCommandLinePrintsTheValue(StoreCase):
     def declared_tree(self):
         return str(self.tree(HEALTHY))
 
-    def test_every_verb_the_command_line_has_is_driven_here(self):
+    def test_every_verb_the_command_line_has_is_driven_in_this_suite(self):
         self.assertEqual(set(cli.COMMANDS), VERBS)
 
     def test_refs_prints_no_value(self):

@@ -18,6 +18,7 @@ import argparse
 import json
 import sys
 
+from . import audit as audit_mod
 from . import check as check_mod
 from . import discover
 from . import stores as stores_mod
@@ -81,6 +82,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     listing_stores = sub.add_parser("stores", help="the declared stores, and what is wrong with them")
     _add_common(listing_stores)
+
+    auditing = sub.add_parser("audit", help="plaintext that should have been a reference")
+    _add_common(auditing)
+    auditing.add_argument("--also", action="append", default=[], metavar="PATH",
+                          help="a place outside the tree to scan as well, repeatable")
+    auditing.add_argument("--no-pii", action="store_true",
+                          help="credentials only; personal data is reported by default and never moved")
+    auditing.add_argument("--with-gitleaks", action="store_true",
+                          help="ask gitleaks for a second opinion when it is installed")
+    auditing.add_argument("-v", "--verbose", action="store_true",
+                          help="also show hits inside declared stores and the reason for each pattern")
 
     return parser
 
@@ -178,6 +190,37 @@ def check_mod_exit(rows) -> int:
     if any(row.status in (check_mod.BAD_REFERENCE, check_mod.ERROR) for row in rows):
         return EX_CONFIG
     return EX_MISSING
+
+
+# ---------------------------------------------------------------------------
+# audit
+# ---------------------------------------------------------------------------
+
+def command_audit(args, out, err) -> int:
+    """Find the values that never became a reference, and say where they belong.
+
+    Exit code: 0 when no credential is loose, `EX_MISSING` when at least one is.
+    Personal data does not change the code. It is worth reporting and it is not
+    a secret, so a tree that holds an invoice with an IBAN in it is not broken.
+    """
+    resolver = Resolver(options_from(args))
+    report = audit_mod.run(args.root, also=args.also, stores=resolver.stores,
+                           include_pii=not args.no_pii)
+    if args.with_gitleaks:
+        _, message = audit_mod.gitleaks(args.root)
+        report.gitleaks = message
+
+    if args.json:
+        print(json.dumps({
+            "findings": [finding.as_dict() for finding in report.findings],
+            "files_read": report.files_read,
+            "credentials": len(report.credentials),
+            "pii": len(report.pii),
+            "gitleaks": report.gitleaks,
+        }, indent=2), file=out)
+    else:
+        print(audit_mod.render(report, verbose=args.verbose), file=out)
+    return EX_MISSING if report.credentials else EX_OK
 
 
 # ---------------------------------------------------------------------------
@@ -546,6 +589,7 @@ COMMANDS = {
     "where": command_where,
     "stores": command_stores,
     "store": command_store,
+    "audit": command_audit,
 }
 
 

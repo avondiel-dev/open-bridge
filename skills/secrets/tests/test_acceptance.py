@@ -893,7 +893,7 @@ class EveryVerbIsDrivenWithALiveValueSomewhere(MachineGuard):
     """
 
     #: Each test module that drives verbs declares `COVERED_VERBS`.
-    SOURCES = ("test_cli.py", "test_where.py", "test_store_cli.py")
+    SOURCES = ("test_cli.py", "test_where.py", "test_store_cli.py", "test_audit_cli.py")
 
     def covered(self) -> set:
         import ast

@@ -107,13 +107,17 @@ Patterns come from two sources, combined at scan time:
 
 ### Hardcoded universal patterns (always active)
 
-These catch classes of leakage that are never CORE-appropriate:
+These catch classes of leakage that are never CORE-appropriate. The list is
+held against `skills/secrets/engine/patterns.py` by
+`scripts/check-secret-patterns.py`, because three copies of it existed and all
+three knew something the others did not:
 
 | Category | Regex (case-insensitive) |
 |---|---|
 | Absolute user paths | `/Users/[a-z0-9._-]+/`, `/home/[a-z0-9._-]+/`, `C:\\Users\\` |
 | Private SSH / keys | `BEGIN [A-Z ]+PRIVATE KEY`, `ssh-rsa AAAA`, `ssh-ed25519 AAAA` |
-| Common API-token prefixes | `\bsk-[-A-Za-z0-9_]{20,}`, `ghp_[A-Za-z0-9]{20,}`, `xox[bp]-[-A-Za-z0-9]{10,}`, `AKIA[0-9A-Z]{16}`, `Bearer [-A-Za-z0-9._~+/=]{20,}` |
+| Common API-token prefixes | `\bsk-[-A-Za-z0-9_]{20,}`, `ghp_[A-Za-z0-9]{20,}`, `github_pat_[A-Za-z0-9_]{50,}`, `xox[bp]-[-A-Za-z0-9]{10,}`, `AKIA[0-9A-Z]{16}`, `ASIA[0-9A-Z]{16}`, `AIza[0-9A-Za-z_-]{35}`, `Bearer [-A-Za-z0-9._~+/=]{20,}` |
+| Opaque tokens without a prefix | `eyJ…\.…\.…` (a JWT), `AccountKey=[A-Za-z0-9+/]{20,}` (an Azure connection string) |
 | OneDrive / Dropbox personal | `OneDrive-[A-Za-z]+`, `Dropbox/.*/Apps/` |
 | Phone numbers (E.164) | `\+?[1-9][0-9]{7,14}` — flag for review, false positives possible |
 | Email addresses | `[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}` — flag unless it is the git author |
@@ -253,7 +257,7 @@ PATTERNS=$(yq -r ".promote.content_blocklist.\"${REPO}\".patterns[]?" bridge-con
 [ -z "$STRINGS" ]  && STRINGS=$(yq -r '.promote.fallback_blocklist.strings[]?'  bridge-config.yaml 2>/dev/null | paste -sd'|' -)
 [ -z "$PATTERNS" ] && PATTERNS=$(yq -r '.promote.fallback_blocklist.patterns[]?' bridge-config.yaml 2>/dev/null | paste -sd'|' -)
 
-UNIVERSAL='BEGIN [A-Z ]+PRIVATE KEY|\bsk-[-A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|AccountKey=[A-Za-z0-9+/]{20,}|/Users/[a-z0-9._-]+/'
+UNIVERSAL='BEGIN [A-Z ]+PRIVATE KEY|ssh-(rsa|ed25519) AAAA|\bsk-[-A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{50,}|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|xox[baprs]-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.|Bearer [-A-Za-z0-9._~+/=]{20,}|AccountKey=[A-Za-z0-9+/]{20,}|/Users/[a-z0-9._-]+/'
 
 # Prefix-less credentials (Elastic Cloud ApiKey and the same shape elsewhere)
 # cannot be matched by a format regex — they are just base64. They ARE
@@ -339,7 +343,7 @@ PATTERNS=$(yq -r ".promote.content_blocklist.\"${REPO}\".patterns[]?" bridge-con
 [ -z "$STRINGS" ]  && STRINGS=$(yq -r '.promote.fallback_blocklist.strings[]?'  bridge-config.yaml 2>/dev/null | paste -sd'|' -)
 [ -z "$PATTERNS" ] && PATTERNS=$(yq -r '.promote.fallback_blocklist.patterns[]?' bridge-config.yaml 2>/dev/null | paste -sd'|' -)
 
-UNIVERSAL='BEGIN [A-Z ]+PRIVATE KEY|\bsk-[-A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|AccountKey=[A-Za-z0-9+/]{20,}|/Users/[a-z0-9._-]+/'
+UNIVERSAL='BEGIN [A-Z ]+PRIVATE KEY|ssh-(rsa|ed25519) AAAA|\bsk-[-A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{50,}|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|xox[baprs]-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.|Bearer [-A-Za-z0-9._~+/=]{20,}|AccountKey=[A-Za-z0-9+/]{20,}|/Users/[a-z0-9._-]+/'
 
 # scan_opaque(): same detector as the pre-commit scan above (full rationale
 # there — base64 id:secret OR free-standing plaintext id:secret, entropy-

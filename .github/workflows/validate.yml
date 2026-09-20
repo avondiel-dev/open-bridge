@@ -215,6 +215,20 @@ jobs:
       - name: The grammar check has its own suite
         run: python3 -m pytest scripts/tests/test_secret_grammar.py -q
 
+      # The same shape one layer up: three places scan for a plaintext secret,
+      # and before this check they had drifted in every direction. The promote
+      # table had no AIza and no github_pat_, the overlay list had neither plus
+      # no Bearer, and the third list lived in an instance-only rule that never
+      # reached CORE at all.
+      - name: Every scanner knows the same plaintext shapes
+        run: python3 scripts/check-secret-patterns.py
+
+      - name: Prove the pattern comparison bites
+        run: python3 scripts/check-secret-patterns.py --mutate
+
+      - name: The pattern check has its own suite
+        run: python3 -m pytest scripts/tests/test_secret_patterns.py -q
+
       # The third layer. Entries reference each other in ordinary fields —
       # a customer names its mandant, an account names the task that
       # provisioned it — and nothing checked that those resolve. On a live

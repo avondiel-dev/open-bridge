@@ -170,7 +170,7 @@ Three measured shapes, on macOS 26 on 2026-09-19, against a throwaway keychain:
 |---|---|---|
 | `abc` | `abc` | `password: "abc"` |
 | `6c310a6c32` | `6c310a6c32` | `password: "6c310a6c32"` |
-| `l1\nl2` | `6c310a6c32` | `password: 0x6C310A6C32  "l1\012l2"` |
+| `l1\nl2` | `6c310a6c32` | `password: 0x6C310A6C32  "l1\012l2"` | <!-- pragma: allowlist secret -->
 | empty | nothing | `password:` |
 
 **This is why the backend uses `-g` and not `-w`.** A value that contains a
