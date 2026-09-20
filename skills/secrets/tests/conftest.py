@@ -342,7 +342,7 @@ class FakeRunner:
 #     'a"b'                  password: "a"b"          the quote is NOT escaped
 #     "a\\b"                 password: 0x615C62  "a\134b"
 #     "a" umlaut "b"         password: 0x61C3A462  "a\303\244b"
-#     "l1\nl2"               password: 0x6C310A6C32  "l1\012l2"
+#     "l1\nl2"               password: 0x6C310A6C32  "l1\012l2"   # pragma: allowlist secret
 #     ""                     password:                with a TRAILING SPACE
 #
 # So the rule the tool actually follows: the quoted form when every byte is

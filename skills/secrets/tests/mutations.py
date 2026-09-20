@@ -44,7 +44,25 @@ Several needles share one anchor and differ only in what they put there. That is
 deliberate and it is not duplication: `_escape` has three ways to be wrong and
 each one arrives at the far end as a different length of value, so each gets its
 own entry with its own named case. A single needle over that line would be
-satisfied by a suite that noticed any one of the three.
+satisfied by a suite that noticed any one of the three. The same holds for
+`looks_opaque`, whose one anchor line rejects a call and an interpolation for two
+different reasons, and for the exit code of `audit`, which can be wrong by
+answering zero over a loose credential and wrong again by answering non zero over
+an invoice.
+
+The pattern needles narrow an expression rather than deleting a line. A pattern
+set is a LIST: a deleted entry drops out of `ALL` and out of `BY_NAME`, the
+example table in `test_patterns.py` no longer matches the list, and half the file
+goes red for a reason that says nothing about the shape. A quantifier narrowed
+past the real format is also what a copy walking past a shape really looks like:
+the pattern is still there, still in every parity check, and it no longer matches
+the thing it is named after.
+
+One needle in the audit walk ADDS a decode where a skip belongs, for the reason
+the argv ones add a call: "a file that cannot be read is not read" is a negative,
+and a negative is not softened by deletion. Removing the branch instead would
+hand `None` to `splitlines` and the case would go red over an AttributeError,
+which is a red that measures nothing.
 
 A needle may only name a test that RUNS AND PASSES in the scratch copy. A test
 that is red before the mutation is applied scores red afterwards for a reason
@@ -93,11 +111,18 @@ FILE_BACKEND = "engine/backends/file.py"
 AZURE = "engine/backends/azure_keyvault.py"
 ONEPASSWORD = "engine/backends/onepassword.py"
 STORES = "engine/stores.py"
+PATTERNS = "engine/patterns.py"
+AUDIT = "engine/audit.py"
 
 #: The line `_escape` really is, kept in one place because three needles soften
 #: it three different ways and a copy that drifted would silently stop applying.
 #: A raw string, so the backslashes here are the backslashes in the source.
 ESCAPE_LINE = r"""    return text.replace("\\", "\\\\").replace('"', '\\"')"""
+
+#: The one line of `looks_opaque` that rejects a value for being code. Two
+#: needles soften it, one character class each, and a raw string again because
+#: the backslash at the end of that class is a backslash in the source.
+OPAQUE_CODE_LINE = r"""    if any(ch in value for ch in "()$<>{}%,; \\"):"""
 
 
 MUTATIONS = (
@@ -1096,5 +1121,435 @@ MUTATIONS = (
              "here` instead of `missing`, before anything runs. The two answers "
              "send a reader to two different places, and a daemon that could not "
              "tell them apart rotated a credential that was sitting right there",
+    ),
+
+    # -- the three shapes the older copies each walked past ------------------
+    #
+    # Narrowed rather than deleted. A deleted entry leaves `ALL` and `BY_NAME`
+    # one pattern shorter, the example table stops matching the list, and the
+    # file goes red in a dozen places for a reason that says nothing about the
+    # shape under measurement.
+    Mutation(
+        name="the-fine-grained-github-token-is-narrowed-past-its-own-format",
+        file=PATTERNS,
+        search=r're.compile(r"\bgithub_pat_[A-Za-z0-9_]{50,}\b")',
+        replace=r're.compile(r"\bgithub_pat_[A-Za-z0-9_]{500,}\b")',
+        test="tests.test_patterns.TheThreeShapesTheOlderCopiesWalkedPast"
+             ".test_the_fine_grained_github_token_is_detected",
+        scar="the promote scan knew `ghp_` and nothing else, and the two GitHub "
+             "formats share no prefix: the classic expression matches "
+             "`github_pat_` at no position at all. A fine-grained token in a "
+             "tracked file therefore walked through a scan that reported itself "
+             "clean",
+    ),
+    Mutation(
+        name="the-google-key-is-narrowed-past-its-own-length",
+        file=PATTERNS,
+        search=r're.compile(r"\bAIza[0-9A-Za-z_-]{35}\b")',
+        replace=r're.compile(r"\bAIza[0-9A-Za-z_-]{45}\b")',
+        test="tests.test_patterns.TheThreeShapesTheOlderCopiesWalkedPast"
+             ".test_the_google_api_key_is_detected",
+        scar="neither CORE scan knew `AIza`. It was carried by a rule that lived "
+             "on one instance and never reached CORE, so the shape was found on "
+             "the machine holding that rule and nowhere else. The length IS the "
+             "expression here: the prefix on its own stands in half the lines of "
+             "a client library",
+    ),
+    Mutation(
+        name="the-bearer-header-is-narrowed-past-every-real-token",
+        file=PATTERNS,
+        search=r're.compile(r"\bBearer [-A-Za-z0-9._~+/=]{20,}")',
+        replace=r're.compile(r"\bBearer [-A-Za-z0-9._~+/=]{200,}")',
+        test="tests.test_patterns.TheThreeShapesTheOlderCopiesWalkedPast"
+             ".test_the_bearer_header_is_detected",
+        scar="the overlay scan had no Bearer at all, and a header pasted out of "
+             "a curl call that worked is how a live token reaches a tracked "
+             "file. The twenty characters are what keeps the prose about bearer "
+             "tokens in this tree out of the report",
+    ),
+
+    # -- a name is not a value -----------------------------------------------
+    Mutation(
+        name="the-assignment-pattern-stops-asking-about-its-own-value",
+        file=PATTERNS,
+        search='            confirm=lambda match: looks_opaque(match.groupdict().get("value", "")),',
+        replace="            confirm=None,",
+        test="tests.test_patterns.LooksOpaqueSeparatesAValueFromTheCodeAroundIt"
+             ".test_the_assignment_pattern_only_fires_once_the_value_is_opaque",
+        scar="measured over this repo: the assignment pattern without the second "
+             "question produced 106 findings and 5 of them were real. A report "
+             "where 101 of 106 lines are calls and placeholders is read once, "
+             "and the five real ones are read with the same eye as the 101",
+    ),
+    Mutation(
+        name="the-scan-stops-asking-the-hook-the-pattern-declares",
+        file=PATTERNS,
+        search="        if match and (pattern.confirm is None or pattern.confirm(match)):",
+        replace="        if match:",
+        test="tests.test_audit_cli.AValueTypedByHandIsMeasuredBeforeItIsBelieved"
+             ".test_a_value_that_is_a_call_rather_than_a_literal_is_not",
+        scar="the same 106 findings from the other end. The hook sits on the "
+             "pattern and `scan_line` is what asks it, so a list that declares a "
+             "confirm and a scan that never calls one is correct in the "
+             "declaration and unfiltered in the report",
+    ),
+
+    # -- looks_opaque, one rejection at a time -------------------------------
+    #
+    # Six reasons, six needles. Each case in the suite carries a twin that IS
+    # accepted, because a rejection on its own goes green for whichever rule
+    # fires first, which for most of these strings is the length.
+    Mutation(
+        name="a-call-on-the-right-hand-side-is-read-as-a-value",
+        file=PATTERNS,
+        search=OPAQUE_CODE_LINE,
+        replace=r"""    if any(ch in value for ch in "$<>{}%,; \\"):""",
+        test="tests.test_patterns.LooksOpaqueSeparatesAValueFromTheCodeAroundIt"
+             ".test_a_call_is_not_a_value",
+        scar="`token = get_deploy_token()` is the commonest line of those 101: "
+             "the NAME says token and the value is a call. The parentheses are "
+             "the only evidence the line carries, and a heuristic reading the "
+             "name instead is the scanner that cried 106 times",
+    ),
+    Mutation(
+        name="an-interpolation-is-read-as-a-value",
+        file=PATTERNS,
+        search=OPAQUE_CODE_LINE,
+        replace=r"""    if any(ch in value for ch in "()<>{}%,; \\"):""",
+        test="tests.test_patterns.LooksOpaqueSeparatesAValueFromTheCodeAroundIt"
+             ".test_an_interpolation_is_not_a_value",
+        scar="`password: ${VAULT_PASSWORD}` is a REFERENCE to a secret, which is "
+             "the thing this skill exists to produce. Reporting it tells the "
+             "reader who did it right that they did it wrong, and that line "
+             "stands in every deployment file somebody has already cleaned up",
+    ),
+    Mutation(
+        name="a-dotted-path-is-read-as-a-value",
+        file=PATTERNS,
+        search='    if "." in value and not any(ch.isdigit() for ch in value):',
+        replace="    if False:",
+        test="tests.test_patterns.LooksOpaqueSeparatesAValueFromTheCodeAroundIt"
+             ".test_a_dotted_path_is_not_a_value",
+        scar="`token = request.headers` and `secret = self.config.token`: an "
+             "attribute path is code, and it is mixed case with no digit in it, "
+             "which is exactly the shape the character-class rule accepts. "
+             "Without the dot the scan reports the line that READS a credential "
+             "as the line that holds one",
+    ),
+    Mutation(
+        name="a-stand-in-word-is-read-as-a-value",
+        file=PATTERNS,
+        search="    if any(word in lowered for word in PLACEHOLDER_WORDS):",
+        replace="    if False:",
+        test="tests.test_patterns.LooksOpaqueSeparatesAValueFromTheCodeAroundIt"
+             ".test_a_stand_in_word_is_not_a_value",
+        scar="`changeme`, `your-token-here`, `example`: what a person writes "
+             "where a value goes, in every template and every README in this "
+             "tree. A scanner that reports its own documentation teaches its "
+             "reader to skim, and the next line skimmed is a real one",
+    ),
+    Mutation(
+        name="the-shortest-value-the-heuristic-accepts-drops-to-eight",
+        file=PATTERNS,
+        search="    if len(value) < 12:",
+        replace="    if len(value) < 8:",
+        test="tests.test_patterns.LooksOpaqueSeparatesAValueFromTheCodeAroundIt"
+             ".test_a_value_under_twelve_characters_is_not_a_value",
+        scar="under twelve characters the alphabet runs out: a port number, a "
+             "colour, a word with a digit in it. Nothing that short "
+             "authenticates anything, and a rule that accepts it fills the "
+             "report with ordinary words while the real hits sit underneath "
+             "them",
+    ),
+    Mutation(
+        name="one-character-class-is-enough-to-count-as-opaque",
+        file=PATTERNS,
+        search="    return classes >= 2",
+        replace="    return classes >= 1",
+        test="tests.test_patterns.LooksOpaqueSeparatesAValueFromTheCodeAroundIt"
+             ".test_a_value_of_one_character_class_is_not_a_value",
+        scar="one class is a word, a run of digits or a hex digest: "
+             "`abcdefghijklmnop` is prose and `348715930264` is an order number. "
+             "Two classes is the cheapest thing that separates an opaque value "
+             "from the language around it, and most of the distance between 5 "
+             "findings and 106",
+    ),
+
+    # -- the excerpt: a finding is a location, never a value -----------------
+    Mutation(
+        name="the-excerpt-cap-is-widened-to-a-whole-token",
+        file=PATTERNS,
+        search="def excerpt(match_text: str, width: int = 8) -> str:",
+        replace="def excerpt(match_text: str, width: int = 64) -> str:",
+        test="tests.test_patterns.NoExcerptCarriesEnoughOfAValueToUseIt"
+             ".test_a_long_match_is_cut_to_the_cap_and_an_ellipsis",
+        scar="a report that quotes the match writes the secret into the log that "
+             "exists to protect it. Measured here: a verify pass once decoded a "
+             "base64 credential into the transcript while checking whether the "
+             "credential was really there. Eight characters recognise the hit on "
+             "the line and authenticate nothing",
+    ),
+    Mutation(
+        name="the-cut-stops-happening-and-the-whole-match-reaches-the-report",
+        file=PATTERNS,
+        search='    return match_text[:width] + "…"',
+        replace="    return match_text",
+        test="tests.test_audit.TheReportNamesThePlaceAndNeverTheValue"
+             ".test_the_rendered_report_does_not_carry_the_value",
+        scar="the same rule at the far end. Every finding goes through this one "
+             "function, so a cut that stops happening puts the value into a "
+             "report that gets pasted into an issue, and an issue is a place "
+             "nothing can be unprinted from",
+    ),
+
+    # -- a line that declares itself a fixture -------------------------------
+    Mutation(
+        name="the-allowlist-pragma-stops-being-recognised",
+        file=PATTERNS,
+        search="    return PRAGMA in line",
+        replace="    return False",
+        test="tests.test_patterns.ADeliberateFixtureSaysSoOnItsOwnLine"
+             ".test_a_line_carrying_the_pragma_reports_nothing",
+        scar="a suite about a scanner is full of strings shaped like the thing it "
+             "looks for, and so is a template and so is a README. Without the "
+             "pragma the report is mostly its own fixtures, and a report of its "
+             "own fixtures is read once",
+    ),
+    Mutation(
+        name="every-line-reads-as-a-deliberate-fixture",
+        file=PATTERNS,
+        search="    return PRAGMA in line",
+        replace="    return True",
+        test="tests.test_patterns.ADeliberateFixtureSaysSoOnItsOwnLine"
+             ".test_the_same_line_without_the_pragma_reports",
+        scar="the same line the other way round, and this one is silent: every "
+             "line is exempt, the scan finds nothing, the run is green, and a "
+             "scanner switched off looks exactly like a clean tree. The needle "
+             "above stays red over a pragma nobody reads and says nothing at all "
+             "about a pragma everybody gets",
+    ),
+    Mutation(
+        name="the-scan-never-asks-whether-the-line-declared-itself",
+        file=PATTERNS,
+        search="    if exempt(line):\n        return []",
+        replace="    if False:\n        return []",
+        test="tests.test_audit_cli.ALineThatDeclaresItselfAFixtureIsNotAFinding"
+             ".test_the_marked_line_is_walked_past",
+        scar="the predicate above is intact and nothing calls it. The contract is "
+             "that a deliberate fixture says so on its own line and a real secret "
+             "never does, so the marker has to be read where the line is read. "
+             "This needle names the end a person meets: the exit code of a run "
+             "over a tree of fixtures",
+    ),
+
+    # -- personal data is reported, never moved, and can be switched off -----
+    Mutation(
+        name="the-personal-data-switch-stops-reaching-the-patterns",
+        file=PATTERNS,
+        search='        if pattern.kind == "pii" and not include_pii:\n            continue',
+        replace="        if False:\n            continue",
+        test="tests.test_patterns.PersonalDataIsReportedAndNeverProposedForAVault"
+             ".test_dropping_personal_data_keeps_the_credential_on_the_same_line",
+        scar="`--no-pii` is for the reader hunting credentials, and it has to drop "
+             "the two personal-data patterns and nothing else. The case it is "
+             "measured by puts all three on ONE line, because a filter that "
+             "dropped the line instead would take the credential with it and look "
+             "identical on a line carrying only an IBAN",
+    ),
+    Mutation(
+        name="the-no-pii-flag-is-parsed-and-never-passed-on",
+        file=CLI,
+        search="                           include_pii=not args.no_pii)",
+        replace="                           include_pii=True)",
+        test="tests.test_audit_cli.NoPiiNarrowsTheReportToCredentialsOnly"
+             ".test_the_findings_are_gone_from_the_json_and_not_merely_uncounted",
+        scar="an option the parser accepts and the engine never receives is an "
+             "option that does nothing. The needle names the JSON case because it "
+             "reads the findings themselves rather than the count line, which is "
+             "where a wrapper reads them and where hiding a hit and dropping one "
+             "look different",
+    ),
+
+    # -- a hit inside a declared file store is the store working -------------
+    Mutation(
+        name="a-value-inside-a-declared-store-is-reported-like-any-other",
+        file=AUDIT,
+        search="            inside = _inside(full, roots)",
+        replace="            inside = False",
+        test="tests.test_audit.AValueInsideADeclaredFileStoreIsTheStoreWorking"
+             ".test_the_hit_inside_the_declared_directory_is_marked_expected",
+        scar="a `file` store is a directory of values by declaration. Reporting "
+             "its contents makes every scan on a machine that has one arrive with "
+             "eleven expected findings, and a reader who skims eleven skims the "
+             "twelfth",
+    ),
+    Mutation(
+        name="a-neighbour-directory-is-read-as-being-inside-the-declared-store",
+        file=AUDIT,
+        search='    return any(real == base or real.startswith(base.rstrip("/") + "/") for base in roots)',
+        replace='    return any(real == base or real.startswith(base.rstrip("/")) for base in roots)',
+        test="tests.test_audit.AValueInsideADeclaredFileStoreIsTheStoreWorking"
+             ".test_a_neighbour_whose_name_starts_with_the_store_is_still_outside",
+        scar="the prefix bug the file backend carries a needle for, here on the "
+             "reporting side: `vault-old` is the directory somebody makes while "
+             "rotating, and without the separator it counts as part of `vault`. "
+             "The stale copy then lies in the one place the scan calls expected "
+             "and never prints",
+    ),
+    Mutation(
+        name="every-store-with-a-path-declares-a-directory-full-of-values",
+        file=AUDIT,
+        search='        if store.backend != "file":\n            continue',
+        replace="        if False:\n            continue",
+        test="tests.test_audit.AValueInsideADeclaredFileStoreIsTheStoreWorking"
+             ".test_a_store_on_another_backend_declares_none_even_when_it_names_a_path",
+        scar="a keychain store declares the keychain FILE it reads and a KeePass "
+             "store declares its database. Taking a path out of every location "
+             "exempts the directory those files sit in, which is where the other "
+             "keychains and the other databases sit too",
+    ),
+
+    # -- where the value belongs comes out of the declarations ---------------
+    Mutation(
+        name="the-suggestion-stops-asking-the-placement-policy",
+        file=AUDIT,
+        search="                cache[kind] = stores_mod.placements_for(stores, kind)",
+        replace="                cache[kind] = []",
+        test="tests.test_audit.ASuggestionComesFromThePlacementPolicyAndNotFromTheScanner"
+             ".test_the_finding_names_the_store_that_declares_this_kind",
+        scar="the answer comes out of the declarations, or it is decided per "
+             "session by whoever is holding the token, which is the habit that put "
+             "credentials in working folders on two machines. A finding that names "
+             "no store is `suspicious string` with more words around it",
+    ),
+    Mutation(
+        name="every-finding-is-routed-as-the-same-kind-of-secret",
+        file=AUDIT,
+        search='        kind = pattern.suggests if pattern else ""',
+        replace='        kind = "personal-token"',
+        test="tests.test_audit.ASuggestionComesFromThePlacementPolicyAndNotFromTheScanner"
+             ".test_a_pattern_that_declares_no_kind_gets_no_suggestion",
+        scar="the kind is per pattern, and `password-assignment` declares none on "
+             "purpose: it says a value is here, never what the value is for. A "
+             "kind invented for it sends a database password to the store that "
+             "holds personal tokens, and the proposal is the line a person pastes",
+    ),
+    Mutation(
+        name="a-value-already-inside-its-store-is-proposed-a-store",
+        file=AUDIT,
+        search='        if finding.kind != "credential" or finding.expected:',
+        replace='        if finding.kind != "credential":',
+        test="tests.test_audit.AValueInsideADeclaredFileStoreIsTheStoreWorking"
+             ".test_nothing_is_suggested_for_a_value_that_is_already_where_it_belongs",
+        scar="a value the declaration already put where it belongs needs no home. "
+             "Proposing one tells the reader to move a file the store declares, "
+             "and a reader who follows that advice once stops following the report",
+    ),
+
+    # -- what the walk skips, and what it counts -----------------------------
+    Mutation(
+        name="the-audit-walk-follows-a-symlink",
+        file=AUDIT,
+        search="            if os.path.islink(full) or os.path.isdir(full):",
+        replace="            if os.path.isdir(full):",
+        test="tests.test_audit.ASymlinkIsNotFollowed"
+             ".test_the_value_behind_the_link_is_not_reported",
+        scar="this repo carries three committed symlinks that point back into "
+             "itself, and following them counted every skill three times when "
+             "`discover` learned the same lesson. The worse half is a link that "
+             "leaves the tree: a scan of a repository then reads a home directory "
+             "and prints what it finds there",
+    ),
+    Mutation(
+        name="a-file-that-could-not-be-read-is-counted-as-read",
+        file=AUDIT,
+        search="                report.skipped_binary += 1",
+        replace="                report.files_read += 1",
+        test="tests.test_audit.WhatCannotBeReadIsCountedRatherThanPassedOver"
+             ".test_both_kinds_of_skip_reach_the_counter",
+        scar="a skip that leaves no trace reads exactly like a file that was "
+             "clean. The count line is the only thing telling a reader the scan "
+             "looked at fewer files than the tree holds, and a value inside a "
+             "skipped file is a value nobody has looked at",
+    ),
+    Mutation(
+        name="the-walk-decodes-what-it-was-supposed-to-skip",
+        file=AUDIT,
+        search="            text = discover.readable_text(full)",
+        replace="            text = discover.readable_text(full)\n"
+                "            if text is None:\n"
+                '                with open(full, encoding="utf-8", errors="replace") as handle:\n'
+                "                    text = handle.read()",
+        test="tests.test_audit.WhatCannotBeReadIsCountedRatherThanPassedOver"
+             ".test_the_value_in_the_binary_file_is_not_reported",
+        scar="a PNG is not text and a two megabyte log is not worth a regular "
+             "expression per line. The needle ADDS the decode rather than removing "
+             "the branch, because deleting the branch hands None to `splitlines` "
+             "and the case goes red over an AttributeError, which measures nothing "
+             "about what a scan reports out of a compressed image",
+    ),
+
+    # -- the exit code a hook and a CI job read ------------------------------
+    Mutation(
+        name="a-loose-credential-exits-zero",
+        file=CLI,
+        search="    return EX_MISSING if report.credentials else EX_OK",
+        replace="    return EX_OK",
+        test="tests.test_audit_cli.APlantedCredentialIsFoundAndSaysWhereItStands"
+             ".test_it_exits_the_code_that_means_a_value_is_lying_in_a_file",
+        scar="a wrapper reads the code and not the prose. `audit` in a hook or a "
+             "CI job that exits 0 over a token lying in a file is a gate that is "
+             "switched on and passing, which is worse than no gate at all because "
+             "somebody trusts it",
+    ),
+    Mutation(
+        name="an-invoice-in-the-tree-fails-the-run",
+        file=CLI,
+        search="    return EX_MISSING if report.credentials else EX_OK",
+        replace="    return EX_MISSING if report.findings else EX_OK",
+        test="tests.test_audit_cli.PersonalDataIsReportedAndNeverProposedForAVault"
+             ".test_a_repository_holding_an_invoice_is_not_broken",
+        scar="personal data does not change the verdict. An IBAN is on every "
+             "invoice its owner writes, so a gate counting findings rather than "
+             "credentials fails over a document doing its job, and a gate that "
+             "fails over invoices is switched off within a week",
+    ),
+    Mutation(
+        name="a-hit-inside-a-declared-store-counts-towards-the-verdict",
+        file=AUDIT,
+        search='        return [f for f in self.findings if f.kind == "credential" and not f.expected]',
+        replace='        return [f for f in self.findings if f.kind == "credential"]',
+        test="tests.test_audit.AValueInsideADeclaredFileStoreIsTheStoreWorking"
+             ".test_it_is_kept_out_of_the_credentials_to_deal_with",
+        scar="the same property from the report's side: `credentials` is the list "
+             "the count line prints and the exit code is taken from. A machine "
+             "whose secrets live in a `file` store would fail every run on the "
+             "strength of its own store, and red every time is green",
+    ),
+
+    # -- the optional second opinion stays optional --------------------------
+    Mutation(
+        name="the-second-opinion-runs-without-being-asked",
+        file=CLI,
+        search="    if args.with_gitleaks:",
+        replace="    if True:",
+        test="tests.test_audit_cli.GitleaksIsASecondOpinionAndNeverTheVerdict"
+             ".test_without_the_flag_no_second_process_is_started",
+        scar="the second opinion is opt in because it is a second process over the "
+             "whole tree. A verb reaching for it by itself shells out on every "
+             "run, on every machine, installed or not, and adds a report the "
+             "caller did not ask for",
+    ),
+    Mutation(
+        name="the-missing-binary-is-no-longer-noticed-before-the-call",
+        file=AUDIT,
+        search="    if not gitleaks_available(runner=runner):",
+        replace="    if False:",
+        test="tests.test_audit.TheSecondOpinionIsOptionalAndSaysWhenItDidNotRun"
+             ".test_nothing_runs_when_the_binary_is_absent",
+        scar="a machine without the tool has to be TOLD, rather than shown a zero "
+             "that reads like a clean tree. Calling it anyway turns a missing "
+             "optional tool into a failure in the middle of a report that "
+             "otherwise works",
     ),
 )

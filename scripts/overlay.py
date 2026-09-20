@@ -127,6 +127,13 @@ RAW_SECRET_PATTERNS = [
     re.compile(r"\bsk-[A-Za-z0-9]{20,}\b"),                    # OpenAI-style key
     re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b"),  # JWT
     re.compile(r"AccountKey=[A-Za-z0-9+/]{20,}={0,2}"),        # Azure conn-string key
+    # Added 2026-09-20 with scripts/check-secret-patterns.py, which compares
+    # this list with skills/secrets/engine/patterns.py and the table in
+    # rules/promote-safety.md. These four were known to one of the three and
+    # walked past by this one.
+    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{50,}\b"),            # GitHub fine-grained token
+    re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"),                   # Google API key
+    re.compile(r"\bBearer [-A-Za-z0-9._~+/=]{20,}"),            # an Authorization header, pasted
 ]
 
 # Opaque base64 credentials — Elastic Cloud ApiKey and the same shape used by

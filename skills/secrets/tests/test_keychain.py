@@ -67,7 +67,7 @@ refs = mod("engine.refs")
 LOOKS_LIKE_HEX = "6c310a6c32"  # pragma: allowlist secret
 
 #: The five bytes those same ten characters name, newline included. Measured:
-#: `password: 0x6C310A6C32  "l1\012l2"`.
+#: `password: 0x6C310A6C32  "l1\012l2"`.   # pragma: allowlist secret
 HEX_BYTES = b"l1\nl2"
 
 
@@ -251,7 +251,7 @@ class TheMeasuredParseShapes(KeychainCase):
         self.assertEqual(reading.secret.expose(), token.encode("utf-8"))
 
     def test_a_hex_value_decodes_to_the_bytes_it_names(self):
-        # The measured line is `password: 0x6C310A6C32  "l1\012l2"`. Five bytes,
+        # The measured line is `password: 0x6C310A6C32  "l1\012l2"`. Five bytes,   # pragma: allowlist secret
         # one of them a newline, which is why the tool refuses to print it plain.
         reading, _ = self.reading(stderr=keychain_report(hex_value=HEX_BYTES))
         self.assertEqual(reading.secret.expose(), HEX_BYTES)

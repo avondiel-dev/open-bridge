@@ -6,7 +6,7 @@ point. Measured on macOS 26 on 2026-09-19 against a throwaway keychain:
     value stored          `-w` prints        `-g` prints
     "abc"                 abc                password: "abc"
     "6c310a6c32"          6c310a6c32         password: "6c310a6c32"
-    "l1\nl2"              6c310a6c32         password: 0x6C310A6C32  "l1\012l2"
+    "l1\nl2"              6c310a6c32         password: 0x6C310A6C32  "l1\012l2"   # pragma: allowlist secret
     ""                    (nothing)          password:
 
 So `-w` is ambiguous: a value that contains a newline, an umlaut or any other
@@ -207,7 +207,7 @@ def parse_password(stderr: str) -> bytes | None:
     Three shapes, all of them measured rather than assumed:
 
         password: "plain text"
-        password: 0x6C310A6C32  "l1\\012l2"
+        password: 0x6C310A6C32  "l1\\012l2"   # pragma: allowlist secret
         password:
     """
     match = _PASSWORD_LINE.search(stderr or "")

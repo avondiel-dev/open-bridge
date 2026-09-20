@@ -2,16 +2,16 @@
 name: secrets
 description: >-
   Resolves a secret reference to the program that needs it and never to the
-  conversation, and puts a new value into a declared store, never through
-  argv. Owns the reference grammar of rules/secret-placement.md and the
-  placement policy of infra/secret-stores/: `refs` lists every reference in the
-  tree with its file and line, `check` reports bytes and a sha256 fingerprint
-  instead of a value, `run` hands a value to a child process and scrubs what
-  comes back, `where` answers where a new secret of a kind belongs, `store`
-  writes it there and reads it back, `stores` lists the declarations. No
-  command prints a secret. Trigger: "/secrets", "secret", "token",
-  "credential", "where do I put this token", "keychain", "vault", "keepass",
-  "store this token", "resolve a reference".
+  conversation, puts a new value into a declared store, never through argv, and
+  finds plaintext that should have been a reference. Owns the grammar of
+  rules/secret-placement.md and the policy of infra/secret-stores/: `refs`
+  lists every reference with its file and line, `check` reports bytes and a
+  sha256 fingerprint instead of a value, `run` hands a value to a child process
+  and scrubs what comes back, `where` says where a new secret belongs, `store`
+  writes it there, `stores` lists the declarations, `audit` finds credentials
+  and personal data in the tree. No command prints a secret. Trigger:
+  "/secrets", "secret", "token", "credential", "where do I put this token",
+  "keychain", "keepass", "is there a token in the repo".
 metadata:
   scope: core
 allowed-tools:
@@ -75,7 +75,7 @@ is used; `audit` will report it where it lies.
 
 ## Arguments
 
-Six verbs. `secrets.sh` resolves its own real path through the discovery
+Seven verbs. `secrets.sh` resolves its own real path through the discovery
 symlink, so it can be called from anywhere.
 
 | Argument | Effect | Default |
@@ -95,6 +95,11 @@ symlink, so it can be called from anywhere.
 | `store --replace` | Overwrite an entry that is already there | off |
 | `store --tag KEY=VALUE` | Metadata written in the same call, where the backend carries it | repeatable, none |
 | `stores` | Every declaration, what it holds, and what is wrong with it | whole tree from `--root` |
+| `audit` | Plaintext that should have been a reference, with where each value belongs | whole tree from `--root` |
+| `audit --also PATH` | Also scan a directory outside the tree, where the loose files actually are | repeatable, none |
+| `audit --no-pii` | Credentials only. Personal data is reported by default and never moved | off |
+| `audit --with-gitleaks` | Ask gitleaks for a second opinion, when it is installed here | off |
+| `audit -v` | Also show the hits inside declared stores, and why each pattern exists | off |
 | `--root PATH` | Tree to read declarations from | `.` |
 | `--keychain PATH` | Address this keychain file instead of the search list. Spell it absolutely: `security` reads a relative path as the login keychain on a write | the search list |
 | `--db NAME=PATH` | Where a KeePass database lives on this machine | none declared |
@@ -102,15 +107,36 @@ symlink, so it can be called from anywhere.
 | `--key-file PATH` | Key file for the KeePass database | none |
 | `--json` | Machine readable output, same fields, still no values | off |
 
+## What an audit proves, and what it does not
+
+It proves the positive and nothing else. A value that matches one of the shapes,
+in a file that was read, is reported with its file, its line, eight characters of
+the match and the store it belongs in. That much is evidence, and it is the half
+worth acting on today.
+
+**A clean scan is not a proof, and the last line of every report says so.** In a
+git tree the scan reads the TRACKED set, so the scratch file nobody added is
+invisible until `--also` names its directory; it reads the working tree and not
+the history, so a value deleted this morning is still in the log; a shape no
+pattern knows walks past, and so does a value that is split over two lines or
+wrapped in something. `--with-gitleaks` buys a second opinion with several
+hundred more shapes and still does not turn any of that into an absence.
+
+Two findings are deliberately not problems. A hit inside a directory that a
+`file` store declares is the store working, shown only under `-v`. Personal data
+is reported where it lies and never proposed for a vault, and it does not change
+the exit code: `0` when no credential is loose, `3` when one is.
+
 ## What is not here yet
 
-Read a plan as a plan. One verb belongs to this design and is NOT implemented,
-so nothing resolves it today and typing it gets an argparse usage error and
-exit `2`:
+Read a plan as a plan. Two things belong to this design and are NOT here, and
+the first of them is a verb, so typing it gets an argparse usage error and exit
+`2`:
 
 | Verb | Would do | State |
 |---|---|---|
-| `audit` | find raw values in the tree that should have been references | next slice |
+| `rotate` | mint the next value at the provider, store it, prove the read-back, then retire the old one | next slice |
+| `--owner` on a write | check the value against the owner line of the policy, the way `--kind` is already checked | `where --owner` narrows; `store` cannot yet |
 
 The same applies one layer down, and it is now the read and the write that
 differ rather than the scheme list. The grammar parses six schemes and **five
@@ -146,6 +172,14 @@ User wants to...
 │                                               references/store.md (§ The placement policy)
 ├── Ask what the kinds are, or why PII is
 │   not one of them                          → run `secrets where` with no kind
+├── Look for values that never became a
+│   reference                                → run `secrets audit`, then
+│                                               references/audit.md (§ Worked example: a run)
+├── Deal with something the audit found      → Read references/audit.md
+│                                               (§ Worked example: a finding, fixed)
+├── Ask why a pattern is there, add one, or
+│   mark a fixture that has to look like a
+│   token                                    → Read references/audit.md (§ One list instead of three)
 └── Ask what the schemes are                 → Answer from rules/secret-placement.md
 ```
 
@@ -155,9 +189,11 @@ User wants to...
 |---|---|
 | `references/resolve.md` | The READ side: how each scheme is addressed, what each backend calls, the store declarations a reference takes its options from, the measured macOS and KeePass facts, the bootstrap, and a worked example per verb |
 | `references/store.md` | The WRITE side: the three value sources, the read-back, what each backend does on a write, and the placement policy worked through |
+| `references/audit.md` | The SCAN side: the one pattern set and the three copies held to it, the pragma for a deliberate fixture, `--also`, the path from a finding to a store, and the limits of a clean scan |
 | [`rules/secret-placement.md`](../../rules/secret-placement.md) | Where a secret belongs: the scheme table and the group hierarchy |
 | `infra/secret-stores/_template.yaml` | What a declaration says, field by field, and `_schema.yaml` next to it |
 | `engine/refs.py` | The grammar itself, and the only copy of it that runs |
+| `engine/patterns.py` | What a plaintext secret looks like: one list, each entry carrying the marker the other copies are compared by. `scripts/check-secret-patterns.py` does the comparing |
 
 ## Hard Rules (non-negotiable)
 
