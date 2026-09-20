@@ -11,18 +11,37 @@ deterministically and a human finds the secret in the vault without guessing.
 
 ## Supported schemes & URI format
 
+This table is the SOURCE. Four other places carry the same list in machine
+form: the `secrets` skill, the overlay leak check, the workload engine and the
+workload schema. `scripts/check-secret-grammar.py` fails CI when any of them
+drifts from this table. Before that check existed they already had drifted:
+three of the four disagreed with each other, and a fifth scheme sat in the
+account template that no list defined at all.
+
 | Backend | URI format | Resolves to |
 |---|---|---|
 | Azure Key Vault | `azure-keyvault://<vault>/<secret-name>` | secret in that vault |
 | macOS Keychain | `keychain://<service>[/<account>]` | generic-password item |
 | 1Password | `1password://<vault>/<item>/<field>` | one field of one item |
+| 1Password, CLI spelling | `op://<vault>/<item>/<field>` | alias of the row above, accepted on input |
 | KeePass (.kdbx) | `keepass://<db>/<group-path>/<entry>/<field>` | one field of one entry |
+| HashiCorp Vault | `vault://<mount>/<path>/<field>` | one field of one KV secret |
+| File | `file://<absolute-path>` | a file with mode 0600 inside a declared store |
 
-- `<field>` defaults to `password` if omitted.
-- `<db>` for KeePass is the logical database name (e.g. `personal`, `<org>`), mapped
-  to a real `.kdbx` path in `bridge-config.yaml` under `secrets.keepass.<db>.path`
-  (never hardcode the filesystem path in the account file).
+- `<field>` defaults to `password` if omitted, and to `value` for `vault://`.
+  The LAST segment is the field. Write `#field` at the end when an entry name
+  would otherwise be read as one.
+- `<db>` for KeePass is the logical database name (e.g. `personal`, `<org>`),
+  never a filesystem path: where a database lives is a property of the machine,
+  not of the reference. The `secrets` skill takes that mapping with
+  `--db <name>=/path/to.kdbx`. An earlier version of this rule promised the key
+  `secrets.keepass.<db>.path` in `bridge-config.yaml`; nothing ever read it, so
+  the promise is withdrawn rather than left standing.
 - `<group-path>` is slash-separated KeePass groups, e.g. `<org>/<customer>`.
+- `file://` is the fallback for a machine with no keychain and no agent, a
+  systemd service on a Linux box being the usual case. It is a locator like the
+  others, and it is the only one a careless reader can follow to the value, so
+  it belongs in a declared store and at mode 0600.
 
 ## Folder / group hierarchy (the placement convention)
 
@@ -57,10 +76,39 @@ Rules:
 
 ## Retrieval
 
-Skills resolve a URI through the matching backend tool — `az keyvault secret show`,
-`security find-generic-password`, the 1Password CLI (`op read`), or the KeePass
-mechanism (`secrets` skill / `keepassxc-cli`). A skill NEVER prints the resolved
-secret into the conversation or a file; it uses it in the operation and discards it.
+**Resolution goes through the `secrets` skill** (`skills/secrets/`), not through
+a hand-written call per site. Before it existed, this rule named the backend
+tools and every caller wrote its own invocation: one instance carried 72 inline
+keychain reads, each of them its own small decision about quoting, emptiness and
+what an error means.
+
+```bash
+skills/secrets/secrets.sh refs                        # every reference in the tree, and where it is written
+skills/secrets/secrets.sh check --all                 # resolve each one and measure the value
+skills/secrets/secrets.sh run --env TOKEN=<uri> -- cmd   # hand it to a child process, nothing else
+```
+
+No command prints a value. `check` reports length and the first eight hex
+characters of the sha256, which is enough to tell two live tokens apart and to
+compare one machine's copy with another's. `run` puts the value in the child's
+environment, captures what the child writes, and replaces the value (and its
+base64, hex, percent and JSON encodings) before that output reaches the caller.
+
+Three distinctions the skill makes, because each one was once a silent failure:
+
+- **An empty entry is a miss.** `security find-generic-password` exits 0 for an
+  item holding zero bytes, so existence is not the measurement; length is.
+- **"Not readable here" is not "missing".** An ssh session has no unlocked login
+  keychain. The entry may be perfectly fine. Exit code 69 says so, and 3 means
+  the entry really is gone.
+- **A value never travels in argv.** Anything on a command line is visible in
+  `ps` to every process of the same user. The tools take the value on stdin:
+  `security -i` reads whole command lines there, and `keepassxc-cli` takes the
+  master password the same way.
+
+Storing a new secret, an audit for plaintext, and the per-kind placement policy
+are the next slices and are not in the skill yet. Until they are, a new secret
+is placed by hand against the convention below.
 
 ## Hard rules
 

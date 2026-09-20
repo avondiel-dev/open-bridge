@@ -200,6 +200,21 @@ jobs:
       - name: Prove every data-model needle bites
         run: python3 scripts/data-model.py --mutate
 
+      # The reference grammar lives in rules/secret-placement.md and in five
+      # machine copies, each of them a literal on purpose, because two of the
+      # skills that carry one have to keep working when their directory is
+      # copied out of the repo alone. Measured the day this ran first: three of
+      # the copies disagreed with the rule and with each other, and the account
+      # template used a sixth scheme that no list defined.
+      - name: Every copy of the secret-reference grammar says the same thing
+        run: python3 scripts/check-secret-grammar.py
+
+      - name: Prove the grammar comparison bites
+        run: python3 scripts/check-secret-grammar.py --mutate
+
+      - name: The grammar check has its own suite
+        run: python3 -m pytest scripts/tests/test_secret_grammar.py -q
+
       # The third layer. Entries reference each other in ordinary fields —
       # a customer names its mandant, an account names the task that
       # provisioned it — and nothing checked that those resolve. On a live
@@ -276,6 +291,18 @@ jobs:
 
       - name: Prove every negative control still bites
         run: bash workflow/workloads/_tests/run.sh --mutate
+
+  secrets-suites:
+    name: Secrets Broker + Mutations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run the secrets engine suite
+        run: bash skills/secrets/run-tests.sh
+
+      - name: Prove every secrets test still bites
+        run: bash skills/secrets/run-tests.sh --mutate
 
   workspace-tests:
     name: Workspace Engine + Registry + Skill

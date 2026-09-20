@@ -991,6 +991,7 @@ class TheHandWrittenGateHoldsWhatTheSchemaHolds(MachineGuard):
         # The negative control, and the place the two lists would drift apart.
         for locator in ("azure-keyvault://vault/name", "keychain://item",
                         "1password://vault/item/field", "op://vault/item/field",
+                        "keepass://personal/group/entry/password",
                         "vault://secret/path", "file:///etc/bridge/token"):
             with self.subTest(locator=locator):
                 raw = self.raw_with()

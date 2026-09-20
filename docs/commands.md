@@ -31,6 +31,7 @@ written down here.
 | `/remote` | `remote` | Remote management: status, health, logs, restart, sync |
 | `/workload` | `workload` | Declared runs: `declare`, `validate`, `render`, `provision`, `list`, `show`, `reconcile`, `view`, `publish`, `adopt`, `retire` |
 | `/schedule` | `schedule` | Scheduled tasks: list, create, deploy, disable |
+| `/secrets` | `secrets` | Secret references: `refs`, `check`, `run`. Resolves a reference and never prints a value |
 | `/promote` | `bridge-promote` | Promote CORE changes upstream (scope:core → `bks-lab/open-bridge`, scope:org → your optional org overlay) |
 | `/overlay` | `bridge-overlay` | Subscribe to org overlays + materialize scope:org content into the live tree (downstream inverse of `/promote`) |
 | `/contribute` | `bridge-contribute` | Scan user branch for upstream-worthy contributions |

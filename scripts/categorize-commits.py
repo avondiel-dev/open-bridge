@@ -387,6 +387,12 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     "scripts/tests/test-reachability.sh",
     "scripts/tests/test_data_model.py",
     "scripts/tests/test_reachability.py",
+    # Registered 2026-09-20 with the secrets skill. The rule table is the source
+    # of the reference grammar and five other files carry it as a literal; this
+    # is the check that holds them together, and validate.yml runs it and its
+    # mutation battery.
+    "scripts/check-secret-grammar.py",
+    "scripts/tests/test_secret_grammar.py",
     # Registered 2026-08-30 with the edge guard. validate.yml runs both.
     "scripts/check-edges.py",
     "scripts/tests/test-edges.sh",
