@@ -22,6 +22,10 @@ from ..refs import Ref
 from ..values import Reading, Secret
 
 
+#: Environment variables every common runner sets.
+CI_MARKERS = ("CI", "GITHUB_ACTIONS", "GITLAB_CI", "BUILDKITE", "TF_BUILD", "JENKINS_URL")
+
+
 @dataclass(frozen=True)
 class Context:
     """Where this process is running, as far as a secret store cares."""
@@ -30,6 +34,13 @@ class Context:
     interactive: bool      # a terminal is attached
     over_ssh: bool         # the session came in over ssh
     display: bool          # a desktop session is available
+    #: A pipeline runner: no person, no desktop, no keychain. Read from the
+    #: environment HERE and nowhere else, because a caller that describes a
+    #: session explicitly must not be overruled by the environment the tool
+    #: happens to run in. It was: on a GitHub runner every synthetic context
+    #: answered "ci", and five cases that pin other sessions failed for a
+    #: reason that had nothing to do with what they measure.
+    ci: bool = False
 
     @classmethod
     def detect(cls, environ=None, platform_name: str | None = None) -> "Context":
@@ -39,12 +50,14 @@ class Context:
         raw = platform_name or sys.platform
         platform = {"darwin": "darwin", "win32": "windows"}.get(raw, "linux" if raw.startswith("linux") else "other")
         over_ssh = bool(env.get("SSH_CONNECTION") or env.get("SSH_TTY") or env.get("SSH_CLIENT"))
+        in_ci = any(env.get(name) for name in CI_MARKERS)
         display = bool(env.get("DISPLAY") or env.get("WAYLAND_DISPLAY")) or platform == "darwin"
         try:
             interactive = os.isatty(0)
         except (OSError, ValueError):  # pragma: no cover - closed stdin in a daemon
             interactive = False
-        return cls(platform=platform, interactive=interactive, over_ssh=over_ssh, display=display)
+        return cls(platform=platform, interactive=interactive, over_ssh=over_ssh,
+                   display=display, ci=in_ci)
 
 
 class Backend:

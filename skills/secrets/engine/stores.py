@@ -170,24 +170,23 @@ class Store:
                        f"and this session is {here}")
 
 
-#: Environment variables every common runner sets. A pipeline is its own kind
-#: of session: it has no person, no desktop and no keychain, and a store that
-#: declares `ci` was unreachable from everywhere before this existed.
-CI_MARKERS = ("CI", "GITHUB_ACTIONS", "GITLAB_CI", "BUILDKITE", "TF_BUILD", "JENKINS_URL")
-
-
 def session_kind(context, environ=None) -> str:
     """Which of the declared contexts this session IS.
 
-    Derived from the platform as well as from the two booleans. The first
-    version read `not interactive` as `launchd-gui`, which is a macOS thing, so
-    a daemon on a Linux box was told it was a launchd session. That message is
-    the entire output of the call, so it has to be true.
+    Two scars in one function. The first version read `not interactive` as
+    `launchd-gui`, which is a macOS thing, so a daemon on a Linux box was told
+    it was a launchd session. The second read the CI markers out of the live
+    environment, which overruled every caller that described its session
+    explicitly: on a runner, every synthetic context answered "ci". The
+    environment is read in `Context.detect` now, once, and `environ` here is for
+    a caller asking about a session other than its own.
     """
-    import os as os_mod
+    from .backends.base import CI_MARKERS
 
-    env = os_mod.environ if environ is None else environ
-    if any(env.get(name) for name in CI_MARKERS):
+    if environ is not None:
+        if any(environ.get(name) for name in CI_MARKERS):
+            return "ci"
+    elif getattr(context, "ci", False):
         return "ci"
     if context.over_ssh:
         return "ssh"
