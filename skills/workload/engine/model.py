@@ -279,7 +279,7 @@ SHARED_INTERPRETERS = (
 #: into git along with the declaration. What it does not do is resolve anything
 #: -- the process receives the locator and resolves it itself -- and a secret
 #: TYPED as a locator is well formed and passes. Same closed list as the schema.
-ENV_VALUE_PATTERN = re.compile(r"^(azure-keyvault|keychain|1password|op|vault|file)://\S+$")
+ENV_VALUE_PATTERN = re.compile(r"^(azure-keyvault|keychain|1password|keepass|op|vault|file)://\S+$")
 
 #: A recipient is a reference, and these two shapes are what make that sentence
 #: true instead of merely stated. A slug has no `@`, no dot, no space and no

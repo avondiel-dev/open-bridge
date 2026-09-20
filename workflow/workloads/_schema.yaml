@@ -442,7 +442,7 @@ properties:
           pattern: "^[A-Za-z_][A-Za-z0-9_]*$"   # the hand-written gate's ENV_NAME_PATTERN, character for character
         additionalProperties:
           type: string
-          pattern: '^(azure-keyvault|keychain|1password|op|vault|file)://\S+$'   # a locator, never a value
+          pattern: '^(azure-keyvault|keychain|1password|keepass|op|vault|file)://\S+$'   # a locator, never a value
         description: |
           A map of environment NAME to a REFERENCE. Never a value.
 

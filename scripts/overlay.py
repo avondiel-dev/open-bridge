@@ -111,9 +111,13 @@ DEFAULT_SOURCE_ROOT = "tree/"
 MAX_MANIFEST_BYTES = 256 * 1024  # an overlay manifest is small; anything bigger is suspect
 
 # Secret material that must never be copied verbatim into a consumer file.
-# Accounts reference secrets by URI only (azure-keyvault:// keychain:// 1password://).
+# Accounts reference secrets by URI only. The list is the one in
+# rules/secret-placement.md, and scripts/check-secret-grammar.py fails CI when
+# the two drift: this tuple had been missing keepass:// and file:// since the
+# schemes were written down, so a keepass reference in a consumer file was read
+# as an opaque string rather than as the locator it is.
 SECRET_URI_PREFIXES = ("azure-keyvault://", "keychain://", "1password://",
-                       "vault://", "op://")
+                       "keepass://", "vault://", "op://", "file://")
 RAW_SECRET_PATTERNS = [
     re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
     re.compile(r"\bAKIA[0-9A-Z]{16}\b"),                       # AWS access key id

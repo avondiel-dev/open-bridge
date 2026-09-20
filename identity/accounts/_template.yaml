@@ -26,7 +26,7 @@ mail:
     #   host: imap.example.com
     #   port: 993
     #   user: "user@example.com"
-    #   credential_ref: "keeper://..."
+    #   credential_ref: "keychain://imap-example-com/user"   # a reference, never a value
   flags:
     attachment_processing: true    # flagged-mail intake workflow
     send: true                     # outbound allowed
@@ -41,7 +41,7 @@ calendar:
     # icalbuddy_name: "Work"       # calendar name as seen by icalBuddy
     # caldav:
     #   url: https://...
-    #   credential_ref: "keeper://..."
+    #   credential_ref: "1password://<vault>/<item>/<field>"   # a reference, never a value
   flags:
     read: true
     write: false                   # Claude may create/move events
@@ -59,7 +59,7 @@ calendar:
 #     - my-org
 #     - my-other-org
 #   ssh_key_ref: "~/.ssh/id_ed25519"
-#   token_ref: "keeper://..."      # NEVER inline the token
+#   token_ref: "azure-keyvault://<vault>/<secret>"   # NEVER inline the token
 
 # ---------------------------------------------------------------------------
 # Cross-references (optional)

@@ -82,6 +82,9 @@ properties:
 #     keychain://<service>[/<account>]           (macOS Keychain)
 #     1password://<vault>/<item>/<field>         (1Password)
 #     keepass://<db>/<group-path>/<entry>/<field> (KeePass .kdbx)
+#     op://<vault>/<item>/<field>                (1Password, the CLI's own spelling)
+#     vault://<mount>/<path>/<field>             (HashiCorp Vault KV)
+#     file://<absolute-path>                     (a 0600 file in a declared store)
 #   Format + folder/group conventions: rules/secret-placement.md.
 #   (See also CLAUDE.md § Cloud Accounts & Secrets.)
 # - Complex accounts get a companion `<id>.README.md` (decision matrix,
