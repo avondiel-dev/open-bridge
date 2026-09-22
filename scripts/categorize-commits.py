@@ -392,8 +392,10 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     # is the check that holds them together, and validate.yml runs it and its
     # mutation battery.
     "scripts/check-secret-grammar.py",
+    "scripts/check-object-grammar.py",
     "scripts/check-secret-patterns.py",
     "scripts/tests/test_secret_grammar.py",
+    "scripts/tests/test_object_grammar.py",
     "scripts/tests/test_secret_patterns.py",
     # Registered 2026-08-30 with the edge guard. validate.yml runs both.
     "scripts/check-edges.py",

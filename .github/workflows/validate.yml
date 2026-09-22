@@ -224,6 +224,19 @@ jobs:
       - name: The grammar check has its own suite
         run: python3 -m pytest scripts/tests/test_secret_grammar.py -q
 
+      # The object reference grammar has one source (the object-store schema)
+      # and a guard from its first commit, and the same script holds the ADR's
+      # hard never: nothing a session reads before its first answer may point
+      # at an object.
+      - name: Every copy of the object grammar agrees, and nothing always-on points at an object
+        run: python3 scripts/check-object-grammar.py
+
+      - name: Prove the object grammar check bites
+        run: python3 scripts/check-object-grammar.py --mutate
+
+      - name: The object grammar check has its own suite
+        run: python3 -m pytest scripts/tests/test_object_grammar.py -q
+
       # The same shape one layer up: three places scan for a plaintext secret,
       # and before this check they had drifted in every direction. The promote
       # table had no AIza and no github_pat_, the overlay list had neither plus
@@ -333,6 +346,24 @@ jobs:
 
       - name: Prove every secrets test still bites
         run: bash skills/secrets/run-tests.sh --mutate
+
+  object-store-suites:
+    name: Object Store Resolver + Mutations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Standard library only, except PyYAML for the declarations. S3 is played
+      # by an in-memory fake on loopback; the suite's guard refuses any other
+      # connection and any child process.
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run the object-store resolver suite
+        run: bash skills/object-store/run-tests.sh
+
+      - name: Prove every object-store test still bites
+        run: bash skills/object-store/run-tests.sh --mutate
 
   workspace-tests:
     name: Workspace Engine + Registry + Skill
