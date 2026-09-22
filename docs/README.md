@@ -20,6 +20,7 @@ instead of a bespoke `_MOC.md` / `index.md` convention.
 - [`repo-layout.md`](repo-layout.md) — Visualisations. The primary C-prime view is generated on demand; brain-metaphor variants v1–v4 are alternatives.
 - [`extension-model.md`](extension-model.md) — how CORE extends, how USER customises.
 - [`data-model.md`](data-model.md): the data model on one page: islands, object types, stores, references, and what a session reads when.
+- [`object-store.md`](object-store.md): ADR for storage outside git. Which content belongs in an object store rather than a repository, how an entry points at it by reference, how access is granted per instance, and what happens when a store cannot be reached.
 - [`multi-instance.md`](multi-instance.md) — running multiple Bridge instances.
 - [`org-overlays.md`](org-overlays.md) — the downstream inverse of `/promote`: how a Bridge subscribes to an org's `scope:org` content and materializes it as copies (git-excluded by default, opt-in tracked).
 - [`workspaces.md`](workspaces.md) — binding config overlays + member repos into a named workspace (shared cross-tool identity + repo-local materialization).
