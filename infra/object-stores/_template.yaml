@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=./_schema.yaml
+# Object Store Declaration
+# Copy to infra/object-stores/{slug}.yaml, one file per store.
+#
+# A store is WHERE content that is not configuration lives: a directory on one
+# machine, a bucket on a self-hosted S3 compatible service. An entry elsewhere
+# in the tree points at one object with object://<store>/<key>; this file says
+# where that store is, who reaches it from where, and which KIND of content
+# belongs in it. The decision behind it: docs/object-store.md.
+#
+# Git holds what is read as text, diffed and reviewed. A store holds what is
+# read whole and moved as bytes: recordings, filed documents, exports,
+# deliverables that carry personal data.
+#
+# NEVER a key, token or connection string in this file. It carries locators,
+# paths and policy. Credentials are references into a secret store.
+
+name: laptop-recordings        # slug, matches the filename
+scope: user                    # REQUIRED: org | user | private. A store names a machine
+                               # or a bucket, so it never ships to every instance.
+backend: local                 # local | s3
+summary: "Recordings on this laptop until they have a shared home"
+
+# Which references this store answers. The <store> segment of
+# object://<store>/<key> is matched against this list; across all declarations
+# the most specific address wins: an exact name, then the longest prefix, then *.
+addresses: [laptop-recordings]
+
+# Where the store physically is. One set of keys per backend.
+# local: absolute or starting with ~, never relative. The directory has to
+# exist, and has to be marked once with `object-store.sh init <store>` while it
+# is really there: the empty mount point of an unmounted volume is not a store.
+location:
+  path: "~/object-stores/recordings"               # local
+  # endpoint: "https://objects.example.org"        # s3, scheme included
+  # bucket: recordings                             # s3
+  # region: eu-central-1                           # s3, default us-east-1
+  # prefix: "instances/<instance>"                 # s3, one prefix per instance or customer
+
+# How the store is opened. References into a secret store, resolved through
+# the secrets skill, never values. Required for s3, and a local store needs
+# none. A caller may instead hand the pair over per store through the
+# environment, OBJECT_STORE_<NAME>_ACCESS_KEY_ID and _SECRET_ACCESS_KEY, which
+# is what `secrets run --env` does.
+# credentials:
+#   access_key_ref: "keychain://org-objects/access-key"
+#   secret_key_ref: "keychain://org-objects/secret-key"
+
+# Where the store is expected to be reachable. The resolver measures
+# reachability live; this only explains a miss.
+reachable_from:
+  machines: []                 # infra/remotes slugs; empty = this machine only
+  contexts: [interactive]      # interactive | launchd-gui | ssh | ci | any
+
+# The placement policy. Which classes of content belong here, and how their
+# keys are named. See _schema.yaml for the closed list of classes.
+holds:
+  - class: recording
+    naming: "<yyyy-mm>/<slug>.<ext>"
+
+# What this store is not, said out loud. A store may have poor properties; it
+# may not hide them. A directory on one laptop is not replicated.
+replicated: false
+recovery:
+  backed_up: false
+  offsite: false
+  break_glass: ""
+  note: "Until this has a shared store, the laptop disk is the only copy."

@@ -25,6 +25,9 @@ stores:
   outside:
     short: "outside git"
     what: "Never in a repository: a secret store reached by URI (rules/secret-placement.md), or a local cache or clone under .bridge/."
+  object:
+    short: "an object store"
+    what: "Never in a repository: bytes an entry reaches by an object:// reference, through a declaration in infra/object-stores/ (docs/object-store.md). A local directory can be one."
 
 # When a session reads it.
 reads:
@@ -146,6 +149,15 @@ families:
                  "remote_ref → infra/remotes/",
                  "account_ref → identity/accounts/"]
     writer: "/secrets"
+    read: named
+
+  - path: infra/object-stores/
+    object: "where content that is not configuration lives, who reaches it, which class belongs in it"
+    island: "core: template, schema; user: entries"
+    lives: [core, private]
+    references: ["credentials.*_ref → a secret store, by URI",
+                 "reachable_from.machines → infra/remotes/"]
+    writer: "a person; /object-store reads it"
     read: named
 
   - path: infra/transcriptions/
@@ -292,13 +304,17 @@ beside:
     island: core
     lives: [core]
   - path: .bridge/
-    what: "the overlay cache and the workspace clones"
+    what: "the overlay cache, the workspace clones and the object read cache"
     island: user
     lives: [outside]
   - path: imports/
     what: "incoming files before they are filed"
     island: user
     lives: [outside]
+  - path: "object://<store>/<key>"
+    what: "content that is not configuration: recordings, filed documents, exports"
+    island: user
+    lives: [object]
 
 # Words for the ring on the landing page.
 ring:
@@ -306,6 +322,6 @@ ring:
   legend_start: {en: "something of it is read at session start", de: "davon wird etwas beim Session-Start gelesen"}
   legend_named: {en: "opened when the work names it", de: "geöffnet, wenn die Arbeit es nennt"}
   walked: {en: "walked to: the references between entries", de: "weitergegangen: Verweise zwischen Einträgen"}
-  outside: {en: "outside git: secret stores by URI, local caches", de: "außerhalb von Git: Secret-Stores per URI, lokale Caches"}
+  outside: {en: "outside git: secret and object stores by URI, local caches", de: "außerhalb von Git: Secret- und Object-Stores per URI, lokale Caches"}
   aria: "What a session reads, as rings. At the centre the session. The first ring is what every session reads before its first answer. The second ring holds the config families, grouped identity, infra, workflow, behaviour and work, with a filled dot where something of the family is read at session start. Beyond it, the references the agent walks along, and outside the dashed line what never enters git."
   foot: {en: "Drawn from docs/data-model.yaml, like the tables in", de: "Aus docs/data-model.yaml gezeichnet, wie die Tabellen in"}

@@ -1,0 +1,12 @@
+# REASON: an empty policy looks declared and answers nothing.
+name: box
+scope: user
+backend: local
+summary: "x"
+addresses: [box]
+location:
+  path: "~/objects"
+holds: []
+replicated: false
+recovery:
+  backed_up: false

@@ -1,0 +1,13 @@
+# REASON: a local store without a path resolves every key against the working
+# directory of whoever happens to run the resolver.
+name: box
+scope: user
+backend: local
+summary: "x"
+addresses: [box]
+location: {}
+holds:
+  - class: recording
+replicated: false
+recovery:
+  backed_up: false

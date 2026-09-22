@@ -1,0 +1,14 @@
+# REASON: a store declaration names a machine or a bucket. It never ships to
+# every instance, so core is not a tier it can have.
+name: box
+scope: core
+backend: local
+summary: "x"
+addresses: [box]
+location:
+  path: "~/objects"
+holds:
+  - class: recording
+replicated: false
+recovery:
+  backed_up: false

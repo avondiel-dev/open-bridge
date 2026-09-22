@@ -1,0 +1,26 @@
+# A self-hosted S3 compatible service shared by an organisation. The keys are
+# references into a secret store, never values.
+name: org-documents
+scope: org
+backend: s3
+summary: "Filed documents on the organisation's object store"
+addresses: ["org-*"]
+location:
+  endpoint: "https://objects.example.org"
+  bucket: documents
+  region: eu-central-1
+  prefix: "instances/example"
+credentials:
+  access_key_ref: "keychain://org-objects/access-key"
+  secret_key_ref: "keychain://org-objects/secret-key"
+reachable_from:
+  machines: []
+  contexts: [any]
+holds:
+  - class: filed-document
+    naming: "<persona>/<yyyy>/<slug>.pdf"
+  - class: export
+replicated: true
+recovery:
+  backed_up: true
+  offsite: true

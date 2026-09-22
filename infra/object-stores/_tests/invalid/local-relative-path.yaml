@@ -1,0 +1,14 @@
+# REASON: `recordings` resolves against the current directory, usually the
+# Bridge's work tree, which is the one place this family keeps content out of.
+name: box
+scope: user
+backend: local
+summary: "x"
+addresses: [box]
+location:
+  path: "recordings"
+holds:
+  - class: recording
+replicated: false
+recovery:
+  backed_up: false

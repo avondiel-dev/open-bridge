@@ -81,6 +81,7 @@ SCENARIOS = [
     ("where does this get documented", ["contexts"], "workflow/contexts/"),
     ("something that runs on a schedule", ["workload"], "workflow/workloads/"),
     ("is the backup healthy", ["backups"], "infra/backups/"),
+    ("where does this recording go, if not into git", ["object"], "infra/object-stores/"),
     ("put it in the calendar", ["calendar"], "workflow/calendars/"),
     ("what rule applies here", ["rules/"], "rules/"),
 ]

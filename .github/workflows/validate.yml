@@ -78,6 +78,15 @@ jobs:
       - name: Prove every remote-inventory control still bites
         run: bash infra/remotes/_tests/run.sh --mutate
 
+      # The object-store declarations, measured the same way: every negative
+      # control fails for its own reason, and removing a rule hollows exactly
+      # the control that belongs to it (docs/object-store.md).
+      - name: Run object-store schema contract
+        run: bash infra/object-stores/_tests/run.sh
+
+      - name: Prove every object-store control still bites
+        run: bash infra/object-stores/_tests/run.sh --mutate
+
   okf-export:
     name: OKF Export
     runs-on: ubuntu-latest

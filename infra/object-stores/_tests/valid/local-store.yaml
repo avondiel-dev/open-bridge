@@ -1,0 +1,17 @@
+# A directory on one machine, declared honestly: not replicated, not backed up.
+name: laptop-recordings
+scope: user
+backend: local
+summary: "Recordings on this laptop until they have a shared home"
+addresses: [laptop-recordings]
+location:
+  path: "~/object-stores/recordings"
+reachable_from:
+  machines: []
+  contexts: [interactive]
+holds:
+  - class: recording
+    naming: "<yyyy-mm>/<slug>.<ext>"
+replicated: false
+recovery:
+  backed_up: false
