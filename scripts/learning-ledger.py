@@ -12,6 +12,17 @@ reason stay exactly where `rules/learning-autonomy.md` puts them.
     python3 scripts/learning-ledger.py fingerprint <id>
     python3 scripts/learning-ledger.py recurrences [--json]
     python3 scripts/learning-ledger.py prior-rejections <target.path> [--json]
+    python3 scripts/learning-ledger.py record <id> --to <state> [--reason R] [--until U]
+    python3 scripts/learning-ledger.py check
+
+`record` appends the audit-trail row after the human decided and the file was
+moved and its status set: the timestamp is the clock, the previous state is
+the proposal's last row, and for `implemented` the commit cell is HEAD's short
+SHA plus its diffstat (it also stores `implemented_commit` and the recurrence
+fingerprint). It refuses when folder or status do not match the transition
+yet. `check` compares folder, frontmatter status and last trail row for every
+proposal, plus placeholder timestamps, implemented rows without a commit and
+rows without a file; it reports and exits 1, never fixes.
 
 `fingerprint` stores `recurrence_fingerprint: <target.path>#<id without its
 date>` on an implemented proposal. `recurrences` lists implemented proposals
@@ -31,8 +42,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -277,6 +290,136 @@ def cmd_prior_rejections(args) -> int:
 
 
 # ---------------------------------------------------------------------------
+# record / check
+# ---------------------------------------------------------------------------
+
+# Which statuses may live in which folder (review-workflow.md § File move).
+STATUSES_BY_FOLDER = {
+    "": {"pending", "deferred", "superseded"},
+    "accepted": {"accepted", "implemented"},
+    "rejected": {"rejected"},
+}
+TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$")
+COMMIT_RE = re.compile(r"^[0-9a-f]{7,40}\b")
+
+
+def _git(root: Path, *args: str) -> str | None:
+    try:
+        result = subprocess.run(["git", "-C", str(root), *args],
+                                capture_output=True, text=True, check=False)
+    except OSError:
+        return None
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _head_commit_cell(root: Path) -> str | None:
+    """`<short sha> (<n> files, +<a>/-<d>)` for HEAD, measured by git."""
+    sha = _git(root, "rev-parse", "--short", "HEAD")
+    if not sha:
+        return None
+    stat = _git(root, "show", "--shortstat", "--format=", "HEAD") or ""
+    files = re.search(r"(\d+) files? changed", stat)
+    plus = re.search(r"(\d+) insertions?", stat)
+    minus = re.search(r"(\d+) deletions?", stat)
+    summary = (f"{files.group(1) if files else 0} files, "
+               f"+{plus.group(1) if plus else 0}/-{minus.group(1) if minus else 0}")
+    return f"{sha} ({summary})"
+
+
+def folder_problem(prop: Proposal) -> str | None:
+    allowed = STATUSES_BY_FOLDER[prop.folder]
+    if prop.status in allowed:
+        return None
+    where = f"proposals/{prop.folder}/" if prop.folder else "proposals/"
+    return f"folder and status disagree: status {prop.status or '(none)'} in {where}"
+
+
+def cmd_record(args) -> int:
+    root = Path(args.root)
+    prop = find_proposal(root, args.id)
+    if prop is None:
+        print(f"no proposal {args.id!r} under {root / LEARNING}", file=sys.stderr)
+        return 2
+    if prop.status != args.to:
+        print(f"{prop.id} has status {prop.status or '(none)'}, not {args.to}: set the "
+              "frontmatter first, then record what happened", file=sys.stderr)
+        return 2
+    problem = folder_problem(prop)
+    if problem:
+        print(f"{prop.id}: {problem}; move the file first (git mv)", file=sys.stderr)
+        return 2
+    trail = trail_path(root)
+    if not trail.is_file():
+        print(f"{trail} is missing", file=sys.stderr)
+        return 2
+
+    earlier = [r for r in read_trail(root) if r.id == prop.id]
+    source = earlier[-1].to_state if earlier else "pending"
+    transition = f"{source} → {args.to}"
+    if args.to == "deferred" and args.until:
+        transition += f" ({args.until})"
+
+    commit = "—"
+    if args.to == "implemented":
+        cell = _head_commit_cell(root)
+        if cell is None:
+            print("implemented needs the commit that landed it, and git has no HEAD here",
+                  file=sys.stderr)
+            return 2
+        commit = cell
+        set_frontmatter_key(prop.path, "implemented_commit", cell.split()[0])
+        set_frontmatter_key(prop.path, "recurrence_fingerprint", fingerprint_for(prop))
+
+    reason = (args.reason or "").replace("|", "/").replace("\n", " ").strip()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    text = trail.read_text(encoding="utf-8")
+    if not text.endswith("\n"):
+        text += "\n"
+    trail.write_text(text + f"| {timestamp} | {prop.id} | {transition} | {reason} | {commit} |\n",
+                     encoding="utf-8")
+    return 0
+
+
+def build_check(root: Path) -> list[tuple[str, str]]:
+    problems: list[tuple[str, str]] = []
+    proposals = {p.id: p for p in all_proposals(root)}
+    rows = read_trail(root)
+
+    for pid, prop in sorted(proposals.items()):
+        problem = folder_problem(prop)
+        if problem:
+            problems.append((pid, problem))
+        own = [r for r in rows if r.id == pid]
+        if own and own[-1].to_state != prop.status:
+            problems.append((pid, f"trail says {own[-1].to_state}, frontmatter says "
+                                  f"{prop.status or '(none)'}"))
+        if not own and prop.status not in ("", "pending"):
+            problems.append((pid, f"status {prop.status} but no audit-trail row"))
+
+    for row in rows:
+        if not TIMESTAMP_RE.match(row.timestamp):
+            problems.append((row.id, f"audit-trail.md:{row.lineno} timestamp "
+                                     f"{row.timestamp!r} is not a measured YYYY-MM-DD HH:MM"))
+        if row.to_state == "implemented" and not COMMIT_RE.match(row.commit):
+            problems.append((row.id, f"audit-trail.md:{row.lineno} implemented without a "
+                                     "commit hash"))
+        if row.id not in proposals:
+            problems.append((row.id, f"audit-trail.md:{row.lineno} has no proposal file "
+                                     "in any folder"))
+    return problems
+
+
+def cmd_check(args) -> int:
+    problems = build_check(Path(args.root))
+    for pid, problem in problems:
+        print(f"{pid}: {problem}")
+    if problems:
+        print(f"learning-ledger check: {len(problems)} finding(s)")
+        return 1
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -302,6 +445,17 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("target_path")
     pr.add_argument("--json", action="store_true")
     pr.set_defaults(func=cmd_prior_rejections)
+
+    re_ = sub.add_parser("record", help="append one audit-trail row, measured from git")
+    re_.add_argument("id")
+    re_.add_argument("--to", required=True,
+                     choices=["accepted", "implemented", "rejected", "deferred", "superseded"])
+    re_.add_argument("--reason", default="", help="the human's reason, passed through as typed")
+    re_.add_argument("--until", default="", help="for --to deferred: date or marker")
+    re_.set_defaults(func=cmd_record)
+
+    ch = sub.add_parser("check", help="folder, status and trail agree for every proposal")
+    ch.set_defaults(func=cmd_check)
 
     return parser
 

@@ -368,3 +368,140 @@ def test_prior_rejections_plain_output_says_none_found(tmp_path, capsys):
     capsys.readouterr()
     assert ll.main(["--root", str(root), "prior-rejections", "skills/x/SKILL.md"]) == 0
     assert "no rejected proposal" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# record / check (#203): the trail is written from git and checked
+# ---------------------------------------------------------------------------
+
+TS_RE = r"^\| \d{4}-\d{2}-\d{2} \d{2}:\d{2} \|"
+
+
+def _commit_all(root: Path, message: str = "c") -> str:
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", message], cwd=root, check=True)
+    return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=root, check=True,
+                          capture_output=True, text=True).stdout.strip()
+
+
+def test_record_accept_writes_a_measured_timestamp_and_no_commit(tmp_path):
+    import re
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-02-demo-task-tighten-trigger", folder="accepted", status="accepted")
+
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "accepted", "--reason", "narrowed the trigger"]) == 0
+    row = trail_rows(root)[-1]
+    assert re.match(TS_RE, row)
+    assert "2026-05-13 14:30" not in row
+    assert "| 2026-01-02-demo-task-tighten-trigger | pending → accepted | narrowed the trigger | — |" in row
+
+
+def test_record_implemented_uses_the_real_head_sha_and_a_diffstat(tmp_path):
+    root = bridge_root(tmp_path)
+    (root / "skills" / "demo").mkdir(parents=True)
+    (root / "skills" / "demo" / "SKILL.md").write_text("v1\n", encoding="utf-8")
+    _commit_all(root, "base")
+    proposal(root, "2026-01-02-demo-task-tighten-trigger", folder="accepted", status="accepted")
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "accepted"]) == 0
+    (root / "skills" / "demo" / "SKILL.md").write_text("v2\nmore\n", encoding="utf-8")
+    path = root / "work" / "_learning" / "proposals" / "accepted" / \
+        "2026-01-02-demo-task-tighten-trigger.md"
+    path.write_text(path.read_text(encoding="utf-8").replace("status: accepted",
+                                                            "status: implemented"),
+                    encoding="utf-8")
+    sha = _commit_all(root, "skill(demo): tighten")
+
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "implemented"]) == 0
+    row = trail_rows(root)[-1]
+    assert "| accepted → implemented |" in row
+    assert f"| {sha} (" in row and "+" in row
+    assert frontmatter(path)["recurrence_fingerprint"] == \
+        "skills/demo/SKILL.md#demo-task-tighten-trigger"
+    assert frontmatter(path)["implemented_commit"] == sha
+
+
+def test_record_defer_carries_the_until_marker(tmp_path):
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-02-demo-task-tighten-trigger", status="deferred")
+
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "deferred", "--until", "phase-3"]) == 0
+    assert "| pending → deferred (phase-3) |" in trail_rows(root)[-1]
+
+
+def test_record_refuses_when_folder_and_status_disagree(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-02-demo-task-tighten-trigger", status="accepted")  # still in root
+
+    before = trail_rows(root)
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "accepted"]) == 2
+    assert trail_rows(root) == before
+
+
+def test_record_refuses_when_the_file_status_is_not_the_target_state(tmp_path):
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-02-demo-task-tighten-trigger", folder="rejected", status="pending")
+
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "rejected", "--reason", "x"]) == 2
+
+
+def _drift_fixture(root: Path) -> None:
+    trail = root / "work" / "_learning" / "audit-trail.md"
+    # 1. implemented row without a commit hash
+    proposal(root, "2026-01-01-a-task-no-commit", folder="accepted", status="implemented")
+    # 2. placeholder timestamp
+    proposal(root, "2026-01-01-b-task-bad-ts", folder="accepted", status="accepted")
+    # 3. folder and status disagree
+    proposal(root, "2026-01-01-c-task-wrong-folder", status="accepted")
+    # 4. trail row for a proposal that has no file anywhere
+    trail.write_text(trail.read_text(encoding="utf-8")
+                     + "| 2026-01-02 10:00 | 2026-01-01-a-task-no-commit | pending → accepted | | — |\n"
+                     + "| 2026-01-02 10:05 | 2026-01-01-a-task-no-commit | accepted → implemented | | — |\n"
+                     + "| %s | 2026-01-01-b-task-bad-ts | pending → accepted | | — |\n"
+                     + "| 2026-01-02 10:10 | 2026-01-01-c-task-wrong-folder | pending → accepted | | — |\n"
+                     + "| 2026-01-02 10:20 | 2026-01-01-d-task-ghost | pending → rejected | gone | — |\n",
+                     encoding="utf-8")
+
+
+def test_check_reports_all_four_drift_patterns(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    _drift_fixture(root)
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "check"]) == 1
+    out = capsys.readouterr().out
+    assert "2026-01-01-a-task-no-commit" in out and "commit" in out
+    assert "2026-01-01-b-task-bad-ts" in out and "timestamp" in out
+    assert "2026-01-01-c-task-wrong-folder" in out and "folder" in out
+    assert "2026-01-01-d-task-ghost" in out and "no proposal file" in out
+
+
+def test_check_passes_a_consistent_ledger(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-01-a-task-fine", folder="accepted", status="implemented")
+    proposal(root, "2026-01-01-b-task-waiting")
+    proposal(root, "2026-01-01-c-task-no", folder="rejected", status="rejected")
+    trail = root / "work" / "_learning" / "audit-trail.md"
+    trail.write_text(trail.read_text(encoding="utf-8")
+                     + "| 2026-01-02 10:00 | 2026-01-01-a-task-fine | pending → accepted | | — |\n"
+                     + "| 2026-01-02 10:05 | 2026-01-01-a-task-fine | accepted → implemented | "
+                       "| 4f3a2b1 (2 files, +5/-1) |\n"
+                     + "| 2026-01-02 10:06 | 2026-01-01-c-task-no | pending → rejected | dup | — |\n",
+                     encoding="utf-8")
+
+    assert ll.main(["--root", str(root), "check"]) == 0
+
+
+def test_check_flags_a_hand_moved_proposal(tmp_path, capsys):
+    """The issue's negative test: moved into accepted/ without a status edit."""
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-01-a-task-moved", folder="accepted", status="pending")
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "check"]) == 1
+    assert "2026-01-01-a-task-moved" in capsys.readouterr().out

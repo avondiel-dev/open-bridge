@@ -126,6 +126,15 @@ paths with repo-relative, strip timestamps, strip line numbers within ±5.
 This is what makes "the same finding" stable across runs even if README
 content shifts.
 
+## Learning-ledger consistency (read-only)
+
+Run `python3 scripts/learning-ledger.py check` once per audit. Each line it
+prints (a proposal whose folder, frontmatter `status` and last audit-trail row
+disagree, a placeholder timestamp, an implemented row without a commit, a row
+with no proposal file) is one **P2** finding with the line as its text. The
+audit never repairs them: `/bridge-learn` owns those files. Exit 0 means no
+finding.
+
 ## Recurring-findings auto-proposal (Phase 3)
 
 After writing the history JSON, scan the **last 10 history files** for

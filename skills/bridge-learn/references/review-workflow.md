@@ -71,18 +71,31 @@ superseded_at: 2026-05-13
 
 ## audit-trail.md format
 
-One row per state transition. Append to bottom, newest at end.
+One row per state transition, appended at the bottom, **written by
+`scripts/learning-ledger.py record`, never composed by hand.** Hand-typed rows
+drifted on a real instance: 17 of 37 lost their commit hash, one carried a
+literal `%s` as its timestamp.
 
-```markdown
-| Timestamp | Proposal ID | Transition | Reason | Commit |
-|---|---|---|---|---|
-| 2026-05-13 14:30 | 2026-05-08-customer-a-coordinator-trigger-too-broad | pending → accepted | "narrowed to 'customer-a invoice'" | 4f3a2b1 |
-| 2026-05-13 14:32 | 2026-05-13-voice-stack-mode-switch | pending → rejected | "covered by gpu-host-config" | — |
-| 2026-05-13 14:35 | 2026-05-10-tahoe-sleep-memory | pending → deferred (next-week) | "" | — |
+```bash
+python3 scripts/learning-ledger.py record <id> --to accepted --reason "<note>"
+python3 scripts/learning-ledger.py record <id> --to implemented        # right after the commit
+python3 scripts/learning-ledger.py record <id> --to rejected --reason "<reason>"
+python3 scripts/learning-ledger.py record <id> --to deferred --until next-week
 ```
 
-Reason column may be empty (`""`) but the pipes must align. Quote any string
-containing pipes or newlines.
+What the script fills in and where from:
+
+| Column | Source |
+|---|---|
+| Timestamp | the clock at the moment of the call, `YYYY-MM-DD HH:MM` |
+| Proposal ID | the proposal file |
+| Transition | its last trail row (or `pending`) → `--to`, plus `(--until)` for defer |
+| Reason | `--reason`, the human's words passed through (pipes become `/`) |
+| Commit | `implemented`: HEAD's short SHA and diffstat, `4f3a2b1 (2 files, +5/-1)`; otherwise `—` |
+
+It refuses when the file's folder or `status:` does not match `--to` yet, so
+move the file and set the status first. `python3 scripts/learning-ledger.py
+check` finds rows and files that disagree after the fact.
 
 ## Validation checkpoints
 
