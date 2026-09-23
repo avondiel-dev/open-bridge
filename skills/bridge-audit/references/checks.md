@@ -299,6 +299,14 @@ backstop for `rules/knowledge-growth.md` (where new knowledge belongs).
    every session. Skip this step (no finding) if the script exits 0 because
    the directory or `MEMORY.md` is missing. This is the mechanical lint pass;
    steps 1-4 below are the separate semantic gate-language scan.
+   Then run `python3 scripts/memory-location.py links` (offline, exits 0) and report
+   its first line verbatim, `N of M memory files carry a session link, X of N
+   unresolved`, as one **P3** finding when X > 0, plus one **P2** finding for
+   each `warning:` line (a declared `work.transcript_retention_days` that
+   disagrees with the live `cleanupPeriodDays`). An unresolved link is expected
+   once a fact is older than the retention window; the count shows how much of
+   the memory base now stands on its own text alone
+   ([`docs/memory.md`](../../../docs/memory.md) § Retention).
 1. For each memory file (excluding `MEMORY.md`): score the body against the
    gate-language heuristic. Need at least one strong signal (cap-lock
    always/never, or an explicit `→`/"when X do Y" mapping) — a lone lowercase

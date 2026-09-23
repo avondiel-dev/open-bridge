@@ -806,3 +806,345 @@ def test_status_memory_dir_equals_legacy_dir_when_source_is_legacy(tmp_path, mon
     status = ml.build_status(str(repo), home=home)
     assert status["source"] == "legacy"
     assert status["memory_dir"] == status["legacy_dir"]
+
+
+# ---------------------------------------------------------------------------
+# index / get: the harness-agnostic Phase 1 read (#209)
+# ---------------------------------------------------------------------------
+
+
+def _index_fixture(tmp_path, monkeypatch):
+    repo, _home, _legacy, target = _enabled_repo(tmp_path, monkeypatch)
+    target.mkdir(parents=True)
+    (target / "feedback_use_trash.md").write_text(
+        "---\nname: use-trash\ndescription: trash not rm\nmetadata:\n  type: feedback\n---\n\n"
+        "Use trash, never rm.\n",
+        encoding="utf-8",
+    )
+    (target / "MEMORY.md").write_text(
+        "# Memory Index\n\n- [Use trash](feedback_use_trash.md) - deleting files\n",
+        encoding="utf-8",
+    )
+    return repo, target
+
+
+def test_index_prints_the_resolved_index_on_a_harness_without_auto_memory(
+        tmp_path, monkeypatch, capsys):
+    repo, _target = _index_fixture(tmp_path, monkeypatch)
+    monkeypatch.delenv("CLAUDECODE", raising=False)
+
+    capsys.readouterr()
+    rc = ml.main(["--repo", str(repo), "index"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "[Use trash](feedback_use_trash.md)" in out
+
+
+def test_index_skips_with_a_note_when_claude_code_already_loads_it(
+        tmp_path, monkeypatch, capsys):
+    repo, _target = _index_fixture(tmp_path, monkeypatch)
+    monkeypatch.setenv("CLAUDECODE", "1")
+    monkeypatch.delenv("CLAUDE_CODE_DISABLE_AUTO_MEMORY", raising=False)
+
+    capsys.readouterr()
+    rc = ml.main(["--repo", str(repo), "index"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "feedback_use_trash.md" not in out
+    assert "memory-location.py get <name>" in out
+
+
+def test_index_prints_under_claude_code_when_auto_memory_is_disabled(
+        tmp_path, monkeypatch, capsys):
+    repo, _target = _index_fixture(tmp_path, monkeypatch)
+    monkeypatch.setenv("CLAUDECODE", "1")
+    local = repo / ".claude" / "settings.local.json"
+    data = json.loads(local.read_text(encoding="utf-8"))
+    data["autoMemoryEnabled"] = False
+    _write_json(local, data)
+
+    capsys.readouterr()
+    rc = ml.main(["--repo", str(repo), "index"])
+    assert rc == 0
+    assert "[Use trash](feedback_use_trash.md)" in capsys.readouterr().out
+
+
+def test_index_prints_nothing_and_exits_zero_without_an_index(tmp_path, monkeypatch, capsys):
+    repo = git_repo(tmp_path / "repo")
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.delenv("CLAUDECODE", raising=False)
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "index"]) == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_get_resolves_a_fact_by_name_slug_or_file_name(tmp_path, monkeypatch, capsys):
+    repo, _target = _index_fixture(tmp_path, monkeypatch)
+
+    for key in ("use-trash", "feedback_use_trash.md", "feedback_use_trash"):
+        capsys.readouterr()
+        assert ml.main(["--repo", str(repo), "get", key]) == 0
+        assert "Use trash, never rm." in capsys.readouterr().out
+
+
+def test_get_exits_one_on_an_unknown_fact(tmp_path, monkeypatch, capsys):
+    repo, _target = _index_fixture(tmp_path, monkeypatch)
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "get", "no-such-fact"]) == 1
+    assert "no-such-fact" in capsys.readouterr().err
+
+
+def test_get_refuses_a_path_outside_the_memory_directory(tmp_path, monkeypatch, capsys):
+    repo, _target = _index_fixture(tmp_path, monkeypatch)
+    (repo / "secret.md").write_text("outside", encoding="utf-8")
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "get", "../../secret.md"]) == 1
+    assert "outside" not in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# links: session-link resolution against the harness's retention (#201)
+# ---------------------------------------------------------------------------
+
+LIVE_ID = "11111111-2222-3333-4444-555555555555"
+GONE_ID = "99999999-8888-7777-6666-555555555555"
+
+
+def _links_fixture(tmp_path, monkeypatch):
+    repo, home, _legacy, target = _enabled_repo(tmp_path, monkeypatch)
+    target.mkdir(parents=True)
+    (target / "MEMORY.md").write_text("# Memory Index\n", encoding="utf-8")
+    (target / "reference_live.md").write_text(
+        f"---\nname: live\nmetadata:\n  type: reference\n  originSessionId: {LIVE_ID}\n---\nx\n",
+        encoding="utf-8",
+    )
+    (target / "reference_gone.md").write_text(
+        f"---\nname: gone\nmetadata:\n  type: reference\n---\nSeen in {GONE_ID}.jsonl\n",
+        encoding="utf-8",
+    )
+    (target / "reference_plain.md").write_text(
+        "---\nname: plain\nmetadata:\n  type: reference\n---\nno link\n", encoding="utf-8"
+    )
+    transcripts = home / ".claude" / "projects" / "-some-other-cwd"
+    transcripts.mkdir(parents=True)
+    (transcripts / f"{LIVE_ID}.jsonl").write_text("{}\n", encoding="utf-8")
+    return repo, home, target
+
+
+def test_links_counts_linked_and_unresolved_facts(tmp_path, monkeypatch, capsys):
+    repo, _home, _target = _links_fixture(tmp_path, monkeypatch)
+
+    capsys.readouterr()
+    rc = ml.main(["--repo", str(repo), "links"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "2 of 3 memory files carry a session link, 1 of 2 unresolved" in out
+    assert "reference_gone.md" in out
+    assert "reference_live.md" not in out
+
+
+def test_links_reports_zero_unresolved_when_every_transcript_exists(
+        tmp_path, monkeypatch, capsys):
+    repo, _home, target = _links_fixture(tmp_path, monkeypatch)
+    (target / "reference_gone.md").unlink()
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "links"]) == 0
+    assert "1 of 2 memory files carry a session link, 0 of 1 unresolved" in capsys.readouterr().out
+
+
+def test_links_json_carries_counts_and_the_harness_retention(tmp_path, monkeypatch, capsys):
+    repo, home, _target = _links_fixture(tmp_path, monkeypatch)
+    _write_json(home / ".claude" / "settings.json", {"cleanupPeriodDays": 90})
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "links", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["files"] == 2 + 1
+    assert data["linked"] == 2
+    assert data["unresolved"] == ["reference_gone.md"]
+    assert data["retention_days"] == 90
+    assert data["retention_source"] == "setting:user"
+
+
+def test_links_defaults_retention_to_thirty_days(tmp_path, monkeypatch, capsys):
+    repo, _home, _target = _links_fixture(tmp_path, monkeypatch)
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "links", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["retention_days"] == 30
+    assert data["retention_source"] == "default"
+
+
+def test_links_warns_when_the_declared_retention_disagrees_with_the_harness(
+        tmp_path, monkeypatch, capsys):
+    repo, _home, _target = _links_fixture(tmp_path, monkeypatch)
+    (repo / "bridge-config.yaml").write_text(
+        "work:\n  enabled: true\n  transcript_retention_days: 365\n", encoding="utf-8"
+    )
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "links", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["declared_retention_days"] == 365
+    assert any("365" in w and "30" in w for w in data["warnings"])
+
+
+def test_links_exits_zero_without_a_memory_directory(tmp_path, monkeypatch, capsys):
+    repo = git_repo(tmp_path / "repo")
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "links"]) == 0
+    assert "0 of 0 memory files carry a session link" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# Review follow-ups: fresh clone, config dir, oversize, parsing, guards
+# ---------------------------------------------------------------------------
+
+
+def _fresh_clone_with_memory(tmp_path, monkeypatch):
+    """No autoMemoryDirectory anywhere: the state of every fresh clone."""
+    repo = git_repo(tmp_path / "repo")
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.delenv("CLAUDE_CONFIG_DIR", raising=False)
+    target = repo / "work" / "memory"
+    target.mkdir(parents=True)
+    (target / "reference_x.md").write_text("---\nname: x\n---\nfact x\n", encoding="utf-8")
+    (target / "MEMORY.md").write_text("# Memory Index\n\n- [X](reference_x.md) - x\n",
+                                      encoding="utf-8")
+    return repo, home, target
+
+
+def test_index_and_get_read_work_memory_on_a_fresh_clone(tmp_path, monkeypatch, capsys):
+    repo, _home, _target = _fresh_clone_with_memory(tmp_path, monkeypatch)
+    monkeypatch.delenv("CLAUDECODE", raising=False)
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "index"]) == 0
+    assert "[X](reference_x.md)" in capsys.readouterr().out
+    assert ml.main(["--repo", str(repo), "get", "x"]) == 0
+    assert "fact x" in capsys.readouterr().out
+
+
+def test_index_prints_work_memory_inside_claude_code_when_the_harness_reads_elsewhere(
+        tmp_path, monkeypatch, capsys):
+    """Without the setting Claude Code loads its legacy dir, not work/memory."""
+    repo, _home, _target = _fresh_clone_with_memory(tmp_path, monkeypatch)
+    monkeypatch.setenv("CLAUDECODE", "1")
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "index"]) == 0
+    assert "[X](reference_x.md)" in capsys.readouterr().out
+
+
+def test_read_resolution_does_not_change_the_migration_resolver(tmp_path, monkeypatch):
+    repo, home, _target = _fresh_clone_with_memory(tmp_path, monkeypatch)
+    _dir, source, _w = ml.resolve_memory_dir(str(repo), home=home)
+    assert source == "legacy"
+    read_dir, read_source, _w = ml.resolve_read_dir(str(repo), home=home)
+    assert read_source == "bridge"
+    assert read_dir == repo / "work" / "memory"
+
+
+def test_index_prints_an_oversized_index_even_under_claude_code(tmp_path, monkeypatch, capsys):
+    repo, _target = _index_fixture(tmp_path, monkeypatch)
+    monkeypatch.setenv("CLAUDECODE", "1")
+    monkeypatch.delenv("CLAUDE_CODE_DISABLE_AUTO_MEMORY", raising=False)
+    index = _target / "MEMORY.md"
+    index.write_text(index.read_text(encoding="utf-8")
+                     + "".join(f"- line {i}\n" for i in range(ml.LOAD_LIMIT_LINES)),
+                     encoding="utf-8")
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "index"]) == 0
+    assert "[Use trash](feedback_use_trash.md)" in capsys.readouterr().out
+
+
+def test_index_prints_when_auto_memory_is_disabled_by_environment(
+        tmp_path, monkeypatch, capsys):
+    repo, _target = _index_fixture(tmp_path, monkeypatch)
+    monkeypatch.setenv("CLAUDECODE", "1")
+    monkeypatch.setenv("CLAUDE_CODE_DISABLE_AUTO_MEMORY", "1")
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "index"]) == 0
+    assert "[Use trash](feedback_use_trash.md)" in capsys.readouterr().out
+
+
+def test_get_refuses_a_symlink_that_leaves_the_memory_directory(tmp_path, monkeypatch, capsys):
+    repo, target = _index_fixture(tmp_path, monkeypatch)
+    outside = tmp_path / "outside.md"
+    outside.write_text("outside secret", encoding="utf-8")
+    (target / "reference_link.md").symlink_to(outside)
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "get", "reference_link"]) == 1
+    assert "outside secret" not in capsys.readouterr().out
+
+
+def test_links_honours_claude_config_dir(tmp_path, monkeypatch, capsys):
+    repo, home, _target = _links_fixture(tmp_path, monkeypatch)
+    moved = tmp_path / "config"
+    (home / ".claude").rename(moved)
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(moved))
+    _write_json(moved / "settings.json", {"cleanupPeriodDays": 60})
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "links", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["unresolved"] == ["reference_gone.md"]
+    assert data["retention_days"] == 60
+
+
+def test_links_counts_only_typed_fact_files(tmp_path, monkeypatch, capsys):
+    repo, _home, target = _links_fixture(tmp_path, monkeypatch)
+    (target / "README.md").write_text(f"see {GONE_ID}.jsonl\n", encoding="utf-8")
+    (target / "PROVENANCE.md").write_text("notes\n", encoding="utf-8")
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "links", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["files"] == 3
+    assert data["unresolved"] == ["reference_gone.md"]
+
+
+def test_links_resolves_a_body_jsonl_link_and_a_top_level_origin_id(
+        tmp_path, monkeypatch, capsys):
+    repo, _home, target = _links_fixture(tmp_path, monkeypatch)
+    (target / "reference_gone.md").write_text(f"body cites {LIVE_ID}.jsonl\n", encoding="utf-8")
+    (target / "reference_plain.md").write_text(
+        f"---\nname: plain\noriginSessionId: {LIVE_ID}\n---\nx\n", encoding="utf-8")
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "links", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["linked"] == 3
+    assert data["unresolved"] == []
+
+
+def test_links_reads_the_declared_retention_only_from_the_work_block(
+        tmp_path, monkeypatch, capsys):
+    repo, _home, _target = _links_fixture(tmp_path, monkeypatch)
+    (repo / "bridge-config.yaml").write_text(
+        "other:\n  transcript_retention_days: 999\n\nwork:\n  enabled: true\n"
+        "  transcript_retention_days: \"30\"  # kept the harness default\n",
+        encoding="utf-8",
+    )
+
+    capsys.readouterr()
+    assert ml.main(["--repo", str(repo), "links", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["declared_retention_days"] == 30
+    assert data["warnings"] == []

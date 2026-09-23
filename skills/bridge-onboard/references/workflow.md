@@ -432,6 +432,13 @@ On `[y]` or `[c]`:
 - Generate `work/log.md` from `work/templates/week-skeleton.md` (fresh week header + today's day-block)
 - Generate `work/board.md` — empty board with header
 - Set `work.enabled: true` in `bridge-config.yaml`
+- Write `work.transcript_retention_days` explicitly, never leave it unset: the live
+  harness value if one is configured (Claude Code: `cleanupPeriodDays` in any
+  settings scope, `python3 scripts/memory-location.py links --json` reports it as
+  `retention_days`), otherwise `30` with the comment `# kept the harness default`.
+  One line to the user: memory facts link to session transcripts, and those links
+  stop resolving after that many days (`docs/memory.md` § Retention). Do not offer
+  to raise it here; that is a privacy decision with its own precondition
 - **D1b — seed one real first task** so the very first `/briefing` lands on a populated
   board instead of "Board is empty. Create tasks?" (this is what makes first-session
   value non-thin).
@@ -458,7 +465,7 @@ On `[y]` or `[c]`:
     Consent-free (derived from the user's own words, no scan) and `bridge_only` (no GitHub
     dependency).
 
-On `[n]`: leave `work.enabled: false`, explicitly mention that
+On `[n]`: leave `work.enabled: false` (still write `work.transcript_retention_days` as above: memory facts exist without task management, so the choice is recorded either way), explicitly mention that
 `/briefing`, `/debrief`, `/archive`, and **`feature-discovery`** are
 now inert.
 

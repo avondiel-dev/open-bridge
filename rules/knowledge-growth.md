@@ -135,7 +135,7 @@ turns), document across the five layers — fill the ones that apply:
 2. **Task → `work/tasks/<slug>/STATUS.md`** — plan, phases, data state, limits — for cross-session or multi-step work.
 3. **Cleanup / audit trail → the matching log** (e.g. `work/doc-system/log.md` for file ops); record reorg mappings so "where did X move" stays traceable.
 4. **Code / config → commit** (atomic, scope-split CORE → BKS → USER); push when the tree is clean.
-5. **Cross-session insight → memory, with a session-link** — `reference` (gotcha) / `project` (ongoing) / `feedback` (rule), each carrying its `<session-id>.jsonl` path for traceability; keep the `MEMORY.md` index line short.
+5. **Cross-session insight → memory, with a session-link** — `reference` (gotcha) / `project` (ongoing) / `feedback` (rule), each carrying its `<session-id>.jsonl` path for traceability; keep the `MEMORY.md` index line short. The link resolves only while the harness keeps that transcript (30 days by default), so write the fact to stand on its own text: [`docs/memory.md`](../docs/memory.md) § Retention.
 
 ## Live inventory
 
