@@ -163,6 +163,10 @@ If 90th-percentile > 2.5x: flag "estimates are systematically optimistic in
    2. cross-ref-broken / docs/extension-model.md L42 — 3 runs since 2026-05-08
       → matching proposal exists: 2026-05-09-docs-fix-xref
 
+♻️  Recurred after implemented (learning-ledger.py recurrences)
+   - 2026-05-09-docs-fix-xref  recurred: 2026-06-02
+     (work/_learning/postmortems/2026-06-02-site-rebuild.md)
+
 😴 Inactive skills (>60d, candidates for review-or-delete)        [if Phase 4]
    - voice-clone-deprecated  (last seen 2026-03-04)
    - kibana-dashboard-manager  (last seen 2026-04-12, key expired)

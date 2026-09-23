@@ -60,8 +60,20 @@ diff_preview: |
   +Detects when the local Twilio-15s-voice loop is active and ensures
   +the LLM endpoint is qwen3:1.7b. Switches back to qwen3:32b on
   +session-end.
+
+# Optional — before/after evidence, when the fix has something measurable
+verification:
+  kind: deterministic                     # deterministic | replay | judgment | none
+  command: "python3 scripts/check-reachability.py"
+  before: "1 family unreachable"
+  after: "0 unreachable"
 ---
 ```
+
+`verification:` stays optional. Most proposals (a rule rewrite, a routing
+fix) have nothing that reduces to a command and a number; leave it out rather
+than invent one. The schema is `work/_learning/_schema.proposal.yaml`; the
+file next to this one only points there.
 
 ## Severity defaults
 

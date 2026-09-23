@@ -106,10 +106,18 @@ Sort proposals by:
 │ Proposed diff (if diff_preview set):                  │
 │   <diff_preview block>                                │
 │                                                       │
+│ Verification (if verification set):                   │
+│   <kind>: <command>                                   │
+│   before: <before>   after: <after>                   │
+│                                                       │
 ╰───────────────────────────────────────────────────────╯
 
 [a]ccept  [r]eject  [e]dit  [d]efer  [s]kip  [q]uit
 ```
+
+A proposal without `verification:` shows no Verification block, nothing else
+changes. `verification:` is evidence for the reviewer, never a threshold: it
+does not accept or reject anything on its own (`rules/learning-autonomy.md`).
 
 ### Action: accept
 
@@ -140,7 +148,10 @@ Sort proposals by:
    PLUS the moved proposal file. Capture commit hash, update audit-trail.md
    row to point at the real hash.
 8. Mark status: `accepted` in proposal's frontmatter (Edit tool).
-   If commit succeeded: transition to `implemented` and update frontmatter again.
+   If commit succeeded: transition to `implemented` and update frontmatter again,
+   then run `python3 scripts/learning-ledger.py fingerprint <id>`. It stores
+   `recurrence_fingerprint` (`<target.path>#<gap slug>`), which trends mode
+   checks against later evidence.
 9. **Upstream hint (scope: core only):** if the accepted proposal has
    `scope: core`, the improvement is by definition generic — offer it to
    the community:
@@ -236,6 +247,12 @@ Useful when user just wants to scan, not act.
 - Most-used (top 5): "for context, not action"
 - Time-spent: skills with median duration >5min (split candidates)
 
+**Recurrences (implemented proposals that came back):**
+- Run `python3 scripts/learning-ledger.py recurrences`: every implemented
+  proposal whose `target.path` shows up in a newer proposal, postmortem or
+  audit-history file is listed as `recurred: <date>` with that evidence
+- Evidence only: a recurrence never reopens or changes a proposal's status
+
 **Task estimate-vs-actual:**
 - From `work/done/YYYY-MM/*/STATUS.md`: parse `estimate_vs_actual` field
 - Median + worst-case last month
@@ -312,7 +329,8 @@ Use imperative present tense ("add", "tighten", "remove") — never "added" or "
 - `skills/task-close-postmortem/SKILL.md` — Layer 1 source of proposals
 - `skills/bridge-audit/` — Phase 3 source of recurring-finding proposals
 - `work/_learning/README.md` — aggregation layer documentation
-- `work/_learning/_schema.proposal.yaml` — proposal frontmatter schema
+- `work/_learning/_schema.proposal.yaml` — proposal frontmatter schema (the one definition)
+- `scripts/learning-ledger.py` — fingerprint and recurrence check
 - `protocols/standing-orders/task-sync.md` — close-out flow that feeds proposals
 - `bridge-config.yaml.learning.proposals` — thresholds + Friday-surface config
 - `skills/briefing/` — invokes bridge-learn in summary mode on Fridays

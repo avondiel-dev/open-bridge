@@ -135,6 +135,9 @@ jobs:
       - name: Run memory-location test suite
         run: bash scripts/tests/test-memory-location.sh
 
+      - name: Run learning-ledger test suite
+        run: pip install jsonschema && bash scripts/tests/test-learning-ledger.sh
+
       - name: Run reachability test suite
         run: bash scripts/tests/test-reachability.sh
 
