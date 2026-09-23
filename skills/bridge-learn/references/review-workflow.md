@@ -50,7 +50,8 @@ status: pending
 # After accept:
 status: accepted              # or 'implemented' if commit landed
 accepted_at: 2026-05-13       # ISO date
-implemented_commit: <hash>    # optional, set after commit
+# implemented_commit and recurrence_fingerprint: written by
+# `learning-ledger.py record <id> --to implemented`, never by hand
 
 # After reject:
 status: rejected
@@ -94,14 +95,17 @@ What the script fills in and where from:
 | Commit | `implemented`: HEAD's short SHA and diffstat, `4f3a2b1 (2 files, +5/-1)`; otherwise `—` |
 
 For a `target.type: skill` proposal, `--to implemented` also appends one line
-to `skills/<name>/references/provenance.md`: `- <date> · <proposal id> · <why>`.
-That is the skill's own record of which proposal put a rule there and why,
+to `skills/<name>/references/provenance.md`, in the format `SKILL.md` accept
+step 8 defines. That is the skill's own record of which proposal put a rule there and why,
 readable without the trail. The skill-local learning journal proposed in #163
 would live in the same directory; its routing block should point here rather
 than repeat it.
 
-It refuses when the file's folder or `status:` does not match `--to` yet, so
-move the file and set the status first. `python3 scripts/learning-ledger.py
+It refuses when the file's folder or `status:` does not match `--to` yet (move
+the file and set the status first), when the proposal is already recorded in
+that state (a second `implemented` would overwrite the real commit with the
+bookkeeping commit), and for `implemented` when HEAD touches neither the
+proposal file nor its target (the change is not committed yet). `python3 scripts/learning-ledger.py
 check` finds rows and files that disagree after the fact.
 
 ## Validation checkpoints

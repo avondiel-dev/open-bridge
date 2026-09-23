@@ -165,7 +165,7 @@ does not accept or reject anything on its own (`rules/learning-autonomy.md`).
    checks against later evidence). For `target.type: skill` it also appends
    one line, `- <date> · <id> · <why>`, to `skills/<name>/references/provenance.md`
    (created on first use, `SKILL.md` untouched), the why being the accept
-   reason from step 5. Rejecting never writes provenance. Commit that bookkeeping as a follow-up
+   reason from step 5, else the first prose line of the proposal body. Rejecting never writes provenance. Commit that bookkeeping as a follow-up
    (`chore(learning): record <id>`); never amend, since amending changes the
    SHA the row just recorded.
 9. **Upstream hint (scope: core only):** if the accepted proposal has
@@ -337,7 +337,7 @@ Use imperative present tense ("add", "tighten", "remove") — never "added" or "
 
 - **No pending proposals** → print "✅ No pending proposals. Run a task close or `/bridge-audit` (Phase 3) to generate signal."
 - **Proposal file malformed** → show validation error + `[e]dit` action; do not act on broken file.
-- **Two proposals target same file** → flag both, ask user "these overlap — pick one?" (one accept implicitly supersedes the other; mark loser as `superseded`).
+- **Two proposals target same file** → flag both, ask user "these overlap — pick one?" (one accept implicitly supersedes the other; mark loser as `superseded` with `superseded_by:` and `superseded_at:`, then `python3 scripts/learning-ledger.py record <loser-id> --to superseded --reason "superseded by <winner-id>"`).
 - **`target.action: create` but file exists** → ask user: accept-and-overwrite / convert-to-edit / reject.
 - **Proposal `scope: core` but content mentions org/customer names** → block accept until /bridge-leak-check passes. (Run leak-check inline before move.)
 - **User runs out of time mid-walk** → `[q]uit` saves progress. Resume any time.

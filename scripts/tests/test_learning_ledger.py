@@ -617,3 +617,206 @@ def test_check_provenance_on_the_shipped_tree_reports_nothing(capsys):
     """The issue's negative test: current CORE carries no provenance yet."""
     capsys.readouterr()
     assert ll.main(["--root", str(REPO_ROOT), "check", "--provenance"]) == 0
+
+
+# ---------------------------------------------------------------------------
+# Review follow-ups
+# ---------------------------------------------------------------------------
+
+
+def test_record_refuses_to_record_the_same_state_twice(tmp_path):
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-02-demo-task-tighten-trigger", folder="accepted", status="accepted")
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "accepted"]) == 0
+    rows = trail_rows(root)
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "accepted"]) == 2
+    assert trail_rows(root) == rows
+
+
+def test_record_allows_a_second_defer(tmp_path):
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-02-demo-task-tighten-trigger", status="deferred")
+    for until in ("next-week", "phase-3"):
+        assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                        "--to", "deferred", "--until", until]) == 0
+    assert "| deferred → deferred (phase-3) |" in trail_rows(root)[-1]
+
+
+def test_a_repeated_implemented_record_keeps_the_first_commit_and_one_provenance_line(tmp_path):
+    root = bridge_root(tmp_path)
+    skill = _skill_accept_to_implemented(root)
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "implemented"]) == 0
+    path = root / "work" / "_learning" / "proposals" / "accepted" / \
+        "2026-01-02-demo-task-tighten-trigger.md"
+    first = frontmatter(path)["implemented_commit"]
+    _commit_all(root, "chore(learning): record")
+
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "implemented"]) == 2
+    assert frontmatter(path)["implemented_commit"] == first
+    text = (skill / "references" / "provenance.md").read_text(encoding="utf-8")
+    assert len([l for l in text.splitlines() if l.startswith("- ")]) == 1
+
+
+def test_record_implemented_refuses_a_head_that_does_not_touch_the_proposal(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    (root / "unrelated.txt").write_text("x\n", encoding="utf-8")
+    _commit_all(root, "unrelated")
+    proposal(root, "2026-01-02-demo-task-tighten-trigger", folder="accepted", status="implemented")
+    (root / "unrelated.txt").write_text("y\n", encoding="utf-8")
+    subprocess.run(["git", "add", "unrelated.txt"], cwd=root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "other work"], cwd=root, check=True)
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "implemented"]) == 2
+    assert "HEAD" in capsys.readouterr().err
+
+
+def test_record_supersede_is_recorded(tmp_path):
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-02-demo-task-tighten-trigger", status="superseded",
+             extra={"superseded_by": "2026-01-03-x-task-better"})
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "superseded"]) == 0
+    assert "| pending → superseded |" in trail_rows(root)[-1]
+
+
+def test_check_flags_a_self_transition_row(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-01-a-task-twice", folder="accepted", status="accepted")
+    trail = root / "work" / "_learning" / "audit-trail.md"
+    trail.write_text(trail.read_text(encoding="utf-8")
+                     + "| 2026-01-02 10:00 | 2026-01-01-a-task-twice | accepted → accepted | | — |\n",
+                     encoding="utf-8")
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "check"]) == 1
+    assert "accepted → accepted" in capsys.readouterr().out
+
+
+def test_check_reports_unparseable_and_duplicated_proposals(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    broken = root / "work" / "_learning" / "proposals" / "2026-01-01-a-task-broken.md"
+    broken.write_text("---\nid: [unclosed\n---\nbody\n", encoding="utf-8")
+    proposal(root, "2026-01-01-b-task-twice")
+    proposal(root, "2026-01-01-b-task-twice", folder="rejected", status="rejected")
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "check"]) == 1
+    out = capsys.readouterr().out
+    assert "2026-01-01-a-task-broken" in out and "frontmatter" in out
+    assert "2026-01-01-b-task-twice" in out and "more than one folder" in out
+
+
+def test_check_reports_a_truncated_trail_row(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    trail = root / "work" / "_learning" / "audit-trail.md"
+    trail.write_text(trail.read_text(encoding="utf-8")
+                     + "| 2026-01-02 10:00 | 2026-01-01-a-task | accepted → implemented |\n",
+                     encoding="utf-8")
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "check"]) == 1
+    assert "audit-trail.md:" in capsys.readouterr().out
+
+
+def test_set_frontmatter_key_keeps_backslashes_and_replaces_a_folded_value(tmp_path):
+    path = tmp_path / "p.md"
+    path.write_text("---\nid: x\nreject_reason: >\n  long\n  folded\nstatus: rejected\n---\nBody\n",
+                    encoding="utf-8")
+    ll.set_frontmatter_key(path, "reject_reason", "a\\b short")
+    data = frontmatter(path)
+    assert data == {"id": "x", "reject_reason": "a\\b short", "status": "rejected"}
+    assert path.read_text(encoding="utf-8").endswith("Body\n")
+
+
+def test_recurrences_scan_undated_postmortems_by_their_commit_date(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    _implemented(root)
+    trail = root / "work" / "_learning" / "audit-trail.md"
+    trail.write_text(trail.read_text(encoding="utf-8")
+                     + "| 2026-01-05 10:00 | 2026-01-02-demo-task-tighten-trigger | accepted → "
+                       "implemented | | 4f3a2b1 (1 files, +1/-0) |\n", encoding="utf-8")
+    pm = root / "work" / "_learning" / "postmortems" / "some-task.md"
+    pm.write_text("Burned time in skills/demo/SKILL.md again.\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "pm"], cwd=root, check=True,
+                   env={**__import__("os").environ, "GIT_COMMITTER_DATE": "2026-03-04T10:00:00",
+                        "GIT_AUTHOR_DATE": "2026-03-04T10:00:00"})
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "recurrences", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data and data[0]["recurred"] == "2026-03-04"
+
+
+def test_recurrences_count_from_the_implemented_row_not_from_acceptance(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    _implemented(root, on="2026-01-05")
+    trail = root / "work" / "_learning" / "audit-trail.md"
+    trail.write_text(trail.read_text(encoding="utf-8")
+                     + "| 2026-01-20 10:00 | 2026-01-02-demo-task-tighten-trigger | accepted → "
+                       "implemented | | 4f3a2b1 (1 files, +1/-0) |\n", encoding="utf-8")
+    proposal(root, "2026-01-10-other-task-before-the-fix-landed")
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "recurrences", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == []
+
+
+def test_recurrences_need_the_whole_path_not_a_substring(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    _implemented(root)
+    (root / "work" / "_learning" / "audit-history" / "2026-03-01.md").write_text(
+        "x/skills/demo/SKILL.md.bak changed\n", encoding="utf-8")
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "recurrences", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == []
+
+
+def test_prior_rejections_normalises_the_path(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    _rejected_fixture(root)
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "prior-rejections",
+                    "./skills/fixture-skill/SKILL.md", "--json"]) == 0
+    assert len(json.loads(capsys.readouterr().out)) == 1
+
+
+def test_provenance_why_falls_back_to_the_proposal_body(tmp_path):
+    root = bridge_root(tmp_path)
+    skill = _skill_accept_to_implemented(root, reason="")
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "implemented"]) == 0
+    text = (skill / "references" / "provenance.md").read_text(encoding="utf-8")
+    assert "· Body." in text and "(no reason recorded)" not in text
+
+
+def test_a_real_proposal_file_validates_through_the_documented_pipeline(tmp_path):
+    """Unquoted YAML dates become date objects; extract-frontmatter stringifies them."""
+    jsonschema = pytest.importorskip("jsonschema")
+    referencing = pytest.importorskip("referencing")
+    root = bridge_root(tmp_path)
+    path = proposal(root, "2026-01-02-demo-task-tighten-trigger", folder="rejected",
+                    status="rejected")
+    path.write_text(path.read_text(encoding="utf-8").replace(
+        "status: rejected", "status: rejected\nrejected_at: 2026-01-03\nreject_reason: dup"),
+        encoding="utf-8")
+    out = subprocess.run([sys.executable, str(REPO_ROOT / "scripts" / "extract-frontmatter.py"),
+                          str(path)], capture_output=True, text=True, check=True).stdout
+    data = json.loads(out)
+
+    def retrieve(uri):
+        return referencing.Resource.from_contents(
+            yaml.safe_load(Path(uri.removeprefix("file://")).read_text(encoding="utf-8")))
+
+    pointer = yaml.safe_load(SKILL_SCHEMA.read_text(encoding="utf-8"))
+    registry = referencing.Registry(retrieve=retrieve)
+    pointer["$id"] = SKILL_SCHEMA.resolve().as_uri()
+    validator = jsonschema.Draft202012Validator(pointer, registry=registry)
+    assert list(validator.iter_errors(data)) == []
+    data["status"] = "shelved"
+    assert list(validator.iter_errors(data))

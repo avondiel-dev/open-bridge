@@ -20,21 +20,26 @@ moved and its status set: the timestamp is the clock, the previous state is
 the proposal's last row, and for `implemented` the commit cell is HEAD's short
 SHA plus its diffstat (it also stores `implemented_commit` and the recurrence
 fingerprint). It refuses when folder or status do not match the transition
-yet. `check` compares folder, frontmatter status and last trail row for every
-proposal, plus placeholder timestamps, implemented rows without a commit and
-rows without a file; it reports and exits 1, never fixes.
+yet, when the proposal is already recorded in that state (except a repeated
+defer), and for `implemented` when HEAD touches neither the proposal nor its
+target. `check` compares folder, frontmatter status and last trail row for
+every proposal, and flags unparseable proposal files, one id in two folders,
+short or self-transition rows, placeholder timestamps, implemented rows
+without a commit and rows without a file; it reports and exits 1, never fixes.
 
 For a proposal with `target.type: skill`, `record --to implemented` also
-appends `- <date> · <id> · <why>` to `skills/<name>/references/provenance.md`
-(created on first use; `SKILL.md` is never touched), with the accept reason as
-the why. `check --provenance` is the opt-in cross-check of those lines against
+appends one provenance line (format: skills/bridge-learn/SKILL.md, accept
+step 8) to `skills/<name>/references/provenance.md`, created on first use;
+`SKILL.md` is never touched. `check --provenance` is the opt-in cross-check of those lines against
 the trail's implemented rows, in both directions.
 
 `fingerprint` stores `recurrence_fingerprint: <target.path>#<id without its
 date>` on an implemented proposal. `recurrences` lists implemented proposals
-whose target.path shows up again after the fix: a newer proposal in any
-folder, or a postmortem or audit-history file whose name starts with a later
-date. It is evidence for the reviewer and never changes a status.
+whose target.path comes back after the day the fix landed (its implemented
+trail row): a newer proposal on the same path, or a postmortem, audit-history
+file or closed task's STATUS.md naming the whole path. A file without a date
+in its name is dated by its last commit. Evidence only; it never changes a
+status.
 
 `prior-rejections` is step 0 for every proposal writer: rejected proposals on
 exactly the same target.path, with their reason, so a new candidate either
@@ -82,7 +87,15 @@ class Proposal:
 
     @property
     def target_path(self) -> str:
-        return str((self.data.get("target") or {}).get("path") or "")
+        return norm_path(str((self.data.get("target") or {}).get("path") or ""))
+
+
+def norm_path(path: str) -> str:
+    """`./skills/x/` and `skills/x` name the same target."""
+    path = path.strip()
+    while path.startswith("./"):
+        path = path[2:]
+    return path.rstrip("/")
 
 
 def split_frontmatter(text: str) -> tuple[str, str] | None:
@@ -117,6 +130,18 @@ def all_proposals(root: Path) -> list[Proposal]:
     return found
 
 
+def broken_proposals(root: Path) -> list[Path]:
+    """Proposal files whose frontmatter does not parse: every reader skips
+    them, so `check` has to name them."""
+    broken: list[Path] = []
+    for rel in FOLDERS.values():
+        for path in sorted((root / LEARNING / rel).glob("*.md")):
+            prop = read_proposal(path, "")
+            if prop is None or not prop.data:
+                broken.append(path)
+    return broken
+
+
 def find_proposal(root: Path, pid: str) -> Proposal | None:
     return next((p for p in all_proposals(root) if p.id == pid or p.path.stem == pid), None)
 
@@ -130,9 +155,10 @@ def set_frontmatter_key(path: Path, key: str, value: str) -> bool:
         return False
     head, rest = parts
     line = f"{key}: {json.dumps(value, ensure_ascii=False)}"
-    pattern = re.compile(rf"^{re.escape(key)}:.*$", re.M)
+    # the key's own line plus any indented continuation (a folded or block value)
+    pattern = re.compile(rf"^{re.escape(key)}:.*(?:\n[ \t]+.*)*", re.M)
     if pattern.search(head):
-        new_head = pattern.sub(line, head, count=1)
+        new_head = pattern.sub(lambda _match: line, head, count=1)
     else:
         new_head = head + "\n" + line
     if new_head == head:
@@ -173,33 +199,55 @@ def cmd_fingerprint(args) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _fixed_on(prop: Proposal) -> str:
-    """The date the fix counts from: accepted_at, else created."""
+def _fixed_on(prop: Proposal, rows: list["TrailRow"]) -> str:
+    """The day the fix landed: its `implemented` trail row, else accepted_at,
+    else created. Evidence has to be dated after that day to count."""
+    landed = [r for r in rows if r.id == prop.id and r.to_state == "implemented"]
+    if landed and TIMESTAMP_RE.match(landed[-1].timestamp):
+        return landed[-1].timestamp[:10]
     return str(prop.data.get("accepted_at") or prop.data.get("created") or "")
+
+
+def _file_date(root: Path, path: Path) -> str:
+    """A signal file's date: its name's date prefix, else the day git last
+    committed it, else its modification day. Postmortems are named by slug."""
+    match = DATE_PREFIX_RE.match(path.name)
+    if match:
+        return match.group(1)
+    committed = _git(root, "log", "-1", "--format=%cs", "--", str(path.relative_to(root)))
+    if committed:
+        return committed
+    return datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d")
+
+
+def _names_path(text: str, target: str) -> bool:
+    """The whole path, not a substring: `x/skills/a/SKILL.md.bak` is not
+    `skills/a/SKILL.md`."""
+    return re.search(rf"(?<![\w./-]){re.escape(target)}(?![\w/-]|\.\w)", text) is not None
 
 
 def build_recurrences(root: Path) -> list[dict]:
     proposals = all_proposals(root)
-    signals: list[tuple[str, str, str]] = []  # (date, rel path, text to search)
-    for prop in proposals:
-        signals.append((str(prop.data.get("created") or ""),
-                        str(prop.path.relative_to(root)), prop.target_path))
+    rows = read_trail(root)
+    files: list[Path] = []
     for sub in ("postmortems", "audit-history"):
-        for path in sorted((root / LEARNING / sub).rglob("*")):
-            match = DATE_PREFIX_RE.match(path.name)
-            if path.is_file() and match:
-                signals.append((match.group(1), str(path.relative_to(root)),
-                                path.read_text(encoding="utf-8", errors="replace")))
+        files += [p for p in sorted((root / LEARNING / sub).rglob("*")) if p.is_file()]
+    files += sorted(root.glob("work/done/*/*/STATUS.md"))
+    signals = [(_file_date(root, path), str(path.relative_to(root)),
+                path.read_text(encoding="utf-8", errors="replace")) for path in files]
 
     found: list[dict] = []
     for prop in proposals:
         fingerprint = prop.data.get("recurrence_fingerprint")
         if prop.status != "implemented" or not fingerprint or not prop.target_path:
             continue
-        since = _fixed_on(prop)
-        own = str(prop.path.relative_to(root))
-        hits = sorted((date, rel) for date, rel, text in signals
-                      if rel != own and date > since and prop.target_path in text)
+        since = _fixed_on(prop, rows)
+        hits = [(str(other.data.get("created") or ""), str(other.path.relative_to(root)))
+                for other in proposals
+                if other.path != prop.path and other.target_path == prop.target_path]
+        hits += [(date, rel) for date, rel, text in signals
+                 if _names_path(text, prop.target_path)]
+        hits = sorted(h for h in hits if h[0] > since)
         if hits:
             found.append({"id": prop.id, "fingerprint": fingerprint,
                           "recurred": hits[0][0], "evidence": hits[0][1]})
@@ -233,6 +281,10 @@ class TrailRow:
     commit: str
 
     @property
+    def from_state(self) -> str:
+        return re.split(r"→|->", self.transition)[0].strip()
+
+    @property
     def to_state(self) -> str:
         """`pending → deferred (phase-3)` → `deferred`."""
         after = re.split(r"→|->", self.transition)[-1].strip()
@@ -243,21 +295,30 @@ def trail_path(root: Path) -> Path:
     return root / LEARNING / "audit-trail.md"
 
 
-def read_trail(root: Path) -> list[TrailRow]:
+def parse_trail(root: Path) -> tuple[list[TrailRow], list[int]]:
+    """(rows, line numbers of table rows too short to be a transition)."""
     path = trail_path(root)
     if not path.is_file():
-        return []
+        return [], []
     rows: list[TrailRow] = []
+    malformed: list[int] = []
     for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if not line.startswith("|"):
             continue
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) < 5 or cells[0] in ("Timestamp", "") or set(cells[0]) <= {"-", ":"}:
+        if cells[0] in ("Timestamp", "") or set(cells[0]) <= {"-", ":"}:
+            continue
+        if len(cells) < 5:
+            malformed.append(lineno)
             continue
         timestamp, pid, transition, *middle, commit = cells
         reason = "|".join(middle).strip().strip('"')
         rows.append(TrailRow(lineno, timestamp, pid, transition, reason, commit))
-    return rows
+    return rows, malformed
+
+
+def read_trail(root: Path) -> list[TrailRow]:
+    return parse_trail(root)[0]
 
 
 # ---------------------------------------------------------------------------
@@ -269,6 +330,7 @@ def build_prior_rejections(root: Path, target_path: str) -> list[dict]:
     """Rejected proposals on exactly this target.path, oldest first. Matching
     on task_slug or topic would cite unrelated proposals, so it never does."""
     trail = read_trail(root)
+    target_path = norm_path(target_path)
     found: list[dict] = []
     for prop in all_proposals(root):
         if prop.folder != "rejected" and prop.status != "rejected":
@@ -332,6 +394,33 @@ def _head_commit_cell(root: Path) -> str | None:
     return f"{sha} ({summary})"
 
 
+def _head_touches(root: Path, paths: list[Path]) -> bool:
+    top = _git(root, "rev-parse", "--show-toplevel")
+    changed = _git(root, "show", "--name-only", "--format=", "HEAD")
+    if not top or changed is None:
+        return False
+    names = {line.strip() for line in changed.splitlines() if line.strip()}
+    for path in paths:
+        try:
+            rel = path.resolve().relative_to(Path(top).resolve())
+        except ValueError:
+            continue
+        if str(rel) in names:
+            return True
+    return False
+
+
+def _body_summary(prop: Proposal) -> str:
+    """First prose line of the proposal body, when nobody typed a reason."""
+    parts = split_frontmatter(prop.path.read_text(encoding="utf-8", errors="replace"))
+    body = parts[1].split("\n", 2)[-1] if parts else ""
+    for line in body.splitlines():
+        line = line.strip()
+        if line and not line.startswith(("#", "---", "```", "|", ">")):
+            return line[:120]
+    return ""
+
+
 def folder_problem(prop: Proposal) -> str | None:
     allowed = STATUSES_BY_FOLDER[prop.folder]
     if prop.status in allowed:
@@ -343,9 +432,8 @@ def folder_problem(prop: Proposal) -> str | None:
 PROVENANCE_HEADER = """# Provenance
 
 One line per accepted proposal that changed this skill, appended by
-`scripts/learning-ledger.py record <id> --to implemented`, never by hand:
-`- <date> · <proposal id> · <why>`. The proposal file and its audit-trail rows
-carry the rest.
+`scripts/learning-ledger.py record <id> --to implemented`, never by hand. The
+line format is defined in skills/bridge-learn/SKILL.md, accept step 8.
 
 """
 PROVENANCE_LINE_RE = re.compile(r"^- (\d{4}-\d{2}-\d{2}) · (\S+) · (.*)$")
@@ -395,6 +483,10 @@ def cmd_record(args) -> int:
 
     earlier = [r for r in read_trail(root) if r.id == prop.id]
     source = earlier[-1].to_state if earlier else "pending"
+    if source == args.to and args.to != "deferred":
+        print(f"{prop.id} is already recorded as {args.to}; a second row would claim a "
+              "transition that did not happen", file=sys.stderr)
+        return 2
     transition = f"{source} → {args.to}"
     if args.to == "deferred" and args.until:
         transition += f" ({args.until})"
@@ -406,14 +498,18 @@ def cmd_record(args) -> int:
             print("implemented needs the commit that landed it, and git has no HEAD here",
                   file=sys.stderr)
             return 2
+        if not _head_touches(root, [prop.path, root / prop.target_path]):
+            print(f"HEAD does not touch {prop.path.relative_to(root)} or {prop.target_path}: "
+                  "commit the change first, then record it", file=sys.stderr)
+            return 2
         commit = cell
         set_frontmatter_key(prop.path, "implemented_commit", cell.split()[0])
         set_frontmatter_key(prop.path, "recurrence_fingerprint", fingerprint_for(prop))
 
-    reason = (args.reason or "").replace("|", "/").replace("\n", " ").strip()
+    reason = (args.reason or "").replace("\\|", "/").replace("|", "/").replace("\n", " ").strip()
     if args.to == "implemented":
         accepted = [r for r in earlier if r.to_state == "accepted"]
-        why = reason or (accepted[-1].reason if accepted else "")
+        why = reason or (accepted[-1].reason if accepted else "") or _body_summary(prop)
         append_provenance(root, prop, why)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     text = trail.read_text(encoding="utf-8")
@@ -426,8 +522,21 @@ def cmd_record(args) -> int:
 
 def build_check(root: Path) -> list[tuple[str, str]]:
     problems: list[tuple[str, str]] = []
-    proposals = {p.id: p for p in all_proposals(root)}
-    rows = read_trail(root)
+    everything = all_proposals(root)
+    proposals = {p.id: p for p in everything}
+    rows, malformed = parse_trail(root)
+
+    for path in broken_proposals(root):
+        problems.append((path.stem, f"{path.relative_to(root)}: frontmatter does not parse, "
+                                    "every reader skips this file"))
+    seen: dict[str, list[str]] = {}
+    for prop in everything:
+        seen.setdefault(prop.id, []).append(prop.folder or "proposals")
+    for pid, folders in sorted(seen.items()):
+        if len(folders) > 1:
+            problems.append((pid, f"exists in more than one folder: {', '.join(folders)}"))
+    for lineno in malformed:
+        problems.append(("audit-trail", f"audit-trail.md:{lineno} has fewer than five cells"))
 
     for pid, prop in sorted(proposals.items()):
         problem = folder_problem(prop)
@@ -441,6 +550,9 @@ def build_check(root: Path) -> list[tuple[str, str]]:
             problems.append((pid, f"status {prop.status} but no audit-trail row"))
 
     for row in rows:
+        if row.from_state == row.to_state and row.to_state != "deferred":
+            problems.append((row.id, f"audit-trail.md:{row.lineno} records "
+                                     f"{row.transition}, which is no transition"))
         if not TIMESTAMP_RE.match(row.timestamp):
             problems.append((row.id, f"audit-trail.md:{row.lineno} timestamp "
                                      f"{row.timestamp!r} is not a measured YYYY-MM-DD HH:MM"))
