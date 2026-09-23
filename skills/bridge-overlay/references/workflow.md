@@ -34,12 +34,12 @@ upstreams:
     branch: main
     role: org-overlay              # what makes list/sync treat it as an overlay
     contribute: false              # an overlay is pull-only by default
+    pull_interval_days: 7          # status warns past this; the unattended sync waits this long
     materialize:                   # presence of THIS block = a subscription
       url: https://github.com/example-org/bridge-overlay.git
       ref: main                    # branch or tag requested (resolves to resolved_sha)
       select: ['**']               # consumer-side narrowing, intersected with manifest.selection
       precedence: 10               # higher wins a dest collision BETWEEN overlays
-      pull_interval_days: 7        # status warns past this
       cache: .bridge/overlays/example-org/
 ```
 
@@ -313,7 +313,10 @@ local edit you can't see.
 Read-only health, no writes:
 
 - `resolved_sha` (lock) vs `git -C <cache> rev-parse HEAD` → behind/ahead/at.
-- `days-since(last_synced)` vs `materialize.pull_interval_days` → 🟢/🟡/🔴.
+- `days-since(last_synced)` vs `pull_interval_days` → 🟢/🟡/🔴.
+- `last unattended`: when the scheduled `sync --unattended` last ran and what it
+  did (`applied`, `held` with the conflict or deletion that held it, `failed`),
+  from `.bridge/overlay-unattended.yaml`. `never` until the job has run.
 - Provenance per file: `git -C <cache> log -1 <src>` and
   `git -C <cache> blame <src>` for "who shipped this line".
 - Bucketed counts: `{clean · locally-modified · upstream-ahead · conflict ·

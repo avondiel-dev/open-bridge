@@ -337,7 +337,7 @@ opts this overlay's dests into normal git tracking instead of the default
 default; can also be set later by hand-editing `materialize.track_managed_dests`
 in `bridge-config.yaml` and re-running `sync`/`apply`.
 
-### `sync [name] [--dry-run] [--yes]`
+### `sync [name] [--dry-run] [--yes] [--unattended]`
 
 Pull the cache up to date and re-materialize. Fetches the ref, recomputes the
 sparse selection and hashes, runs the 3-way comparison against the lock,
@@ -345,6 +345,30 @@ re-materializes clean and upstream-ahead files, prompts on conflict and on PII,
 prunes files the upstream deleted, and bumps `resolved_sha`. No `name` syncs all
 subscribed overlays. `--yes` is valid **only** for non-behavioural batches;
 behavioural files always prompt.
+
+`--unattended` is the scheduled run, and what `scripts/overlay-autosync.sh`
+calls. It applies an overlay only when its whole plan needs nobody:
+
+| The plan contains | Unattended run |
+|---|---|
+| updates, new config files, clean 3-way merges | applied |
+| a behavioural file arriving for the first time | applied without it; listed as pending until a `[y]` in `/overlay sync` |
+| a conflict with a local edit | the overlay is **held**: nothing written, the lock pin stays |
+| a file it would delete | **held** |
+| nothing new, inside `pull_interval_days` | `not-due`, nothing fetched |
+
+A conflict holds the whole overlay because `sync --yes` keeps the local side
+**and** advances the pin. From the next run on the 3-way base is the new
+upstream, the file reads as an ordinary local edit, and the upstream change is
+lost with nothing left that says so. The lock has one pin per overlay, so the
+overlay waits as a whole until somebody resolves the conflict interactively. A
+held or failed overlay is looked at again on every run; an applied one waits
+out its `pull_interval_days` (top level of the `upstreams[]` entry, default 7).
+
+Schedule it with one step: `scripts/install-upstream-autoupdate.sh --overlays`
+installs a daily LaunchAgent at 07:15, after the CORE auto-update at 07:00, with
+the same Signal notification. It notifies when the outcome changes, not every
+morning. `--print` renders the job without installing it.
 
 ### `apply [name]`
 
@@ -355,7 +379,8 @@ files after a fresh checkout without re-fetching.
 ### `status [name]`
 
 Reports `resolved_sha` vs cache `HEAD`, days-since-sync vs `pull_interval_days`,
-git provenance (`git -C <cache> log` / `blame`), and per-file counts:
+the last unattended run and its outcome (`applied`, `held` with the reason, or
+`failed`), git provenance (`git -C <cache> log` / `blame`), and per-file counts:
 `clean | locally-modified | upstream-ahead | conflict | orphan | CORE-refused`.
 
 ### `diff [name]`

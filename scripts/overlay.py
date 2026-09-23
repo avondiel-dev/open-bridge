@@ -60,7 +60,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 try:
     import yaml
@@ -106,6 +106,15 @@ ALL_KINDS = {"config", "skill", "agent", "standing-order", "rule",
 LARGE_PRUNE_THRESHOLD = 5
 CACHE_BASE = ".bridge/overlays"
 LOCK_FILE = "overlays.lock.yaml"
+# Last outcome of each unattended sync, per overlay. Derived state beside the
+# caches (gitignored), read by `status`: the lock records what was applied, this
+# records what the last scheduled run DID, which includes holding back.
+UNATTENDED_STATE = ".bridge/overlay-unattended.yaml"
+DEFAULT_PULL_INTERVAL_DAYS = 7
+# A daily job starts at roughly the same minute each day, so an interval of N
+# days measured to the second would miss its slot by the few seconds the last
+# run took and slip a whole day. An hour of slack keeps it on schedule.
+DUE_SLACK = timedelta(hours=1)
 MANIFEST_FILE = "overlay.manifest.yaml"
 DEFAULT_SOURCE_ROOT = "tree/"
 MAX_MANIFEST_BYTES = 256 * 1024  # an overlay manifest is small; anything bigger is suspect
@@ -479,6 +488,20 @@ class Consumer:
         )
         atomic_write_bytes(self.lock_path,
                            (header + dump_yaml(lock)).encode("utf-8"))
+
+    # --- unattended-run state (derived, gitignored) ------------------------
+    def load_unattended(self) -> dict:
+        path = os.path.join(self.root, UNATTENDED_STATE)
+        try:
+            data = load_yaml_file(path)
+        except OverlayError:
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def write_unattended(self, state: dict) -> None:
+        path = os.path.join(self.root, UNATTENDED_STATE)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        atomic_write_bytes(path, dump_yaml(state).encode("utf-8"))
 
     # --- ecosystem @import in CLAUDE.md -----------------------------------
     def ensure_ecosystem_import(self, fragment: str, dry: bool) -> bool:
@@ -1847,6 +1870,8 @@ def cmd_sync(consumer: Consumer, args) -> int:
     if not names:
         print("No org overlays subscribed (upstreams[] role: org-overlay).")
         return 0
+    if args.unattended:
+        return cmd_sync_unattended(consumer, names)
     rc = 0
     for name in names:
         try:
@@ -1887,6 +1912,141 @@ def _sync_one(consumer: Consumer, name: str, args) -> int:
                          track_managed_dests=params["track_managed_dests"])
     report_counts("synced", name, counts)
     return 0
+
+
+def pull_interval_days(sub: dict | None) -> int:
+    """`pull_interval_days` of a subscription. It sits on the upstream entry
+    (bridge-config.yaml.template, `add`); an older write-up put it under
+    `materialize:`, so that spelling is read too rather than silently ignored."""
+    sub = sub or {}
+    raw = sub.get("pull_interval_days",
+                  (sub.get("materialize") or {}).get("pull_interval_days",
+                                                     DEFAULT_PULL_INTERVAL_DAYS))
+    try:
+        return max(0, int(raw))
+    except (TypeError, ValueError):
+        return DEFAULT_PULL_INTERVAL_DAYS
+
+
+def unattended_due(prev: dict | None, interval: int, now: datetime) -> bool:
+    """Only an APPLIED run waits out the interval. A held or failed overlay is
+    looked at again on the next run, so a conflict somebody resolves today is
+    picked up tomorrow and not a week later."""
+    if not prev or prev.get("outcome") != "applied" or interval <= 0:
+        return True
+    try:
+        last = datetime.strptime(prev.get("at", ""), "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc)
+    except ValueError:
+        return True
+    return now - last >= timedelta(days=interval) - DUE_SLACK
+
+
+def unattended_blockers(consumer: Consumer, cache: str, items: list[PlanItem],
+                        prune: list[dict], old_sha: str | None) -> list[str]:
+    """What in this plan needs a person. Any of it holds the WHOLE overlay.
+
+    A conflict: `sync --yes` keeps the local side AND advances the lock pin, and
+    from the next run on the base of the 3-way merge is the new upstream, so the
+    file reads as an ordinary local edit. The upstream change is then lost with
+    no state left that says so: `status` counts it as locally-modified. Holding
+    the overlay keeps the pin where it is, and the conflict stays a conflict
+    until somebody resolves it with `/overlay sync`.
+
+    A deletion: an unattended run applies and updates, it never deletes (see
+    scripts/overlay-autosync.sh for the file that made this the rule).
+
+    Applying the rest and holding only the conflicting file would need a pin per
+    file, and the lock has one per overlay."""
+    blockers: list[str] = []
+    for it in items:
+        if it.state == "error":
+            blockers.append(f"error: {it.dest}")
+        elif it.state == "local-edit":
+            merged, _ = three_way(consumer, cache, it, old_sha, interactive=False)
+            if merged is None:
+                blockers.append(f"conflict: {it.dest}")
+    for pr in prune:
+        if pr["present"]:
+            blockers.append(f"would delete: {pr['dest']}")
+    return blockers
+
+
+def _unattended_one(consumer: Consumer, name: str, prev: dict | None,
+                    now: datetime) -> tuple[str, str]:
+    """(outcome, detail) for one overlay. Outcomes: applied · held · not-due."""
+    sub = find_subscription(consumer, name)
+    interval = pull_interval_days(sub)
+    if not unattended_due(prev, interval, now):
+        return "not-due", f"last applied {prev.get('at')}, interval {interval}d"
+    params = _resolve_overlay_params(consumer, name)
+    if not params["url"]:
+        raise OverlayError(f"overlay '{name}' has no materialize.url, re-add it")
+    lock = consumer.load_lock()
+    prev_entry = (lock.get("overlays") or {}).get(name, {})
+    old_sha = prev_entry.get("resolved_sha")
+    cache = ensure_cache(consumer, name, params["url"], params["ref"],
+                         DEFAULT_SOURCE_ROOT)
+    validate_manifest(cache)
+    manifest, manifest_sha = read_manifest(cache)
+    defaults = manifest_defaults(manifest)
+    resolved = resolved_sha(cache)
+    items, prune = build_plan(consumer, cache, manifest, defaults,
+                              params["select"], name, params["precedence"],
+                              lock, old_sha, False)
+    blockers = unattended_blockers(consumer, cache, items, prune, old_sha)
+    if blockers:
+        return "held", "; ".join(blockers)
+
+    # What the engine will leave for a person without holding anything back:
+    # a behavioural file arriving for the first time (the [y] gate is never
+    # answered unattended) and a file the consumer already has that the overlay
+    # would claim. Neither is recorded in the lock, so both come up again.
+    known = {f.get("dest") for f in prev_entry.get("files", []) if isinstance(f, dict)}
+    pending = sorted(
+        it.dest for it in items
+        if (it.kind in BEHAVIOURAL_KINDS and it.dest not in known
+            and it.state not in ("core-refused", "leak-refused", "skip"))
+        or (it.state == "user-owned"
+            and (it.on_conflict or defaults["on_conflict"]) == "prompt"))
+    refused = sorted(it.dest for it in items
+                     if it.state in ("core-refused", "leak-refused"))
+    counts = materialize(consumer, cache, manifest, defaults, items, prune,
+                         name, params["url"], params["ref"], resolved,
+                         manifest_sha, params["precedence"], lock, old_sha,
+                         False, True, False,
+                         track_managed_dests=params["track_managed_dests"])
+    written = sum(counts[k] for k in ("clean", "upstream-ahead", "locally-modified"))
+    detail = [f"{written} written", f"at {resolved[:10]}"]
+    if pending:
+        detail.append("pending: " + ", ".join(pending))
+    if refused:
+        detail.append("refused: " + ", ".join(refused))
+    return "applied", "; ".join(detail)
+
+
+def cmd_sync_unattended(consumer: Consumer, names: list[str]) -> int:
+    """The scheduled run: apply an overlay only when its plan needs nobody.
+
+    One line per overlay, `unattended <name>: <outcome> (<detail>)`, stable and
+    parsed by scripts/overlay-autosync.sh. Exit 1 only when an overlay FAILED; a
+    held overlay did its job."""
+    state = consumer.load_unattended()
+    now = datetime.now(timezone.utc)
+    rc = 0
+    for name in names:
+        prev = state.get(name) if isinstance(state.get(name), dict) else None
+        try:
+            outcome, detail = _unattended_one(consumer, name, prev, now)
+        except (OverlayError, OSError, subprocess.SubprocessError) as exc:
+            outcome, detail = "failed", str(exc).splitlines()[0][:300] if str(exc) else type(exc).__name__
+            rc = 1
+        print(f"unattended {name}: {outcome}" + (f" ({detail})" if detail else ""))
+        if outcome != "not-due":
+            state[name] = {"at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                           "outcome": outcome, "detail": detail}
+    consumer.write_unattended(state)
+    return rc
 
 
 def cmd_apply(consumer: Consumer, args) -> int:
@@ -1964,6 +2124,12 @@ def cmd_status(consumer: Consumer, args) -> int:
                 print(f"  last_synced  : {last}  ({days}d ago){flag}")
             except ValueError:
                 print(f"  last_synced  : {last}")
+        run = consumer.load_unattended().get(name)
+        if isinstance(run, dict):
+            print(f"  last unattended: {run.get('at', '?')}  {run.get('outcome', '?')}"
+                  + (f" ({run['detail']})" if run.get("detail") else ""))
+        else:
+            print("  last unattended: never")
         # per-file state counts
         counts = {"clean": 0, "locally-modified": 0, "upstream-ahead": 0,
                   "conflict": 0, "orphan": 0}
@@ -2213,6 +2379,11 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--dry-run", action="store_true", help="plan only, no writes")
     s.add_argument("--yes", action="store_true",
                    help="batch-confirm non-behavioural; skip interactive prompts")
+    s.add_argument("--unattended", action="store_true",
+                   help="the scheduled run: honour pull_interval_days, hold an "
+                        "overlay whose plan has a conflict or a deletion, never "
+                        "approve a new behavioural file, record the outcome for "
+                        "`status` (scripts/overlay-autosync.sh)")
     s.set_defaults(func=cmd_sync)
 
     ap = sub.add_parser("apply", help="OFFLINE re-materialize from cache + lock")

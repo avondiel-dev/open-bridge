@@ -64,8 +64,8 @@ flowchart LR
   `git merge-tree` allow it.
 - **org to user.** `scripts/overlay.py sync`, or `scripts/overlay-autosync.sh`
   unattended: configuration and updates to files already accepted are applied, a
-  behavioural file arriving for the first time waits for one explicit yes, and an
-  unattended run never deletes anything.
+  behavioural file arriving for the first time waits for one explicit yes, and a
+  conflict with a local edit or a deletion holds the overlay for a person.
 - **user to core or org.** `/promote` and `/contribute` route every file by its
   island, through a content scan that refuses personal data
   (`rules/promote-safety.md`).
