@@ -69,7 +69,7 @@ draft. None of this persists. No gate needed.
 
 Mutation requires:
 1. A proposal file under `work/_learning/proposals/<id>.md` with the
-   schema in `skills/task-close-postmortem/references/_schema.proposal.yaml`.
+   schema in `work/_learning/_schema.proposal.yaml` (the skill's copy is a pointer).
 2. Evidence chain (at least one source pointer — postmortem anchor,
    audit-history JSON, trigger-correction line, or curator finding).
 3. User accept in `/bridge-learn` (or a documented `--auto-apply` mode

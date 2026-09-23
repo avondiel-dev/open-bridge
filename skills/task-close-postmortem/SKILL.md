@@ -107,14 +107,23 @@ candidates from THREE sources, in order:
    this Bridge repo (skills/, protocols/, rules/, docs/) that wasn't a planned
    edit, flag as potential trigger-or-routing miss for the postmortem.
 
-For each candidate, write one file to:
+**Step 0, before any file is written: consult rejected proposals.** For each
+candidate, run `python3 scripts/learning-ledger.py prior-rejections <target.path>`.
+It lists rejected proposals on exactly that path (never a `task_slug` or topic
+match). On a hit, either carry the list as `prior_rejections: [{id, reason}]`
+and say in the body what is different this time, or drop the candidate without
+writing a file. Never neither. This widens what the writer reads; the decision
+stays in `/bridge-learn` (`rules/learning-autonomy.md`).
+
+For each candidate that survives step 0, write one file to:
 
 ```
 work/_learning/proposals/<YYYY-MM-DD>-<task-slug>-<topic-slug>.md
 ```
 
 Following the schema in
-[`references/_schema.proposal.yaml`](references/_schema.proposal.yaml).
+[`references/_schema.proposal.yaml`](references/_schema.proposal.yaml), a pointer to
+`work/_learning/_schema.proposal.yaml`.
 
 **Naming rule:** `<topic-slug>` is the gap-id from `bridge_gaps[]` if
 structured, or a 3-4-word kebab-case summary if from free-text. Disambiguate

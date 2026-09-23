@@ -50,7 +50,8 @@ status: pending
 # After accept:
 status: accepted              # or 'implemented' if commit landed
 accepted_at: 2026-05-13       # ISO date
-implemented_commit: <hash>    # optional, set after commit
+# implemented_commit and recurrence_fingerprint: written by
+# `learning-ledger.py record <id> --to implemented`, never by hand
 
 # After reject:
 status: rejected
@@ -71,18 +72,41 @@ superseded_at: 2026-05-13
 
 ## audit-trail.md format
 
-One row per state transition. Append to bottom, newest at end.
+One row per state transition, appended at the bottom, **written by
+`scripts/learning-ledger.py record`, never composed by hand.** Hand-typed rows
+drifted on a real instance: 17 of 37 lost their commit hash, one carried a
+literal `%s` as its timestamp.
 
-```markdown
-| Timestamp | Proposal ID | Transition | Reason | Commit |
-|---|---|---|---|---|
-| 2026-05-13 14:30 | 2026-05-08-customer-a-coordinator-trigger-too-broad | pending → accepted | "narrowed to 'customer-a invoice'" | 4f3a2b1 |
-| 2026-05-13 14:32 | 2026-05-13-voice-stack-mode-switch | pending → rejected | "covered by gpu-host-config" | — |
-| 2026-05-13 14:35 | 2026-05-10-tahoe-sleep-memory | pending → deferred (next-week) | "" | — |
+```bash
+python3 scripts/learning-ledger.py record <id> --to accepted --reason "<note>"
+python3 scripts/learning-ledger.py record <id> --to implemented        # right after the commit
+python3 scripts/learning-ledger.py record <id> --to rejected --reason "<reason>"
+python3 scripts/learning-ledger.py record <id> --to deferred --until next-week
 ```
 
-Reason column may be empty (`""`) but the pipes must align. Quote any string
-containing pipes or newlines.
+What the script fills in and where from:
+
+| Column | Source |
+|---|---|
+| Timestamp | the clock at the moment of the call, `YYYY-MM-DD HH:MM` |
+| Proposal ID | the proposal file |
+| Transition | its last trail row (or `pending`) → `--to`, plus `(--until)` for defer |
+| Reason | `--reason`, the human's words passed through (pipes become `/`) |
+| Commit | `implemented`: HEAD's short SHA and diffstat, `4f3a2b1 (2 files, +5/-1)`; otherwise `—` |
+
+For a `target.type: skill` proposal, `--to implemented` also appends one line
+to `skills/<name>/references/provenance.md`, in the format `SKILL.md` accept
+step 8 defines. That is the skill's own record of which proposal put a rule there and why,
+readable without the trail. The skill-local learning journal proposed in #163
+would live in the same directory; its routing block should point here rather
+than repeat it.
+
+It refuses when the file's folder or `status:` does not match `--to` yet (move
+the file and set the status first), when the proposal is already recorded in
+that state (a second `implemented` would overwrite the real commit with the
+bookkeeping commit), and for `implemented` when HEAD touches neither the
+proposal file nor its target (the change is not committed yet). `python3 scripts/learning-ledger.py
+check` finds rows and files that disagree after the fact.
 
 ## Validation checkpoints
 

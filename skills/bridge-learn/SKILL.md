@@ -106,10 +106,23 @@ Sort proposals by:
 │ Proposed diff (if diff_preview set):                  │
 │   <diff_preview block>                                │
 │                                                       │
+│ Prior rejections (if prior_rejections set):           │
+│   <id>: <reason>                                      │
+│                                                       │
+│ Verification (if verification set):                   │
+│   <kind>: <command>                                   │
+│   before: <before>   after: <after>                   │
+│                                                       │
 ╰───────────────────────────────────────────────────────╯
 
 [a]ccept  [r]eject  [e]dit  [d]efer  [s]kip  [q]uit
 ```
+
+A proposal without `verification:` or `prior_rejections:` shows neither block,
+nothing else changes. `prior_rejections` means the writer found an earlier
+rejection on the same target and argued past it: read that argument in the
+body before deciding. `verification:` is evidence for the reviewer, never a threshold: it
+does not accept or reject anything on its own (`rules/learning-autonomy.md`).
 
 ### Action: accept
 
@@ -124,11 +137,14 @@ Sort proposals by:
    - If yes: generate patch based on proposal body, show preview, then apply
    - If edit: user can refine the patch interactively
 3. Verify target file is valid (syntax-check YAML if YAML, schema if defined)
-4. `git mv work/_learning/proposals/<id>.md work/_learning/proposals/accepted/<id>.md`
-5. Append to `work/_learning/audit-trail.md`:
+4. `git mv work/_learning/proposals/<id>.md work/_learning/proposals/accepted/<id>.md`,
+   then set `status: accepted` and `accepted_at:` in its frontmatter (Edit tool).
+5. Record the transition. Never type the row by hand:
+   ```bash
+   python3 scripts/learning-ledger.py record <id> --to accepted --reason "<user's note, or omit>"
    ```
-   | 2026-05-13 14:30 | <id> | pending → accepted | <user-supplied note or ""> | <commit-hash-or-staged> |
-   ```
+   The script measures the timestamp and refuses if folder or status do not
+   match `accepted` yet.
 6. Suggest a commit message (short, in the proposal's style):
    ```
    Suggested commit: <type>(<scope>): <one-line summary from proposal>
@@ -136,11 +152,22 @@ Sort proposals by:
 
    Commit now? [y/n/edit]
    ```
-7. If user accepts commit: run `git commit -m ...` on the staged changes
-   PLUS the moved proposal file. Capture commit hash, update audit-trail.md
-   row to point at the real hash.
-8. Mark status: `accepted` in proposal's frontmatter (Edit tool).
-   If commit succeeded: transition to `implemented` and update frontmatter again.
+7. If user accepts commit: set `status: implemented` in the proposal's
+   frontmatter, then `git commit` the staged changes PLUS the moved proposal
+   file and the step 5 trail row.
+8. Right after that commit, record it:
+   ```bash
+   python3 scripts/learning-ledger.py record <id> --to implemented
+   ```
+   The commit cell is HEAD's real short SHA plus its diffstat, never a
+   placeholder. The same call stores `implemented_commit` and
+   `recurrence_fingerprint` (`<target.path>#<gap slug>`, which trends mode
+   checks against later evidence). For `target.type: skill` it also appends
+   one line, `- <date> · <id> · <why>`, to `skills/<name>/references/provenance.md`
+   (created on first use, `SKILL.md` untouched), the why being the accept
+   reason from step 5, else the first prose line of the proposal body. Rejecting never writes provenance. Commit that bookkeeping as a follow-up
+   (`chore(learning): record <id>`); never amend, since amending changes the
+   SHA the row just recorded.
 9. **Upstream hint (scope: core only):** if the accepted proposal has
    `scope: core`, the improvement is by definition generic — offer it to
    the community:
@@ -157,21 +184,15 @@ Sort proposals by:
 
 1. Ask: "One-line reason? (why reject — will be logged in audit-trail)"
 2. `git mv work/_learning/proposals/<id>.md work/_learning/proposals/rejected/<id>.md`
-3. Update proposal frontmatter: `status: rejected` + append `reject_reason:` field
-4. Append to `audit-trail.md`:
-   ```
-   | <ts> | <id> | pending → rejected | <reason> | — |
-   ```
+3. Update proposal frontmatter: `status: rejected`, `rejected_at:`, `reject_reason:`
+4. `python3 scripts/learning-ledger.py record <id> --to rejected --reason "<reason>"`
 
 ### Action: defer
 
 1. Ask: "Defer until when? (e.g. 'next-week', '2026-06-01', 'phase-3')"
 2. Update proposal frontmatter: `status: deferred` + `defer_until: <user-input>`
 3. Leave file in `work/_learning/proposals/` (don't move — defer means "still pending later")
-4. Append to `audit-trail.md`:
-   ```
-   | <ts> | <id> | pending → deferred (<defer_until>) | <reason or ""> | — |
-   ```
+4. `python3 scripts/learning-ledger.py record <id> --to deferred --until "<defer_until>" --reason "<reason, or omit>"`
 
 ### Action: edit
 
@@ -236,6 +257,12 @@ Useful when user just wants to scan, not act.
 - Most-used (top 5): "for context, not action"
 - Time-spent: skills with median duration >5min (split candidates)
 
+**Recurrences (implemented proposals that came back):**
+- Run `python3 scripts/learning-ledger.py recurrences`: every implemented
+  proposal whose `target.path` shows up in a newer proposal, postmortem or
+  audit-history file is listed as `recurred: <date>` with that evidence
+- Evidence only: a recurrence never reopens or changes a proposal's status
+
 **Task estimate-vs-actual:**
 - From `work/done/YYYY-MM/*/STATUS.md`: parse `estimate_vs_actual` field
 - Median + worst-case last month
@@ -257,6 +284,14 @@ if today == trigger_day and pending_count >= threshold:
 ```
 
 The summary lands as a /briefing block. User can drill in with `/bridge-learn`.
+
+## Ledger check
+
+`python3 scripts/learning-ledger.py check` compares, for every proposal, the
+folder its file sits in, its frontmatter `status`, and its last audit-trail
+row, and flags placeholder timestamps, implemented rows without a commit and
+rows without a file. It reports and exits 1; it never fixes. Run it at the
+start of an interactive walk and show any finding before the first proposal.
 
 ## Schema validation
 
@@ -302,7 +337,7 @@ Use imperative present tense ("add", "tighten", "remove") — never "added" or "
 
 - **No pending proposals** → print "✅ No pending proposals. Run a task close or `/bridge-audit` (Phase 3) to generate signal."
 - **Proposal file malformed** → show validation error + `[e]dit` action; do not act on broken file.
-- **Two proposals target same file** → flag both, ask user "these overlap — pick one?" (one accept implicitly supersedes the other; mark loser as `superseded`).
+- **Two proposals target same file** → flag both, ask user "these overlap — pick one?" (one accept implicitly supersedes the other; mark loser as `superseded` with `superseded_by:` and `superseded_at:`, then `python3 scripts/learning-ledger.py record <loser-id> --to superseded --reason "superseded by <winner-id>"`).
 - **`target.action: create` but file exists** → ask user: accept-and-overwrite / convert-to-edit / reject.
 - **Proposal `scope: core` but content mentions org/customer names** → block accept until /bridge-leak-check passes. (Run leak-check inline before move.)
 - **User runs out of time mid-walk** → `[q]uit` saves progress. Resume any time.
@@ -312,7 +347,8 @@ Use imperative present tense ("add", "tighten", "remove") — never "added" or "
 - `skills/task-close-postmortem/SKILL.md` — Layer 1 source of proposals
 - `skills/bridge-audit/` — Phase 3 source of recurring-finding proposals
 - `work/_learning/README.md` — aggregation layer documentation
-- `work/_learning/_schema.proposal.yaml` — proposal frontmatter schema
+- `work/_learning/_schema.proposal.yaml` — proposal frontmatter schema (the one definition)
+- `scripts/learning-ledger.py` — audit-trail writer (`record`), consistency `check`, fingerprint, recurrences, prior rejections
 - `protocols/standing-orders/task-sync.md` — close-out flow that feeds proposals
 - `bridge-config.yaml.learning.proposals` — thresholds + Friday-surface config
 - `skills/briefing/` — invokes bridge-learn in summary mode on Fridays

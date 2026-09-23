@@ -7,10 +7,9 @@
 # Validation pattern:
 #   extract-frontmatter <proposal>.md | check-jsonschema --schemafile _schema.proposal.yaml -
 #
-# This is the canonical copy next to the proposals it validates. The
-# producer skill ships the same schema at
-# skills/task-close-postmortem/references/_schema.proposal.yaml — keep
-# the two in sync (any field change is a schema bump in both places).
+# This is the ONE definition. The producer skill's
+# skills/task-close-postmortem/references/_schema.proposal.yaml is a `$ref`
+# pointer to this file, so a new field lands here and nowhere else.
 #
 # Related:
 #   - skills/task-close-postmortem/references/proposal-writing.md (style guide)
@@ -47,7 +46,7 @@ properties:
     additionalProperties: false
     properties:
       type:
-        enum: [postmortem, audit-recurring, trigger-correction, manual, curator-suggestion, archive-distill]
+        enum: [postmortem, audit-recurring, trigger-correction, manual, curator-suggestion, archive-distill, capability-gap]
         description: |
           postmortem: from task-close-postmortem skill
           audit-recurring: from /bridge-audit Phase-3 trend detection
@@ -59,10 +58,17 @@ properties:
             out of the log rows for the period being archived, before log.md
             is reset. Always target.type=memory. Proposed, never written
             silently (rules/learning-autonomy.md).
+          capability-gap: from capability-broker's capture step, a request
+            the Bridge could not serve (skills/capability-broker/).
       task_slug:
         type: string
         pattern: "^[a-z][a-z0-9-]*$"
         description: "The closing task's slug — only set when source.type=postmortem"
+      fingerprint:
+        type: string
+        description: |
+          Only for source.type=audit-recurring: the finding's fingerprint from
+          audit-history, which bridge-audit's dedup matches against.
       evidence:
         type: array
         minItems: 1
@@ -143,6 +149,61 @@ properties:
   superseded_by:
     type: string
     description: "If status=superseded: the id of the proposal that replaces this."
+
+  verification:
+    type: object
+    additionalProperties: false
+    required: [kind]
+    description: |
+      Optional evidence that the fix works, shown to the reviewer in
+      /bridge-learn's per-proposal view. Never a threshold: the human gate in
+      rules/learning-autonomy.md decides, with or without this block.
+    properties:
+      kind:
+        enum: [deterministic, replay, judgment, none]
+        description: |
+          deterministic: a command whose output differs before and after
+          replay: re-running a recorded session or transcript step
+          judgment: a reviewer's reading, stated in before/after
+          none: nothing measurable, said explicitly
+      command: {type: string, description: "What to run to see the difference."}
+      before: {type: string, description: "Observed value before the change."}
+      after: {type: string, description: "Observed or expected value after it."}
+
+  prior_rejections:
+    type: array
+    description: |
+      Rejected proposals on the same target.path that the writer found in
+      step 0 (`scripts/learning-ledger.py prior-rejections <target.path>`).
+      Citing them is the price of writing anyway: the body says what is
+      different this time. A candidate that cannot say so is dropped instead.
+    items:
+      type: object
+      additionalProperties: false
+      required: [id, reason]
+      properties:
+        id: {type: string}
+        reason: {type: string}
+
+  recurrence_fingerprint:
+    type: string
+    description: |
+      Written by `scripts/learning-ledger.py fingerprint` when the proposal
+      reaches status=implemented: `<target.path>#<id without its date>`.
+      `/bridge-learn trends` lists later evidence on the same target as
+      `recurred: <date>` (`learning-ledger.py recurrences`).
+
+  # ---- Lifecycle fields, written by /bridge-learn's actions ----
+  # (skills/bridge-learn/references/review-workflow.md § Frontmatter status update)
+
+  accepted_at: {type: string, format: date}
+  implemented_commit: {type: string, description: "Commit that implemented the proposal."}
+  rejected_at: {type: string, format: date}
+  reject_reason: {type: string}
+  deferred_at: {type: string, format: date}
+  defer_until: {type: string, description: "ISO date or a symbolic marker such as phase-3."}
+  defer_reason: {type: string}
+  superseded_at: {type: string, format: date}
 
 # Notes (advisory):
 # - additionalProperties:false is strict on purpose — /bridge-learn reads

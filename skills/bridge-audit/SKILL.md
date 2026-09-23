@@ -126,6 +126,20 @@ paths with repo-relative, strip timestamps, strip line numbers within ±5.
 This is what makes "the same finding" stable across runs even if README
 content shifts.
 
+## Learning-ledger consistency (read-only)
+
+Run `python3 scripts/learning-ledger.py check` once per audit. Each line it
+prints (a proposal whose folder, frontmatter `status` and last audit-trail row
+disagree, a placeholder timestamp, an implemented row without a commit, a row
+with no proposal file) is one **P2** finding with the line as its text. The
+audit never repairs them: `/bridge-learn` owns those files. Exit 0 means no
+finding.
+
+Optional, off by default: `learning-ledger.py check --provenance` also compares
+each skill's `references/provenance.md` with the trail's implemented rows, both
+ways. Run it only when asked; it starts opt-in because the convention starts
+at zero adoption. Report its lines as P3.
+
 ## Recurring-findings auto-proposal (Phase 3)
 
 After writing the history JSON, scan the **last 10 history files** for
@@ -134,6 +148,10 @@ recurring fingerprint:
 
 1. Check if `work/_learning/proposals/*.md` already has a proposal whose
    frontmatter `source.fingerprint` matches. If yes: skip (proposal exists).
+   Then widen the lookup to `proposals/rejected/`: run
+   `python3 scripts/learning-ledger.py prior-rejections <target.path>` for the
+   path the new proposal would target. On a hit, carry `prior_rejections:` and
+   argue the difference in the body, or skip writing. Never neither.
 2. If no proposal exists: write a new proposal file
    `work/_learning/proposals/<YYYY-MM-DD>-audit-recurring-<fp-short>.md`
    using the template in `skills/bridge-learn/references/trend-analysis.md`.

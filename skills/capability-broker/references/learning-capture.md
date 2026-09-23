@@ -7,8 +7,14 @@ in `/bridge-learn`) and a **ledger row** (recurrence tracking).
 ## 1. Proposal
 
 Write `work/_learning/proposals/<YYYY-MM-DD>-capability-<slug>.md` against
-`work/_learning/_schema.proposal.yaml` (it requires `capability-gap` in the
-`source.type` enum — see design.md § 10).
+`work/_learning/_schema.proposal.yaml` (`capability-gap` is one of its
+`source.type` values, see design.md § 10).
+
+**Step 0, before writing:** run
+`python3 scripts/learning-ledger.py prior-rejections <target.path>`. On a hit,
+add `prior_rejections: [{id, reason}]` and say in the body what changed since
+that rejection, or do not write the proposal (the ledger row below still
+counts the recurrence).
 
 ```markdown
 ---

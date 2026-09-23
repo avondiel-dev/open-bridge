@@ -45,6 +45,10 @@ Edge cases:
 When `/bridge-learn trends` detects a recurring fingerprint that does NOT yet
 have a matching proposal in `work/_learning/proposals/`:
 
+First run `python3 scripts/learning-ledger.py prior-rejections <target.path>`.
+On a hit, add `prior_rejections: [{id, reason}]` and argue the difference in
+the body, or do not generate the file.
+
 ```yaml
 # Auto-generated proposal file:
 # work/_learning/proposals/YYYY-MM-DD-audit-recurring-<fingerprint-short>.md
@@ -162,6 +166,10 @@ If 90th-percentile > 2.5x: flag "estimates are systematically optimistic in
       → no matching proposal — auto-generate? [y/N]
    2. cross-ref-broken / docs/extension-model.md L42 — 3 runs since 2026-05-08
       → matching proposal exists: 2026-05-09-docs-fix-xref
+
+♻️  Recurred after implemented (learning-ledger.py recurrences)
+   - 2026-05-09-docs-fix-xref  recurred: 2026-06-02
+     (work/_learning/postmortems/2026-06-02-site-rebuild.md)
 
 😴 Inactive skills (>60d, candidates for review-or-delete)        [if Phase 4]
    - voice-clone-deprecated  (last seen 2026-03-04)
