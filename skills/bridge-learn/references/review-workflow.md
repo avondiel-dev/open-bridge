@@ -93,6 +93,13 @@ What the script fills in and where from:
 | Reason | `--reason`, the human's words passed through (pipes become `/`) |
 | Commit | `implemented`: HEAD's short SHA and diffstat, `4f3a2b1 (2 files, +5/-1)`; otherwise `—` |
 
+For a `target.type: skill` proposal, `--to implemented` also appends one line
+to `skills/<name>/references/provenance.md`: `- <date> · <proposal id> · <why>`.
+That is the skill's own record of which proposal put a rule there and why,
+readable without the trail. The skill-local learning journal proposed in #163
+would live in the same directory; its routing block should point here rather
+than repeat it.
+
 It refuses when the file's folder or `status:` does not match `--to` yet, so
 move the file and set the status first. `python3 scripts/learning-ledger.py
 check` finds rows and files that disagree after the fact.

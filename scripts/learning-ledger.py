@@ -13,7 +13,7 @@ reason stay exactly where `rules/learning-autonomy.md` puts them.
     python3 scripts/learning-ledger.py recurrences [--json]
     python3 scripts/learning-ledger.py prior-rejections <target.path> [--json]
     python3 scripts/learning-ledger.py record <id> --to <state> [--reason R] [--until U]
-    python3 scripts/learning-ledger.py check
+    python3 scripts/learning-ledger.py check [--provenance]
 
 `record` appends the audit-trail row after the human decided and the file was
 moved and its status set: the timestamp is the clock, the previous state is
@@ -23,6 +23,12 @@ fingerprint). It refuses when folder or status do not match the transition
 yet. `check` compares folder, frontmatter status and last trail row for every
 proposal, plus placeholder timestamps, implemented rows without a commit and
 rows without a file; it reports and exits 1, never fixes.
+
+For a proposal with `target.type: skill`, `record --to implemented` also
+appends `- <date> · <id> · <why>` to `skills/<name>/references/provenance.md`
+(created on first use; `SKILL.md` is never touched), with the accept reason as
+the why. `check --provenance` is the opt-in cross-check of those lines against
+the trail's implemented rows, in both directions.
 
 `fingerprint` stores `recurrence_fingerprint: <target.path>#<id without its
 date>` on an implemented proposal. `recurrences` lists implemented proposals
@@ -334,6 +340,40 @@ def folder_problem(prop: Proposal) -> str | None:
     return f"folder and status disagree: status {prop.status or '(none)'} in {where}"
 
 
+PROVENANCE_HEADER = """# Provenance
+
+One line per accepted proposal that changed this skill, appended by
+`scripts/learning-ledger.py record <id> --to implemented`, never by hand:
+`- <date> · <proposal id> · <why>`. The proposal file and its audit-trail rows
+carry the rest.
+
+"""
+PROVENANCE_LINE_RE = re.compile(r"^- (\d{4}-\d{2}-\d{2}) · (\S+) · (.*)$")
+
+
+def provenance_file(root: Path, target_path: str) -> Path | None:
+    """`skills/<name>/references/provenance.md` for a skill target, else None."""
+    parts = Path(target_path).parts
+    if len(parts) < 2 or parts[0] != "skills":
+        return None
+    return root / "skills" / parts[1] / "references" / "provenance.md"
+
+
+def append_provenance(root: Path, prop: Proposal, why: str) -> Path | None:
+    if (prop.data.get("target") or {}).get("type") != "skill":
+        return None
+    record = provenance_file(root, prop.target_path)
+    if record is None:
+        return None
+    record.parent.mkdir(parents=True, exist_ok=True)
+    text = record.read_text(encoding="utf-8") if record.is_file() else PROVENANCE_HEADER
+    if not text.endswith("\n"):
+        text += "\n"
+    line = f"- {datetime.now().strftime('%Y-%m-%d')} · {prop.id} · {why or '(no reason recorded)'}"
+    record.write_text(text + line + "\n", encoding="utf-8")
+    return record
+
+
 def cmd_record(args) -> int:
     root = Path(args.root)
     prop = find_proposal(root, args.id)
@@ -371,6 +411,10 @@ def cmd_record(args) -> int:
         set_frontmatter_key(prop.path, "recurrence_fingerprint", fingerprint_for(prop))
 
     reason = (args.reason or "").replace("|", "/").replace("\n", " ").strip()
+    if args.to == "implemented":
+        accepted = [r for r in earlier if r.to_state == "accepted"]
+        why = reason or (accepted[-1].reason if accepted else "")
+        append_provenance(root, prop, why)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     text = trail.read_text(encoding="utf-8")
     if not text.endswith("\n"):
@@ -409,8 +453,39 @@ def build_check(root: Path) -> list[tuple[str, str]]:
     return problems
 
 
+def build_provenance_check(root: Path) -> list[tuple[str, str]]:
+    """Implemented skill proposals in the trail against provenance lines, both
+    ways. Opt-in: the convention starts at zero adoption."""
+    problems: list[tuple[str, str]] = []
+    proposals = {p.id: p for p in all_proposals(root)}
+    implemented = {r.id for r in read_trail(root) if r.to_state == "implemented"}
+
+    recorded: dict[str, Path] = {}
+    for record in sorted(root.glob("skills/*/references/provenance.md")):
+        for line in record.read_text(encoding="utf-8").splitlines():
+            match = PROVENANCE_LINE_RE.match(line)
+            if match:
+                recorded[match.group(2)] = record
+
+    for pid in sorted(implemented):
+        prop = proposals.get(pid)
+        if prop is None or (prop.data.get("target") or {}).get("type") != "skill":
+            continue
+        expected = provenance_file(root, prop.target_path)
+        if expected is not None and recorded.get(pid) != expected:
+            problems.append((pid, f"implemented skill proposal has no line in "
+                                  f"{expected.relative_to(root)} (provenance)"))
+    for pid, record in sorted(recorded.items()):
+        if pid not in implemented:
+            problems.append((pid, f"{record.relative_to(root)} names it, but the audit "
+                                  "trail has no implemented row (provenance)"))
+    return problems
+
+
 def cmd_check(args) -> int:
     problems = build_check(Path(args.root))
+    if args.provenance:
+        problems += build_provenance_check(Path(args.root))
     for pid, problem in problems:
         print(f"{pid}: {problem}")
     if problems:
@@ -455,6 +530,8 @@ def build_parser() -> argparse.ArgumentParser:
     re_.set_defaults(func=cmd_record)
 
     ch = sub.add_parser("check", help="folder, status and trail agree for every proposal")
+    ch.add_argument("--provenance", action="store_true",
+                    help="also cross-check skills/*/references/provenance.md (opt-in)")
     ch.set_defaults(func=cmd_check)
 
     return parser

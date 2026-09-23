@@ -505,3 +505,115 @@ def test_check_flags_a_hand_moved_proposal(tmp_path, capsys):
     capsys.readouterr()
     assert ll.main(["--root", str(root), "check"]) == 1
     assert "2026-01-01-a-task-moved" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# provenance (#205): accepting a skill proposal leaves one line in the skill
+# ---------------------------------------------------------------------------
+
+
+def _skill_accept_to_implemented(root: Path, pid="2026-01-02-demo-task-tighten-trigger",
+                                 reason="narrowed the trigger to invoices"):
+    skill = root / "skills" / "demo"
+    skill.mkdir(parents=True, exist_ok=True)
+    (skill / "SKILL.md").write_text("---\nname: demo\n---\nv1\n", encoding="utf-8")
+    _commit_all(root, "base")
+    path = proposal(root, pid, folder="accepted", status="accepted")
+    assert ll.main(["--root", str(root), "record", pid, "--to", "accepted",
+                    "--reason", reason]) == 0
+    path.write_text(path.read_text(encoding="utf-8").replace("status: accepted",
+                                                            "status: implemented"),
+                    encoding="utf-8")
+    (skill / "SKILL.md").write_text("---\nname: demo\n---\nv2\n", encoding="utf-8")
+    _commit_all(root, "skill(demo): tighten")
+    return skill
+
+
+def test_implemented_skill_proposal_appends_one_provenance_line(tmp_path):
+    root = bridge_root(tmp_path)
+    skill = _skill_accept_to_implemented(root)
+    size_before = (skill / "SKILL.md").stat().st_size
+
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "implemented"]) == 0
+    record = skill / "references" / "provenance.md"
+    lines = [l for l in record.read_text(encoding="utf-8").splitlines() if l.startswith("- ")]
+    assert len(lines) == 1
+    import re
+    assert re.match(r"^- \d{4}-\d{2}-\d{2} · 2026-01-02-demo-task-tighten-trigger · "
+                    r"narrowed the trigger to invoices$", lines[0])
+    assert (skill / "SKILL.md").stat().st_size == size_before
+
+
+def test_a_second_implemented_proposal_appends_a_second_line(tmp_path):
+    root = bridge_root(tmp_path)
+    _skill_accept_to_implemented(root)
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "implemented"]) == 0
+    skill = _skill_accept_to_implemented(root, pid="2026-01-09-other-task-add-example",
+                                         reason="added a worked example")
+    assert ll.main(["--root", str(root), "record", "2026-01-09-other-task-add-example",
+                    "--to", "implemented"]) == 0
+    text = (skill / "references" / "provenance.md").read_text(encoding="utf-8")
+    assert len([l for l in text.splitlines() if l.startswith("- ")]) == 2
+
+
+def test_rejecting_a_skill_proposal_writes_no_provenance(tmp_path):
+    root = bridge_root(tmp_path)
+    (root / "skills" / "demo").mkdir(parents=True)
+    proposal(root, "2026-01-02-demo-task-tighten-trigger", folder="rejected", status="rejected")
+
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "rejected", "--reason", "no"]) == 0
+    assert not (root / "skills" / "demo" / "references").exists()
+
+
+def test_a_non_skill_target_writes_no_provenance(tmp_path):
+    root = bridge_root(tmp_path)
+    (root / "rules").mkdir()
+    (root / "rules" / "x.md").write_text("x\n", encoding="utf-8")
+    _commit_all(root)
+    proposal(root, "2026-01-02-demo-task-rule-fix", folder="accepted", status="implemented",
+             target_path="rules/x.md", target_type="rule")
+
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-rule-fix",
+                    "--to", "implemented"]) == 0
+    assert not list(root.rglob("provenance.md"))
+
+
+def test_check_provenance_flags_both_directions(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    _skill_accept_to_implemented(root)
+    assert ll.main(["--root", str(root), "record", "2026-01-02-demo-task-tighten-trigger",
+                    "--to", "implemented"]) == 0
+    record = root / "skills" / "demo" / "references" / "provenance.md"
+    # trail row without a line: remove the line
+    record.write_text("# Provenance\n", encoding="utf-8")
+    # a line without a trail row
+    other = root / "skills" / "other" / "references"
+    other.mkdir(parents=True)
+    (other / "provenance.md").write_text("- 2026-01-03 · 2026-01-03-x-task-ghost · why\n",
+                                         encoding="utf-8")
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "check", "--provenance"]) == 1
+    out = capsys.readouterr().out
+    assert "2026-01-02-demo-task-tighten-trigger" in out and "provenance" in out
+    assert "2026-01-03-x-task-ghost" in out
+    assert (root / "skills" / "demo" / "references" / "provenance.md").read_text(
+        encoding="utf-8") == "# Provenance\n", "check never edits"
+
+
+def test_check_without_the_flag_ignores_provenance(tmp_path):
+    root = bridge_root(tmp_path)
+    other = root / "skills" / "other" / "references"
+    other.mkdir(parents=True)
+    (other / "provenance.md").write_text("- 2026-01-03 · 2026-01-03-x-task-ghost · why\n",
+                                         encoding="utf-8")
+    assert ll.main(["--root", str(root), "check"]) == 0
+
+
+def test_check_provenance_on_the_shipped_tree_reports_nothing(capsys):
+    """The issue's negative test: current CORE carries no provenance yet."""
+    capsys.readouterr()
+    assert ll.main(["--root", str(REPO_ROOT), "check", "--provenance"]) == 0

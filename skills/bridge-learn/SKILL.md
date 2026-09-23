@@ -162,7 +162,10 @@ does not accept or reject anything on its own (`rules/learning-autonomy.md`).
    The commit cell is HEAD's real short SHA plus its diffstat, never a
    placeholder. The same call stores `implemented_commit` and
    `recurrence_fingerprint` (`<target.path>#<gap slug>`, which trends mode
-   checks against later evidence). Commit that bookkeeping as a follow-up
+   checks against later evidence). For `target.type: skill` it also appends
+   one line, `- <date> · <id> · <why>`, to `skills/<name>/references/provenance.md`
+   (created on first use, `SKILL.md` untouched), the why being the accept
+   reason from step 5. Rejecting never writes provenance. Commit that bookkeeping as a follow-up
    (`chore(learning): record <id>`); never amend, since amending changes the
    SHA the row just recorded.
 9. **Upstream hint (scope: core only):** if the accepted proposal has

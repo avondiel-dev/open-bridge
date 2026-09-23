@@ -135,6 +135,11 @@ with no proposal file) is one **P2** finding with the line as its text. The
 audit never repairs them: `/bridge-learn` owns those files. Exit 0 means no
 finding.
 
+Optional, off by default: `learning-ledger.py check --provenance` also compares
+each skill's `references/provenance.md` with the trail's implemented rows, both
+ways. Run it only when asked; it starts opt-in because the convention starts
+at zero adoption. Report its lines as P3.
+
 ## Recurring-findings auto-proposal (Phase 3)
 
 After writing the history JSON, scan the **last 10 history files** for
