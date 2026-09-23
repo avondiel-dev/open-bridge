@@ -24,6 +24,16 @@ moment an instance opts into an in-repo directory).
     python3 scripts/memory-location.py migrate [--dry-run] [--prefer-newer]
     python3 scripts/memory-location.py stub-legacy --yes
     python3 scripts/memory-location.py check
+    python3 scripts/memory-location.py index
+    python3 scripts/memory-location.py get <name>
+    python3 scripts/memory-location.py links [--json]
+
+`index` and `get` are the harness-agnostic Phase 1 read (`rules/operations.md`):
+any agent reads the index and fetches a fact by name, the way
+`scripts/context-index.py` serves `ecosystem.yaml`. Inside Claude Code with auto
+memory on, `index` prints a one-line note instead, since the harness already
+loaded that same file. `links` counts facts whose session transcript is gone
+(`docs/memory.md` § Retention); it reads only the local disk.
 
 `resolve_memory_dir(start, home=None)` is the library entry point: it never
 raises on a missing git binary, a missing settings file, or invalid JSON, and
@@ -38,6 +48,7 @@ from __future__ import annotations
 import argparse
 import filecmp
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -586,6 +597,225 @@ def cmd_check(args) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Settings lookup shared by index, get and links
+# ---------------------------------------------------------------------------
+
+BRIDGE_MEMORY_DIR = Path("work") / "memory"
+
+
+def _claude_dir(home: Path) -> Path:
+    """The harness's config dir: `CLAUDE_CONFIG_DIR` when set, else ~/.claude."""
+    override = os.environ.get("CLAUDE_CONFIG_DIR")
+    return Path(override).expanduser() if override else home / ".claude"
+
+
+def _first_setting(repo_root: Path, home: Path, key: str):
+    """(value, source) from the first settings file holding `key`, same
+    precedence as resolve_memory_dir; (None, "default") when none does."""
+    for path, source in (
+        (repo_root / ".claude" / "settings.local.json", "setting:local"),
+        (repo_root / ".claude" / "settings.json", "setting:project"),
+        (_claude_dir(home) / "settings.json", "setting:user"),
+    ):
+        if not path.is_file():
+            continue
+        data, _warning = _read_json_object(path)
+        if data is not None and key in data:
+            return data[key], source
+    return None, "default"
+
+
+def resolve_read_dir(start, home=None) -> tuple[Path, str, list[str]]:
+    """Where a READER finds the memory base, on any harness.
+
+    Same as resolve_memory_dir while a setting names a directory. Without
+    one, `work/memory/` wins when it exists (source "bridge"): that is the
+    Bridge-owned location, and a fresh clone never carries the gitignored
+    setting. Only then the legacy harness path. resolve_memory_dir itself
+    stays unchanged, because migrate and stub-legacy mean "what the harness
+    writes to", which is still the legacy path until `enable` runs.
+    """
+    home = Path(home) if home is not None else Path.home()
+    memory_dir, source, warnings = resolve_memory_dir(start, home)
+    if source == "legacy":
+        bridge_dir = repo_root_for(start) / BRIDGE_MEMORY_DIR
+        if bridge_dir.is_dir():
+            return bridge_dir, "bridge", warnings
+    return memory_dir, source, warnings
+
+
+def _harness_already_loaded(start, home: Path, read_dir: Path) -> bool:
+    """True when Claude Code has already put this exact MEMORY.md into the
+    session, in full. A heuristic: `CLAUDECODE` is also set in sub-agent and
+    `claude -p` shells, so a false "already loaded" is possible there."""
+    if not os.environ.get("CLAUDECODE"):
+        return False
+    if os.environ.get("CLAUDE_CODE_DISABLE_AUTO_MEMORY", "").lower() in ("1", "true"):
+        return False
+    repo_root = repo_root_for(start)
+    enabled, _source = _first_setting(repo_root, home, "autoMemoryEnabled")
+    if enabled is False:
+        return False
+    harness_dir, _source, _warnings = resolve_memory_dir(start, home)
+    if harness_dir != read_dir:
+        return False  # the harness reads its legacy dir, not this one
+    # an oversized index is loaded truncated, so its tail was never seen
+    return not any("load limit" in v for v in lint_memory_index(read_dir))
+
+
+# ---------------------------------------------------------------------------
+# index / get: the Phase 1 read that works on any harness
+# ---------------------------------------------------------------------------
+
+
+def cmd_index(args) -> int:
+    home = Path.home()
+    memory_dir, _source, _warnings = resolve_read_dir(args.repo, home)
+    index_path = memory_dir / "MEMORY.md"
+    if not index_path.is_file():
+        return 0
+    if _harness_already_loaded(args.repo, home, memory_dir):
+        print(f"memory index already loaded by Claude Code from {memory_dir}; "
+              "fetch a fact with: python3 scripts/memory-location.py get <name>")
+        return 0
+    sys.stdout.write(index_path.read_text(encoding="utf-8", errors="replace"))
+    return 0
+
+
+def _frontmatter_name(path: Path) -> str | None:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    if not text.startswith("---"):
+        return None
+    match = re.search(r"^name:\s*['\"]?([^'\"\n]+?)['\"]?\s*$", text.split("\n---", 1)[0], re.M)
+    return match.group(1) if match else None
+
+
+def _inside(path: Path, directory: Path) -> bool:
+    try:
+        return path.resolve().is_relative_to(directory.resolve())
+    except OSError:
+        return False
+
+
+def cmd_get(args) -> int:
+    memory_dir, _source, _warnings = resolve_read_dir(args.repo)
+    key = args.name
+    found: Path | None = None
+    if "/" not in key and "\\" not in key and ".." not in key and memory_dir.is_dir():
+        for candidate in (key, f"{key}.md"):
+            if (memory_dir / candidate).is_file():
+                found = memory_dir / candidate
+                break
+        if found is None:
+            for path in sorted(memory_dir.glob("*.md")):
+                if _frontmatter_name(path) == key:
+                    found = path
+                    break
+    if found is not None and not _inside(found, memory_dir):
+        print(f"refused: {found.name} points outside {memory_dir}", file=sys.stderr)
+        return 1
+    if found is None:
+        print(f"no memory fact named {key!r} in {memory_dir}", file=sys.stderr)
+        return 1
+    sys.stdout.write(found.read_text(encoding="utf-8", errors="replace"))
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# links: do the session links in memory facts still resolve?
+# ---------------------------------------------------------------------------
+
+DEFAULT_RETENTION_DAYS = 30  # Claude Code's cleanupPeriodDays default
+UUID = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+SESSION_LINK_RE = re.compile(rf"originSessionId:\s*['\"]?({UUID})|({UUID})\.jsonl", re.I)
+FACT_FILE_RE = re.compile(r"^(user|feedback|project|reference)_.+\.md$")
+DECLARED_RETENTION_RE = re.compile(r"^  transcript_retention_days:\s*['\"]?(\d+)['\"]?\s*(?:#.*)?$")
+
+
+def _declared_retention(config: Path) -> int | None:
+    """`work.transcript_retention_days` from bridge-config.yaml, read without
+    a YAML dependency: only a two-space key inside the top-level `work:` block."""
+    in_work = False
+    for line in config.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line and not line[0].isspace() and not line.startswith("#"):
+            in_work = line.split("#", 1)[0].strip() == "work:"
+            continue
+        if in_work:
+            match = DECLARED_RETENTION_RE.match(line)
+            if match:
+                return int(match.group(1))
+    return None
+
+
+def build_links(repo_arg, home=None) -> dict:
+    home = Path(home) if home is not None else Path.home()
+    repo_root = repo_root_for(repo_arg)
+    memory_dir, _source, warnings = resolve_read_dir(repo_arg, home)
+
+    projects = _claude_dir(home) / "projects"
+    transcripts = {p.stem.lower() for p in projects.glob("*/*.jsonl")}
+    facts = sorted(p for p in memory_dir.glob("*.md") if FACT_FILE_RE.match(p.name))
+    linked: list[str] = []
+    unresolved: list[str] = []
+    for path in facts:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        ids = {(a or b).lower() for a, b in SESSION_LINK_RE.findall(text)}
+        if not ids:
+            continue
+        linked.append(path.name)
+        if not ids & transcripts:
+            unresolved.append(path.name)
+
+    value, retention_source = _first_setting(repo_root, home, "cleanupPeriodDays")
+    retention = value if isinstance(value, int) and not isinstance(value, bool) else None
+    if retention is None:
+        if value is not None:
+            warnings.append(f"cleanupPeriodDays={value!r} is not a whole number; "
+                            f"assuming the default of {DEFAULT_RETENTION_DAYS}")
+        retention, retention_source = DEFAULT_RETENTION_DAYS, "default"
+
+    declared = None
+    config = repo_root / "bridge-config.yaml"
+    if config.is_file():
+        declared = _declared_retention(config)
+        if declared is not None and declared != retention:
+            warnings.append(
+                f"bridge-config.yaml declares work.transcript_retention_days: {declared}, "
+                f"but the harness keeps transcripts {retention} days ({retention_source})"
+            )
+
+    return {
+        "memory_dir": str(memory_dir),
+        "files": len(facts),
+        "linked": len(linked),
+        "unresolved": unresolved,
+        "retention_days": retention,
+        "retention_source": retention_source,
+        "declared_retention_days": declared,
+        "warnings": warnings,
+    }
+
+
+def cmd_links(args) -> int:
+    report = build_links(args.repo)
+    if args.json:
+        print(json.dumps(report, indent=2))
+        return 0
+    print(f"{report['linked']} of {report['files']} memory files carry a session link, "
+          f"{len(report['unresolved'])} of {report['linked']} unresolved")
+    for name in report["unresolved"]:
+        print(f"  unresolved: {name}")
+    print(f"transcript retention: {report['retention_days']} days ({report['retention_source']}); "
+          "a session link is only guaranteed to resolve inside that window")
+    for warning in report["warnings"]:
+        print(f"warning: {warning}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -627,6 +857,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     ch = sub.add_parser("check", help="lint the resolved directory's MEMORY.md")
     ch.set_defaults(func=cmd_check)
+
+    ix = sub.add_parser(
+        "index",
+        help="print the resolved MEMORY.md (Phase 1 read), or a one-line note when "
+             "Claude Code already loaded it",
+    )
+    ix.set_defaults(func=cmd_index)
+
+    ge = sub.add_parser("get", help="print one fact by file name or frontmatter name")
+    ge.add_argument("name", help="fact file name (with or without .md) or its name: slug")
+    ge.set_defaults(func=cmd_get)
+
+    li = sub.add_parser(
+        "links", help="count memory facts whose session transcript no longer exists (offline)"
+    )
+    li.add_argument("--json", action="store_true", help="machine-readable output")
+    li.set_defaults(func=cmd_links)
 
     return parser
 

@@ -188,6 +188,15 @@ items:
     note: >-
       Six of twenty-one blocks. Empty in a fresh clone, since a fresh clone has
       no bridge-config.yaml, and that is not an error.
+  "cmd:python3 scripts/memory-location.py index":
+    source: phase1
+    max_bytes: 25600
+    note: >-
+      The memory index for a harness that reads only AGENTS.md. Empty in a
+      fresh clone, and one line inside Claude Code with auto memory on, since
+      the harness already loaded the same file. The cap is the harness's own
+      load limit for MEMORY.md (25 KB), which `memory-location.py check`
+      enforces on the file itself.
   "cmd:python3 scripts/worklog.py --recent 3":
     source: phase1
     note: >-

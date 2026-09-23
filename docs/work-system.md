@@ -237,6 +237,7 @@ Single source: `bridge-config.yaml` (USER layer), `work:` block. Controls:
 - **Activity types** — emoji × name list for log entries
 - **Limits** — `max_active` (WIP warning threshold for doing+review in `work/tasks/`; warns, never blocks), daily goals
 - **Imports** — directory + rules for the universal inbox
+- **Transcript retention**: `transcript_retention_days`, how long the harness keeps session transcripts, so how long a memory fact's session link resolves ([`memory.md`](memory.md) § Retention)
 
 The legacy `work/.config.yaml` is obsolete (merged into `bridge-config.yaml` on 2026-04-11).
 

@@ -80,6 +80,12 @@ python3 scripts/context-index.py --check                         # the guards, C
 
 Phase 1 (`rules/operations.md`) runs the first form. The rest is on demand.
 
+The memory base gets the same split without a `card:`, because its index is
+already a table of contents: Phase 1 runs
+`python3 scripts/memory-location.py index` and a fact arrives with
+`get <name>`, on any harness. Details: [`memory.md`](memory.md) § Reading it on
+any harness.
+
 ## Three decisions worth knowing
 
 **Slices are raw text, never re-serialized YAML.** A round trip through a YAML

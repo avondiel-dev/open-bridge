@@ -1,9 +1,11 @@
 ---
 summary: "File-based memory model — one fact per file, MEMORY.md as a lean index"
 type: guide
-last_updated: 2026-09-13
+last_updated: 2026-09-23
 related:
   - ../rules/knowledge-growth.md
+  - ../rules/operations.md
+  - context-index.md
 ---
 
 # Memory
@@ -47,24 +49,71 @@ deferred candidate becomes a `work/_learning/proposals/` entry with
 
 ## Filesystem location
 
-Two states exist, and both are legitimate:
+The memory base is a **Bridge-owned family**: an index plus one fact per file
+under `work/memory/`, read the same way on every harness. Two states exist,
+and both are legitimate:
 
-- **Default (harness-managed):** the memory base lives **outside the repo**,
-  in a tool-specific path, not committed alongside the Bridge files.
-  For Claude Code it sits under `~/.claude/projects/<project-hash>/memory/`,
-  where `MEMORY.md` is the index and each `<type>_<slug>.md` is one fact.
-  Other harnesses use their own location.
-- **Recommended: inside the repo.** A Bridge can instead keep its memory base
-  at `work/memory/`, versioned like the rest of `work/`. Claude Code reads the
-  setting `autoMemoryDirectory` from any settings scope; run
-  `python3 scripts/memory-location.py enable` to write it as an absolute path
-  into the gitignored `.claude/settings.local.json`. See
-  [Keeping memory inside the repo](#keeping-memory-inside-the-repo) below.
+- **Default: inside the repo, at `work/memory/`.** Versioned like the rest of
+  `work/`, and readable by any agent through
+  [Reading it on any harness](#reading-it-on-any-harness) below. This is the
+  model CORE documents and its tooling assumes.
+- **Harness-managed, outside the repo.** A harness may keep its own memory in
+  a tool-specific path instead. For Claude Code that is
+  `~/.claude/projects/<project-hash>/memory/`, where `MEMORY.md` is the index
+  and each `<type>_<slug>.md` is one fact. Other harnesses use their own
+  location, or none.
+
+`scripts/memory-location.py` resolves which of the two an instance uses, so no
+reader has to reconstruct a path by hand. Its readers (`index`, `get`, `links`)
+take `work/memory/` whenever that directory exists and no setting names another
+one, so a fresh clone needs no setup to be read. Claude Code's `autoMemoryDirectory`
+setting is an **optional per-instance convenience** that points the harness's
+own auto memory at `work/memory/` (`python3 scripts/memory-location.py enable`
+writes it as an absolute path into the gitignored `.claude/settings.local.json`,
+see [Keeping memory inside the repo](#keeping-memory-inside-the-repo)).
+`autoMemoryEnabled` stays as the harness ships it, or is turned off where an
+instance wants no harness-side auto memory at all. Neither setting changes
+what counts as a memory fact: the write-time gate in
+[`../rules/knowledge-growth.md`](../rules/knowledge-growth.md) applies wherever
+the directory lives.
 
 A fresh clone, either way, therefore has **no memory base yet**: it is
 created as you work (the first fact you save creates the directory and
 index). An empty or missing memory base on a new clone is expected, not a
 broken setup.
+
+## Reading it on any harness
+
+Codex, Gemini CLI, Cursor and Copilot read `AGENTS.md`, not a Claude Code
+setting, so the memory base reaches them through Phase 1
+([`../rules/operations.md`](../rules/operations.md)), the same split
+[`context-index.md`](context-index.md) applies to `ecosystem.yaml`: the index
+at session start, one fact when the work names it.
+
+```bash
+python3 scripts/memory-location.py index          # MEMORY.md of the resolved directory
+python3 scripts/memory-location.py get <name>     # one fact, by file name or name: slug
+```
+
+Inside Claude Code with auto memory on, `index` prints a one-line note instead
+of the file, because the harness has already loaded that same index; reading
+it twice would only double its cost. With no index yet, it prints nothing.
+Two cases print the file anyway: when the harness reads a different directory
+(its legacy path, because `autoMemoryDirectory` is not set), and when the index
+exceeds the load limit below, since the harness then loaded only its head. The
+Claude Code test is the `CLAUDECODE` environment variable, which sub-agent and
+`claude -p` shells carry too, so treat the note as a hint there.
+
+**Sub-agents are the limit.** An ordinary sub-agent dispatch runs no Phase 1
+and does not load the parent's auto memory either (Claude Code docs, Memory,
+https://code.claude.com/docs/en/memory). A fact a sub-agent must know belongs
+in an `@`-imported file, the same rule `AGENTS.md` states for every pointer
+that must reach sub-agents. Two narrow exceptions exist and neither closes
+this gap: a **forked** sub-agent inherits the parent's context including its
+memory, and a sub-agent given its own `memory` field keeps a separate auto
+memory directory of its own, never the parent's facts and never
+`work/memory/`. Asked about a fact it cannot see, a sub-agent should say it
+lacks access rather than guess.
 
 ## Keeping memory inside the repo
 
@@ -74,6 +123,10 @@ invisible edit under `~/.claude`), revertable (`git checkout` undoes a bad
 write the same way it undoes any other mistake), survives a repo move or a
 re-clone on a new machine, and is checkable by the same tooling that already
 reads the rest of the tree instead of only by the harness itself.
+
+Readers find `work/memory/` without any setup. The steps below are for
+Claude Code only, so that its **own** auto memory also reads and writes there
+instead of in its legacy path.
 
 **One-time setup:**
 
@@ -167,10 +220,49 @@ Every index entry is exactly:
   **guardrail** (a never-/always-/only-on-explicit-OK rule) is never "cold": it
   fires rarely *by design*, so it stays in the live index regardless of age.
 
+## Retention
+
+A fact may carry a **session link**: `originSessionId:` in its frontmatter
+(Claude Code writes it) or a `<session-id>.jsonl` path in its body, as
+[`../rules/knowledge-growth.md`](../rules/knowledge-growth.md) asks. That link
+points into the harness's own transcript store, and the two stores live on
+different clocks:
+
+| What | Where | Lifespan |
+|---|---|---|
+| Session transcript | `~/.claude/projects/**/<session-id>.jsonl`, local plaintext | `cleanupPeriodDays`, **30 days** by default (Claude Code docs, Data usage, https://code.claude.com/docs/en/data-usage) |
+| Memory fact citing it | the memory base | kept until you delete it; memory is not part of that cleanup |
+
+So a session link is **only guaranteed to resolve inside the retention
+window**, not for as long as the fact lives. It is still worth writing: for a
+month it gives real traceability back to the conversation that produced the
+fact. Past that, the fact has to stand on its own text.
+
+Each instance records its choice as `work.transcript_retention_days` in
+`bridge-config.yaml`, written at onboarding. Keeping the harness default counts
+as a choice, as long as it is written down rather than silently inherited.
+The value is a declaration, never the truth: `links` below reads the live
+`cleanupPeriodDays` from the settings files and warns when the two disagree.
+
+**Raising retention keeps more plaintext on disk.** Transcripts hold whatever
+was pasted into a session, secrets included. An instance that raises
+`cleanupPeriodDays` so links outlive the default should pair that with
+encryption at rest for `~/.claude/projects/`; CORE does not raise the default
+for you.
+
+```bash
+python3 scripts/memory-location.py links          # N of M facts carry a link, X of N unresolved
+python3 scripts/memory-location.py links --json
+```
+
+It reads the local disk only, no network call, and exits 0: a dead link is a
+count to watch, not an error.
+
 ## Enforcement
 
 The ≤120-char index-line cap and the 200-line/25 KB load limit are checked by
 `python3 scripts/memory-location.py check`, which `bridge-audit`'s memory pass
 runs against whichever directory the memory base actually resolves to
-(in-repo or legacy). Treat the audit as the backstop, not a substitute for
+(in-repo or legacy). The same pass runs `links` and reports the unresolved
+count (see [Retention](#retention)). Treat the audit as the backstop, not a substitute for
 keeping lines lean as you write them.
