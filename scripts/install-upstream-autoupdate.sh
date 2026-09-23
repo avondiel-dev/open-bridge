@@ -5,14 +5,72 @@
 # path — re-run after moving the repo to rebind), generates + loads the job, and
 # VERIFIES it actually runs in the launchd context instead of assuming it does.
 #
+# Two jobs, one installer:
+#   (default)    CORE: scripts/upstream-autoupdate.sh      daily 07:00
+#   --overlays   org overlays: scripts/overlay-autosync.sh daily 07:15, after
+#                the CORE merge. It honours each overlay's pull_interval_days
+#                itself, so a daily schedule is correct for any interval.
+#   --print      render the plist to stdout and stop: nothing written, nothing
+#                loaded (what the tests use; also a dry look before installing)
+#
 # Env: UPSTREAM_REF (default upstream/main) · AUTOUPDATE_HOUR/MIN (default 7:00)
+#      OVERLAY_AUTOSYNC_HOUR/MIN (default 7:15)
 #      SIGNAL_ACCOUNT + SIGNAL_RECIPIENT (both → the job sends a Signal summary)
 set -euo pipefail
 REPO="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
-LABEL="com.openbridge.upstream-autoupdate"
+JOB=core; PRINT=0
+for arg in "$@"; do
+  case "$arg" in
+    --overlays) JOB=overlays ;;
+    --print)    PRINT=1 ;;
+    -h|--help)  sed -n '3,19p' "$0"; exit 0 ;;
+    *) echo "unknown argument: $arg (see --help)" >&2; exit 64 ;;
+  esac
+done
+if [ "$JOB" = overlays ]; then
+  LABEL="com.openbridge.overlay-autosync"
+  SCRIPT="scripts/overlay-autosync.sh"
+  STEM="overlay-autosync"
+  REPORT="work/overlay-status.md"
+  HOUR="${OVERLAY_AUTOSYNC_HOUR:-7}"; MIN="${OVERLAY_AUTOSYNC_MIN:-15}"
+else
+  LABEL="com.openbridge.upstream-autoupdate"
+  SCRIPT="scripts/upstream-autoupdate.sh"
+  STEM="upstream-autoupdate"
+  REPORT="work/upstream-status.md"
+  HOUR="${AUTOUPDATE_HOUR:-7}"; MIN="${AUTOUPDATE_MIN:-0}"
+fi
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
-HOUR="${AUTOUPDATE_HOUR:-7}"; MIN="${AUTOUPDATE_MIN:-0}"
 UID_="$(id -u)"
+
+sig=""
+[ -n "${SIGNAL_ACCOUNT:-}" ]   && sig="$sig    <key>SIGNAL_ACCOUNT</key><string>${SIGNAL_ACCOUNT}</string>
+"
+[ -n "${SIGNAL_RECIPIENT:-}" ] && sig="$sig    <key>SIGNAL_RECIPIENT</key><string>${SIGNAL_RECIPIENT}</string>
+"
+
+render_plist() { cat <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>$LABEL</string>
+  <key>ProgramArguments</key><array>
+    <string>/bin/bash</string><string>$REPO/$SCRIPT</string>
+  </array>
+  <key>WorkingDirectory</key><string>$REPO</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>UPSTREAM_REF</key><string>${UPSTREAM_REF:-upstream/main}</string>
+$sig  </dict>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>$HOUR</integer><key>Minute</key><integer>$MIN</integer></dict>
+  <key>StandardOutPath</key><string>$REPO/work/$STEM.launchd.out</string>
+  <key>StandardErrorPath</key><string>$REPO/work/$STEM.launchd.err</string>
+  <key>RunAtLoad</key><false/>
+</dict></plist>
+PLIST
+}
+
+if [ "$PRINT" = 1 ]; then render_plist; exit 0; fi
 
 # --- TCC-protection preflight (the launchd-can't-read-~/Documents trap) ---
 case "$REPO/" in
@@ -27,46 +85,23 @@ esac
 
 launchctl bootout "gui/$UID_/$LABEL" 2>/dev/null || true
 
-sig=""
-[ -n "${SIGNAL_ACCOUNT:-}" ]   && sig="$sig    <key>SIGNAL_ACCOUNT</key><string>${SIGNAL_ACCOUNT}</string>
-"
-[ -n "${SIGNAL_RECIPIENT:-}" ] && sig="$sig    <key>SIGNAL_RECIPIENT</key><string>${SIGNAL_RECIPIENT}</string>
-"
-
-cat > "$PLIST" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>Label</key><string>$LABEL</string>
-  <key>ProgramArguments</key><array>
-    <string>/bin/bash</string><string>$REPO/scripts/upstream-autoupdate.sh</string>
-  </array>
-  <key>WorkingDirectory</key><string>$REPO</string>
-  <key>EnvironmentVariables</key><dict>
-    <key>PATH</key><string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-    <key>UPSTREAM_REF</key><string>${UPSTREAM_REF:-upstream/main}</string>
-$sig  </dict>
-  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>$HOUR</integer><key>Minute</key><integer>$MIN</integer></dict>
-  <key>StandardOutPath</key><string>$REPO/work/upstream-autoupdate.launchd.out</string>
-  <key>StandardErrorPath</key><string>$REPO/work/upstream-autoupdate.launchd.err</string>
-  <key>RunAtLoad</key><false/>
-</dict></plist>
-PLIST
+mkdir -p "$(dirname "$PLIST")"
+render_plist > "$PLIST"
 
 launchctl bootstrap "gui/$UID_" "$PLIST"
 printf 'installed + loaded: %s @ %02d:%02d daily → %s\n' "$LABEL" "$HOUR" "$MIN" "$REPO"
 
 # --- VERIFY in the real launchd context (do not assume) ---
 echo "verifying (launchctl kickstart)…"
-: > "$REPO/work/upstream-autoupdate.launchd.err" 2>/dev/null || true
+: > "$REPO/work/$STEM.launchd.err" 2>/dev/null || true
 launchctl kickstart -k "gui/$UID_/$LABEL"
 sleep 5
-err="$REPO/work/upstream-autoupdate.launchd.err"
+err="$REPO/work/$STEM.launchd.err"
 if grep -qiE 'not permitted|operation not permitted' "$err" 2>/dev/null; then
   echo "✗ VERIFY FAILED — TCC/permission denied in launchd context:"; tail -3 "$err"; exit 1
-elif [ -s "$REPO/work/upstream-status.md" ]; then
+elif [ -s "$REPO/$REPORT" ]; then
   echo "✓ VERIFIED — job executed in launchd context and wrote its report:"
-  grep -m2 '^-' "$REPO/work/upstream-status.md" | sed 's/^/    /'
+  grep -m2 '^-' "$REPO/$REPORT" | sed 's/^/    /'
 else
   echo "✗ VERIFY INCONCLUSIVE — no report written; launchd err:"; tail -3 "$err" 2>/dev/null; exit 1
 fi

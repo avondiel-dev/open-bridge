@@ -54,6 +54,12 @@
 #     fragment also shipped under tree/ still gets its @import, and a fragment
 #     the overlay stops shipping is pruned
 #     together with its @import
+#   - unattended sync (§26, #218): new files and updates apply; a conflict or a
+#     planned deletion HOLDS the whole overlay (nothing written, pin unchanged,
+#     still held on the next run); a clean merge applies; a new behavioural file
+#     stays pending; pull_interval_days is honoured; a failure exits 1; status
+#     shows the last run; the wrapper reports and notifies on change only; the
+#     installer renders the --overlays job under --print, sandboxed
 #
 # Run:  bash scripts/tests/test-overlay.sh        (exits non-zero on any failure)
 set -u
@@ -1196,6 +1202,178 @@ cp "$OV/$FRAG" "$OV/tree/$FRAG"; commit_ov "$OV" frag-in-tree
 run_overlay "$CON" add "file://$OV" --name example-org
 assert_rc "25m: add with the fragment also under tree/ succeeds" 0
 assert_grep "25m: the @import is wired" "$CON/CLAUDE.md" "@$FRAG"
+
+# ───────────────────────────────────────────────────────────────────
+echo
+echo "── 26. unattended sync (#218) ──────────────────────────────────"
+# `sync --unattended` is what the scheduled job runs. It applies an overlay only
+# when the whole plan needs nobody: a predicted conflict or a planned deletion
+# HOLDS the overlay (nothing written, lock pin unchanged), because a plain
+# `sync --yes` keeps the local side of a conflict AND advances the pin, and from
+# the next run on the file reads as an ordinary local edit: the upstream change
+# is lost and no signal says so any more. New behavioural files stay pending
+# (never auto-approved), the rest applies. `status` shows the last run.
+lock_pin() { python3 - "$1/overlays.lock.yaml" <<'PY'
+import sys, yaml
+print(((yaml.safe_load(open(sys.argv[1])) or {}).get("overlays") or {}).get("example-org", {}).get("resolved_sha", ""))
+PY
+}
+set_interval() { python3 - "$1/bridge-config.yaml" "$2" <<'PY'
+import sys, yaml
+p, n = sys.argv[1], int(sys.argv[2])
+d = yaml.safe_load(open(p))
+for u in d.get("upstreams") or []:
+    if u.get("role") == "org-overlay":
+        u["pull_interval_days"] = n
+yaml.safe_dump(d, open(p, "w"), sort_keys=False, allow_unicode=True)
+PY
+}
+unattended() { OUT="$(python3 "$OVERLAY" --repo-root "$1" sync --unattended </dev/null 2>&1)"; RC=$?; }
+CTX_OLD='description: "Documentation + routing context for the example-org engagement"'
+NEWCTX=workflow/contexts/example-new.yaml
+
+# 26a. a new file and an upstream change arrive unattended.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+run_overlay "$CON" status example-org
+assert_out "26a: status before any unattended run says never" "last unattended: never"
+sed 's/id: example-docs/id: example-new/' "$OV/tree/workflow/contexts/example-docs.yaml" > "$OV/tree/$NEWCTX"
+edit_line "$OV/tree/workflow/contexts/example-docs.yaml" "$CTX_OLD" 'description: "UPSTREAM-V2"'
+commit_ov "$OV" v2
+unattended "$CON"
+assert_rc "26a: unattended sync succeeds" 0
+assert_out "26a: reports applied" "unattended example-org: applied"
+assert_file "26a: the new file is materialized" "$CON/$NEWCTX"
+assert_grep "26a: the upstream change is applied" "$CON/workflow/contexts/example-docs.yaml" "UPSTREAM-V2"
+assert_eq "26a: the lock pin advances to the overlay HEAD" "$(lock_pin "$CON")" "$(git -C "$OV" rev-parse HEAD)"
+run_overlay "$CON" status example-org
+assert_out "26a: status shows the last unattended run and its outcome" "applied"
+
+# 26b. an interval that has not elapsed: nothing is fetched or written.
+edit_line "$OV/tree/workflow/contexts/example-docs.yaml" 'description: "UPSTREAM-V2"' 'description: "UPSTREAM-V3"'
+commit_ov "$OV" v3
+unattended "$CON"
+assert_rc "26b: a run inside the interval succeeds" 0
+assert_out "26b: reports not-due" "unattended example-org: not-due"
+assert_nogrep "26b: nothing applied inside the interval" "$CON/workflow/contexts/example-docs.yaml" "UPSTREAM-V3"
+run_overlay "$CON" status example-org
+assert_out "26b: a not-due run does not replace the last real outcome" "applied"
+set_interval "$CON" 0
+unattended "$CON"
+assert_out "26b: interval 0 makes every run due" "unattended example-org: applied"
+assert_grep "26b: and the change lands" "$CON/workflow/contexts/example-docs.yaml" "UPSTREAM-V3"
+
+# 26c. a conflict with a local edit holds the WHOLE overlay and stays held.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+set_interval "$CON" 0
+pin0="$(lock_pin "$CON")"
+T="$CON/workflow/contexts/example-docs.yaml"
+edit_line "$T" "$CTX_OLD" 'description: "LOCAL-CONFLICT"'
+edit_line "$OV/tree/workflow/contexts/example-docs.yaml" "$CTX_OLD" 'description: "UPSTREAM-CONFLICT"'
+sed 's/id: example-docs/id: example-new/' "$OV/tree/workflow/contexts/example-docs.yaml" > "$OV/tree/$NEWCTX"
+commit_ov "$OV" conflict
+unattended "$CON"
+assert_rc "26c: a held run is not a failure" 0
+assert_out "26c: reports held" "unattended example-org: held"
+assert_out "26c: names the conflicting file" "conflict: workflow/contexts/example-docs.yaml"
+assert_grep "26c: the local edit is intact" "$T" "LOCAL-CONFLICT"
+assert_nogrep "26c: no conflict markers written" "$T" "<<<<<<<"
+assert_absent "26c: nothing else from the held overlay is applied either" "$CON/$NEWCTX"
+assert_eq "26c: the lock pin does not advance" "$(lock_pin "$CON")" "$pin0"
+unattended "$CON"
+assert_out "26c: the next run is still held (the conflict is not laundered away)" "conflict: workflow/contexts/example-docs.yaml"
+run_overlay "$CON" status example-org
+assert_out "26c: status shows the held run" "held"
+
+# 26d. a local edit that merges cleanly is not a reason to hold.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+T="$CON/workflow/contexts/example-docs.yaml"
+edit_line "$T" "default_mandant: example-team" "default_mandant: example-team  # CONSUMER-LINE"
+edit_line "$OV/tree/workflow/contexts/example-docs.yaml" "$CTX_OLD" 'description: "UPSTREAM-LINE"'
+commit_ov "$OV" disjoint
+unattended "$CON"
+assert_out "26d: a clean merge applies" "unattended example-org: applied"
+assert_grep "26d: the consumer's line is kept" "$T" "CONSUMER-LINE"
+assert_grep "26d: the upstream line is merged in" "$T" "UPSTREAM-LINE"
+
+# 26e. a new behavioural file is never approved unattended; the rest applies.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+mkdir -p "$OV/tree/skills/example-new-skill"
+sed 's/example-org-coordinator/example-new-skill/' "$OV/tree/skills/example-org-coordinator/SKILL.md" > "$OV/tree/skills/example-new-skill/SKILL.md"
+edit_line "$OV/tree/workflow/contexts/example-docs.yaml" "$CTX_OLD" 'description: "UPSTREAM-BESIDE-SKILL"'
+commit_ov "$OV" new-skill
+unattended "$CON"
+assert_out "26e: applies the rest" "unattended example-org: applied"
+# on the summary line, not anywhere: the engine's own SKIP line names the file too
+case "$(printf '%s\n' "$OUT" | grep '^unattended example-org:')" in
+  *"pending: skills/example-new-skill/SKILL.md"*) pass "26e: the summary names the pending behavioural file" ;;
+  *) fail "26e: the summary does not name the pending behavioural file" "$OUT" ;;
+esac
+assert_absent "26e: the new skill is not installed" "$CON/skills/example-new-skill/SKILL.md"
+assert_grep "26e: the config change beside it is applied" "$CON/workflow/contexts/example-docs.yaml" "UPSTREAM-BESIDE-SKILL"
+
+# 26f. a planned deletion holds the overlay; the file stays.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+git -C "$OV" rm -q tree/identity/mandants/example-team.yaml; commit_ov "$OV" drop-mandant
+unattended "$CON"
+assert_out "26f: a planned deletion holds" "unattended example-org: held"
+assert_out "26f: names the file it would delete" "identity/mandants/example-team.yaml"
+assert_file "26f: the file stays" "$CON/identity/mandants/example-team.yaml"
+
+# 26g. an unreachable overlay is a failure, recorded, and exits non-zero.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+rm -rf "$CON/.bridge/overlays/example-org" "$OV"
+unattended "$CON"
+assert_rc "26g: an unreachable overlay fails" 1
+assert_out "26g: reports failed" "unattended example-org: failed"
+run_overlay "$CON" status example-org
+assert_out "26g: status shows the failed run" "failed"
+
+# 26h. the scheduled wrapper: report, notification on change only.
+# The consumer fixture is `git archive HEAD`, so copy the WORKING-TREE engine
+# and wrapper in; otherwise this section tests the last commit.
+CON="$(mkcon)"; OV="$(mk_clean_overlay)"
+cp "$ROOT/scripts/overlay.py" "$ROOT/scripts/overlay-autosync.sh" "$CON/scripts/"
+run_overlay "$CON" add "file://$OV" --name example-org >/dev/null 2>&1
+set_interval "$CON" 0
+FAKEBIN="$TMP/fakebin"; mkdir -p "$FAKEBIN"; SENT="$TMP/signal-sent.log"; : > "$SENT"
+printf '#!/bin/sh\necho "$@" >> "%s"\n' "$SENT" > "$FAKEBIN/signal-cli"; chmod +x "$FAKEBIN/signal-cli"
+autosync() { OUT="$(PATH="$FAKEBIN:$PATH" SIGNAL_ACCOUNT=+1 SIGNAL_RECIPIENT=+2 bash "$CON/scripts/overlay-autosync.sh" </dev/null 2>&1)"; RC=$?; }
+edit_line "$CON/workflow/contexts/example-docs.yaml" "$CTX_OLD" 'description: "LOCAL-CONFLICT"'
+edit_line "$OV/tree/workflow/contexts/example-docs.yaml" "$CTX_OLD" 'description: "UPSTREAM-CONFLICT"'
+commit_ov "$OV" conflict
+autosync
+assert_rc "26h: the wrapper exits 0 on a held overlay" 0
+assert_grep "26h: the report says held" "$CON/work/overlay-status.md" "held"
+assert_grep "26h: the report names the conflict" "$CON/work/overlay-status.md" "workflow/contexts/example-docs.yaml"
+assert_grep "26h: a held overlay notifies" "$SENT" "held"
+n1="$(wc -l < "$SENT" | tr -d ' ')"
+autosync
+assert_eq "26h: the same held outcome does not notify again" "$(wc -l < "$SENT" | tr -d ' ')" "$n1"
+edit_line "$CON/workflow/contexts/example-docs.yaml" 'description: "LOCAL-CONFLICT"' 'description: "UPSTREAM-CONFLICT"'
+autosync
+assert_grep "26h: once resolved the report says applied" "$CON/work/overlay-status.md" "applied"
+
+# 26i. one install step schedules it (rendered, not loaded: no launchd in CI).
+# Sandboxed twice over: HOME points into $TMP and `launchctl` is a recorder, so
+# an installer that ignored --print could still never register a real job.
+# (The first red run of this section did exactly that against the real HOME.)
+mkdir -p "$TMP/home"; LREC="$TMP/launchctl.log"; : > "$LREC"
+printf '#!/bin/sh\necho "$@" >> "%s"\n' "$LREC" > "$FAKEBIN/launchctl"; chmod +x "$FAKEBIN/launchctl"
+installer() { OUT="$(HOME="$TMP/home" PATH="$FAKEBIN:$PATH" bash "$ROOT/scripts/install-upstream-autoupdate.sh" "$@" </dev/null 2>&1)"; RC=$?; }
+installer --overlays --print
+assert_rc "26i: installer --overlays --print succeeds" 0
+assert_out "26i: the job runs overlay-autosync.sh" "scripts/overlay-autosync.sh"
+assert_out "26i: under its own label" "com.openbridge.overlay-autosync"
+installer --print
+assert_out "26i: without --overlays the CORE job is unchanged" "scripts/upstream-autoupdate.sh"
+assert_eq "26i: --print never calls launchctl" "$(wc -c < "$LREC" | tr -d ' ')" "0"
+assert_absent "26i: --print writes no plist" "$TMP/home/Library/LaunchAgents"
 
 # ───────────────────────────────────────────────────────────────────
 echo
