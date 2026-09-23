@@ -11,12 +11,17 @@ reason stay exactly where `rules/learning-autonomy.md` puts them.
 
     python3 scripts/learning-ledger.py fingerprint <id>
     python3 scripts/learning-ledger.py recurrences [--json]
+    python3 scripts/learning-ledger.py prior-rejections <target.path> [--json]
 
 `fingerprint` stores `recurrence_fingerprint: <target.path>#<id without its
 date>` on an implemented proposal. `recurrences` lists implemented proposals
 whose target.path shows up again after the fix: a newer proposal in any
 folder, or a postmortem or audit-history file whose name starts with a later
 date. It is evidence for the reviewer and never changes a status.
+
+`prior-rejections` is step 0 for every proposal writer: rejected proposals on
+exactly the same target.path, with their reason, so a new candidate either
+cites them in `prior_rejections:` or is dropped. It never blocks a write.
 
 Contract: `scripts/tests/test_learning_ledger.py`.
 """
@@ -195,6 +200,83 @@ def cmd_recurrences(args) -> int:
 
 
 # ---------------------------------------------------------------------------
+# audit-trail.md rows
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class TrailRow:
+    lineno: int
+    timestamp: str
+    id: str
+    transition: str
+    reason: str
+    commit: str
+
+    @property
+    def to_state(self) -> str:
+        """`pending → deferred (phase-3)` → `deferred`."""
+        after = re.split(r"→|->", self.transition)[-1].strip()
+        return after.split("(")[0].strip()
+
+
+def trail_path(root: Path) -> Path:
+    return root / LEARNING / "audit-trail.md"
+
+
+def read_trail(root: Path) -> list[TrailRow]:
+    path = trail_path(root)
+    if not path.is_file():
+        return []
+    rows: list[TrailRow] = []
+    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 5 or cells[0] in ("Timestamp", "") or set(cells[0]) <= {"-", ":"}:
+            continue
+        timestamp, pid, transition, *middle, commit = cells
+        reason = "|".join(middle).strip().strip('"')
+        rows.append(TrailRow(lineno, timestamp, pid, transition, reason, commit))
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# prior-rejections
+# ---------------------------------------------------------------------------
+
+
+def build_prior_rejections(root: Path, target_path: str) -> list[dict]:
+    """Rejected proposals on exactly this target.path, oldest first. Matching
+    on task_slug or topic would cite unrelated proposals, so it never does."""
+    trail = read_trail(root)
+    found: list[dict] = []
+    for prop in all_proposals(root):
+        if prop.folder != "rejected" and prop.status != "rejected":
+            continue
+        if prop.target_path != target_path:
+            continue
+        reason = str(prop.data.get("reject_reason") or "")
+        if not reason:
+            rows = [r for r in trail if r.id == prop.id and r.to_state == "rejected"]
+            reason = rows[-1].reason if rows else ""
+        found.append({"id": prop.id, "reason": reason})
+    return found
+
+
+def cmd_prior_rejections(args) -> int:
+    found = build_prior_rejections(Path(args.root), args.target_path)
+    if args.json:
+        print(json.dumps(found, indent=2, ensure_ascii=False))
+        return 0
+    if not found:
+        print(f"no rejected proposal targets {args.target_path}")
+    for item in found:
+        print(f"{item['id']}  reason: {item['reason'] or '(none recorded)'}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -214,6 +296,12 @@ def build_parser() -> argparse.ArgumentParser:
     rc = sub.add_parser("recurrences", help="implemented proposals whose target came back")
     rc.add_argument("--json", action="store_true")
     rc.set_defaults(func=cmd_recurrences)
+
+    pr = sub.add_parser("prior-rejections",
+                        help="rejected proposals on the same target.path, before writing a new one")
+    pr.add_argument("target_path")
+    pr.add_argument("--json", action="store_true")
+    pr.set_defaults(func=cmd_prior_rejections)
 
     return parser
 

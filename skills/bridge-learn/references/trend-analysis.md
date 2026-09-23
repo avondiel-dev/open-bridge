@@ -45,6 +45,10 @@ Edge cases:
 When `/bridge-learn trends` detects a recurring fingerprint that does NOT yet
 have a matching proposal in `work/_learning/proposals/`:
 
+First run `python3 scripts/learning-ledger.py prior-rejections <target.path>`.
+On a hit, add `prior_rejections: [{id, reason}]` and argue the difference in
+the body, or do not generate the file.
+
 ```yaml
 # Auto-generated proposal file:
 # work/_learning/proposals/YYYY-MM-DD-audit-recurring-<fingerprint-short>.md

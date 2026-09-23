@@ -292,3 +292,79 @@ def test_recurrences_never_changes_a_status(tmp_path):
                    for p in (root / "work" / "_learning").rglob("*.md"))
     assert before == after
     assert frontmatter(later)["status"] == "pending"
+
+
+# ---------------------------------------------------------------------------
+# prior-rejections (#204): writers consult rejected/ before writing
+# ---------------------------------------------------------------------------
+
+
+def test_schema_accepts_prior_rejections_and_the_audit_fingerprint():
+    data = _base()
+    data["prior_rejections"] = [{"id": "2026-01-01-fixture-topic", "reason": "parent task failed"}]
+    data["source"]["fingerprint"] = "3f2a8b1c" * 8
+    assert list(_validator().iter_errors(data)) == []
+    data["prior_rejections"] = [{"id": "2026-01-01-fixture-topic"}]
+    assert list(_validator().iter_errors(data)), "reason is required in a citation"
+
+
+def _rejected_fixture(root):
+    return proposal(root, "2026-01-01-fixture-topic", folder="rejected", status="rejected",
+                    target_path="skills/fixture-skill/SKILL.md",
+                    extra={"rejected_at": "2026-01-01", "reject_reason": "parent task failed"})
+
+
+def test_prior_rejections_finds_a_rejection_on_the_same_target_path(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    _rejected_fixture(root)
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "prior-rejections",
+                    "skills/fixture-skill/SKILL.md", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == [
+        {"id": "2026-01-01-fixture-topic", "reason": "parent task failed"}]
+
+
+def test_prior_rejections_ignores_a_different_target_even_with_the_same_task(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    _rejected_fixture(root)  # source.task_slug is demo-task
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "prior-rejections",
+                    "skills/other-skill/SKILL.md", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == []
+
+
+def test_prior_rejections_ignores_pending_and_accepted_proposals(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-01-pending-topic", target_path="skills/fixture-skill/SKILL.md")
+    proposal(root, "2026-01-01-accepted-topic", folder="accepted", status="implemented",
+             target_path="skills/fixture-skill/SKILL.md")
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "prior-rejections",
+                    "skills/fixture-skill/SKILL.md", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == []
+
+
+def test_prior_rejections_falls_back_to_the_trail_reason(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+    proposal(root, "2026-01-01-fixture-topic", folder="rejected", status="rejected",
+             target_path="skills/fixture-skill/SKILL.md")
+    trail = root / "work" / "_learning" / "audit-trail.md"
+    trail.write_text(trail.read_text(encoding="utf-8")
+                     + "| 2026-01-01 10:00 | 2026-01-01-fixture-topic | pending → rejected "
+                       "| covered by another skill | — |\n", encoding="utf-8")
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "prior-rejections",
+                    "skills/fixture-skill/SKILL.md", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)[0]["reason"] == "covered by another skill"
+
+
+def test_prior_rejections_plain_output_says_none_found(tmp_path, capsys):
+    root = bridge_root(tmp_path)
+
+    capsys.readouterr()
+    assert ll.main(["--root", str(root), "prior-rejections", "skills/x/SKILL.md"]) == 0
+    assert "no rejected proposal" in capsys.readouterr().out

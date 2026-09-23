@@ -106,6 +106,9 @@ Sort proposals by:
 │ Proposed diff (if diff_preview set):                  │
 │   <diff_preview block>                                │
 │                                                       │
+│ Prior rejections (if prior_rejections set):           │
+│   <id>: <reason>                                      │
+│                                                       │
 │ Verification (if verification set):                   │
 │   <kind>: <command>                                   │
 │   before: <before>   after: <after>                   │
@@ -115,8 +118,10 @@ Sort proposals by:
 [a]ccept  [r]eject  [e]dit  [d]efer  [s]kip  [q]uit
 ```
 
-A proposal without `verification:` shows no Verification block, nothing else
-changes. `verification:` is evidence for the reviewer, never a threshold: it
+A proposal without `verification:` or `prior_rejections:` shows neither block,
+nothing else changes. `prior_rejections` means the writer found an earlier
+rejection on the same target and argued past it: read that argument in the
+body before deciding. `verification:` is evidence for the reviewer, never a threshold: it
 does not accept or reject anything on its own (`rules/learning-autonomy.md`).
 
 ### Action: accept

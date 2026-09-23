@@ -134,6 +134,10 @@ recurring fingerprint:
 
 1. Check if `work/_learning/proposals/*.md` already has a proposal whose
    frontmatter `source.fingerprint` matches. If yes: skip (proposal exists).
+   Then widen the lookup to `proposals/rejected/`: run
+   `python3 scripts/learning-ledger.py prior-rejections <target.path>` for the
+   path the new proposal would target. On a hit, carry `prior_rejections:` and
+   argue the difference in the body, or skip writing. Never neither.
 2. If no proposal exists: write a new proposal file
    `work/_learning/proposals/<YYYY-MM-DD>-audit-recurring-<fp-short>.md`
    using the template in `skills/bridge-learn/references/trend-analysis.md`.

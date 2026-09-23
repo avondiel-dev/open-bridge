@@ -64,6 +64,11 @@ properties:
         type: string
         pattern: "^[a-z][a-z0-9-]*$"
         description: "The closing task's slug — only set when source.type=postmortem"
+      fingerprint:
+        type: string
+        description: |
+          Only for source.type=audit-recurring: the finding's fingerprint from
+          audit-history, which bridge-audit's dedup matches against.
       evidence:
         type: array
         minItems: 1
@@ -164,6 +169,21 @@ properties:
       command: {type: string, description: "What to run to see the difference."}
       before: {type: string, description: "Observed value before the change."}
       after: {type: string, description: "Observed or expected value after it."}
+
+  prior_rejections:
+    type: array
+    description: |
+      Rejected proposals on the same target.path that the writer found in
+      step 0 (`scripts/learning-ledger.py prior-rejections <target.path>`).
+      Citing them is the price of writing anyway: the body says what is
+      different this time. A candidate that cannot say so is dropped instead.
+    items:
+      type: object
+      additionalProperties: false
+      required: [id, reason]
+      properties:
+        id: {type: string}
+        reason: {type: string}
 
   recurrence_fingerprint:
     type: string
