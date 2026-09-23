@@ -75,6 +75,7 @@ Run this every time, in order:
 | `infra/channels/<name>.yaml` | `infra/channels/_template.yaml` | `infra/channels/_schema.yaml` | `examples/agency/infra/channels/email.yaml` |
 | `infra/backups/*.yaml` | `infra/backups/_template.yaml` | — | `examples/agency/infra/backups/topology.yaml` |
 | `infra/secret-stores/<slug>.yaml` | `infra/secret-stores/_template.yaml` | `infra/secret-stores/_schema.yaml` | the template itself, which is written as one |
+| `infra/object-stores/<slug>.yaml` | `infra/object-stores/_template.yaml` | `infra/object-stores/_schema.yaml` | `infra/object-stores/_tests/valid/` |
 | `workflow/contexts/<id>.yaml` | `workflow/contexts/_template.yaml` | `workflow/contexts/_schema.yaml` | `examples/agency/workflow/contexts/webapp/context.yaml` |
 | `workflow/projects/<id>.yaml` | `workflow/projects/_template.yaml` | `workflow/projects/_schema.yaml` | `docs/examples/projects/` |
 | `workflow/calendars/*.yaml` | `workflow/calendars/_template.yaml` | `workflow/calendars/_schema.yaml` | `examples/agency/workflow/calendars/entries.yaml` |

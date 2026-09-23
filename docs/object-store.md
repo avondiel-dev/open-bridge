@@ -15,9 +15,10 @@ related:
 > ADR for the question: **where does content live that a repository must not
 > hold, and how does an entry point at it without carrying it?**
 
-**Status: decided, not built.** The implementation is
-[#226](https://github.com/bks-lab/open-bridge/issues/226), and this file is the
-contract it has to be true to.
+**Status: decided and built** ([#226](https://github.com/bks-lab/open-bridge/issues/226)).
+The declarations live in `infra/object-stores/`, the resolver in
+`skills/object-store/`, and the grammar guard in `scripts/check-object-grammar.py`.
+This file stays the contract all three have to be true to.
 
 ## The answers
 
@@ -70,6 +71,11 @@ The boundary: declaring a local store is **opt-in and never retroactive**.
 declares what it is not (`replicated: false`, `recovery.backed_up: false`): a
 store may have poor properties, it may not hide them.
 
+A local store's root is a directory that says it is one: it carries a marker,
+written once while the store is really there, and it is never created by a
+write. An unmounted volume leaves an empty mount point behind, and a store that
+accepted that directory would put the bytes on the boot disk.
+
 ### 2. One family, shaped like the secret stores
 
 Stores are declared in `infra/object-stores/<id>.yaml`, and the family mirrors
@@ -81,9 +87,13 @@ a file instead of per file by whoever is writing it.
 
 ### 3. The reference names the store
 
-`object://<store>/<key>`. `<store>` is matched against `addresses` the way the
-service of a `keychain://` reference is matched today; `<key>` is opaque to all
-but the store. An entry tracks the URI plus size, content hash and class, never
+`object://<store>/<key>`. `<store>` is matched against `addresses`, and the most
+specific address wins: an exact name, then the longest prefix, then `*`, with a
+tie refused. That departs from the secret stores, where the first match in file
+order wins, because here the wrong winner moves bytes: a catch-all bucket sorted
+ahead of a named local store would receive content declared as staying on this
+machine. `<key>` is opaque to all but the store, except that no segment may be
+empty, `.` or `..`. An entry tracks the URI plus size, content hash and class, never
 the bytes and never a pre-signed URL, which is a credential with an expiry date.
 
 A backend URI (`s3://bucket/key`) is rejected for the reason the KeePass reference

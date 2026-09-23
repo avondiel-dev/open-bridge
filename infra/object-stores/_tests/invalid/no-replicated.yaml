@@ -1,0 +1,13 @@
+# REASON: a store may have poor properties, it may not hide them. Whether the
+# bytes exist twice is the first thing a caller has to know.
+name: box
+scope: user
+backend: local
+summary: "x"
+addresses: [box]
+location:
+  path: "~/objects"
+holds:
+  - class: recording
+recovery:
+  backed_up: false

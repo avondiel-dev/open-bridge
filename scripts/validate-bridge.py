@@ -119,6 +119,16 @@ SURFACES = [
         "exclude_prefixes": ["_"],
     },
     {
+        # An object store: where content that is not configuration lives, and
+        # which class of content belongs in it (docs/object-store.md). Validated
+        # for the reason the secret stores are: a typo in `backend:` or a
+        # credential written as a value must fail here, not at resolve time.
+        "name": "object-store",
+        "schema": "infra/object-stores/_schema.yaml",
+        "instances": "infra/object-stores/*.yaml",
+        "exclude_prefixes": ["_"],
+    },
+    {
         "name": "mandant",
         "schema": "identity/mandants/_schema.yaml",
         "instances": "identity/mandants/*.yaml",

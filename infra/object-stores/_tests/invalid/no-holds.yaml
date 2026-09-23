@@ -1,0 +1,12 @@
+# REASON: holds is the declared answer to "what goes here". Without it the
+# placement decision falls back to whoever writes the file.
+name: box
+scope: user
+backend: local
+summary: "x"
+addresses: [box]
+location:
+  path: "~/objects"
+replicated: false
+recovery:
+  backed_up: false

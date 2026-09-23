@@ -392,8 +392,10 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     # is the check that holds them together, and validate.yml runs it and its
     # mutation battery.
     "scripts/check-secret-grammar.py",
+    "scripts/check-object-grammar.py",
     "scripts/check-secret-patterns.py",
     "scripts/tests/test_secret_grammar.py",
+    "scripts/tests/test_object_grammar.py",
     "scripts/tests/test_secret_patterns.py",
     # Registered 2026-08-30 with the edge guard. validate.yml runs both.
     "scripts/check-edges.py",
@@ -482,7 +484,11 @@ CLUSTER_WRAPPER_FALLBACK = re.compile(
 # describes what it depicts, never where it lives, and only an enumerated
 # family may claim that exemption, which is why the set above is a list and not
 # a shape.
-WRAPPER_TESTS_CORE = re.compile(r"^(?:infra/remotes|workflow/workloads)/_tests/")
+#
+# infra/object-stores joined on 2026-09-22 (#226), in the same change as the CI
+# step that runs its suite. Its fixtures use example.org hosts, placeholder
+# store names and placeholder values, never an instance's own.
+WRAPPER_TESTS_CORE = re.compile(r"^(?:infra/remotes|infra/object-stores|workflow/workloads)/_tests/")
 # workflow/workloads joined on 2026-08-27, when its 69 fixtures were rewritten
 # generic and in English for exactly this step. Before that they named real
 # hosts, real customers and one real person, so the family stayed out and its

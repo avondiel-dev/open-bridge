@@ -1,0 +1,15 @@
+# REASON: a misspelled location key is read as nothing, and the store resolves
+# against a default nobody declared.
+name: box
+scope: user
+backend: local
+summary: "x"
+addresses: [box]
+location:
+  path: "~/objects"
+  pth: "/mnt/archive"
+holds:
+  - class: recording
+replicated: false
+recovery:
+  backed_up: false

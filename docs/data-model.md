@@ -91,13 +91,9 @@ draws exactly this, from the same file as the tables below:
 4. **Beyond it** are the references between entries (`persona_ref`, `context_ref`,
    `remote_ref` and the rest), the path the agent walks after the first hop.
    `scripts/check-edges.py` holds each one to resolving.
-5. **Outside the dashed line** is what never enters git: secret stores, reached by
-   URI, and local caches.
-
-That last one is currently two unlike things under one name, and a Bridge has no
-declared home for content that is neither configuration nor a secret.
-[`object-store.md`](object-store.md) decides the shape of that home. It is a
-decision, not a description: nothing in the tables below implements it yet.
+5. **Outside the dashed line** is what never enters git: secret stores and object
+   stores, reached by URI, and local caches. Why content that is not
+   configuration gets a store of its own: [`object-store.md`](object-store.md).
 
 ## The tables
 
@@ -130,6 +126,7 @@ decision, not a description: nothing in the tables below implements it yet.
 | `infra/instances/` | another Bridge this one should know about | core: template, schema; user: entries | open-bridge (CORE)<br>your user branch | `location.host` → infra/remotes/<br>`promote_config_ref` → bridge-config.yaml upstreams | a person; the overlay engine keeps subscribes_overlays current | when named |
 | `infra/remotes/` | a machine: ssh, wake, services | core: template, schema; user: entries | open-bridge (CORE)<br>ignored, opt-in | `layout_ref` → infra/backups/ | /remote | when named |
 | `infra/secret-stores/` | where a secret lives, who reaches it, which kind belongs in it | core: template, schema; user: entries | open-bridge (CORE)<br>your user branch | `unlock.password_ref` → another store, by URI<br>`remote_ref` → infra/remotes/<br>`account_ref` → identity/accounts/ | /secrets | when named |
+| `infra/object-stores/` | where content that is not configuration lives, who reaches it, which class belongs in it | core: template, schema; user: entries | open-bridge (CORE)<br>your user branch | `credentials.*_ref` → a secret store, by URI<br>`reachable_from.machines` → infra/remotes/ | a person; /object-store reads it | when named |
 | `infra/transcriptions/` | where recordings become transcripts, and where those land | core: template, schema; user: topology.yaml | open-bridge (CORE)<br>your user branch | `worker host` → infra/remotes/ | the meeting-transcription skill | when named |
 | `infra/utilities/` | a supply connection at a location: power, gas, water, heat | core: template; user: entries | open-bridge (CORE)<br>your user branch | `portal_password_ref` → a secret store, by URI | a person | when named |
 | `workflow/calendars/` | a scheduled outbound action: what, to whom, when | core: template, schema; user: entries.yaml | open-bridge (CORE)<br>ignored, opt-in | `recipients` → identity/mandants/ | /calendar | when named |
@@ -156,8 +153,9 @@ decision, not a description: nothing in the tables below implements it yet.
 | `context-budget.yaml` | the declared ceiling for what every session reads | core | open-bridge (CORE) |
 | `context-budget.user.yaml` | an instance's own caps for its own always-on files | user | ignored, opt-in |
 | `DESIGN.md` | the design tokens every generated visual reads | core | open-bridge (CORE) |
-| `.bridge/` | the overlay cache and the workspace clones | user | outside git |
+| `.bridge/` | the overlay cache, the workspace clones and the object read cache | user | outside git |
 | `imports/` | incoming files before they are filed | user | outside git |
+| `object://<store>/<key>` | content that is not configuration: recordings, filed documents, exports | user | an object store |
 
 #### The stores
 
@@ -168,6 +166,7 @@ decision, not a description: nothing in the tables below implements it yet.
 | ignored, opt-in | Ignored by the shipped .gitignore, because it carries personal data. A PRIVATE instance may opt in and track it as a backup; a public fork never does. |
 | org overlay | Materialized from an organisation's overlay repository and recorded in overlays.lock.yaml (docs/org-overlays.md). |
 | outside git | Never in a repository: a secret store reached by URI (rules/secret-placement.md), or a local cache or clone under .bridge/. |
+| an object store | Never in a repository: bytes an entry reaches by an object:// reference, through a declaration in infra/object-stores/ (docs/object-store.md). A local directory can be one. |
 <!-- data-model:table:end -->
 
 ## Adding an object type

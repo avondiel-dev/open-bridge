@@ -1,0 +1,13 @@
+# REASON: without scope the file carries no tripwire, and a genericization sweep
+# treats it as CORE content.
+name: box
+backend: local
+summary: "x"
+addresses: [box]
+location:
+  path: "~/objects"
+holds:
+  - class: recording
+replicated: false
+recovery:
+  backed_up: false

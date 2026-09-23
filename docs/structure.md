@@ -100,6 +100,10 @@ Every config type lives in **`<wrapper>/<types>/`** — a plural folder with tem
 | `infra/secret-stores/_template.yaml` | CORE | Secret-store template |
 | `infra/secret-stores/_schema.yaml` | CORE | Secret-store schema |
 | `infra/secret-stores/<slug>.yaml` | USER | One store: where it is, who reaches it, which kind of secret belongs in it |
+| `infra/object-stores/_template.yaml` | CORE | Object-store template |
+| `infra/object-stores/_schema.yaml` | CORE | Object-store schema, and the source of the object reference grammar |
+| `infra/object-stores/_tests/**` | CORE | The schema's controls and their mutation battery |
+| `infra/object-stores/<slug>.yaml` | USER | One store: where it is, who reaches it, which class of content belongs in it |
 | `infra/transcriptions/_template.yaml` | CORE | Transcription topology template |
 | `infra/transcriptions/_schema.yaml` | CORE | Transcription topology schema |
 | `infra/transcriptions/topology.yaml` | USER | Pipeline placement (mode local/remote, worker host) |

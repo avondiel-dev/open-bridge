@@ -1,0 +1,15 @@
+# REASON: a key written beside the declaration instead of into a secret store.
+# Only credentials used to refuse extra keys, so this validated.
+name: box
+scope: user
+secret_access_key: "a-raw-value-where-a-reference-belongs"
+backend: local
+summary: "x"
+addresses: [box]
+location:
+  path: "~/objects"
+holds:
+  - class: recording
+replicated: false
+recovery:
+  backed_up: false

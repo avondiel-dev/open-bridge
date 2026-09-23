@@ -1,0 +1,12 @@
+# REASON: "recovery: {}" reads like an answer and gives none.
+name: box
+scope: user
+backend: local
+summary: "x"
+addresses: [box]
+location:
+  path: "~/objects"
+holds:
+  - class: recording
+replicated: false
+recovery: {}

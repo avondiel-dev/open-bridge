@@ -1,0 +1,17 @@
+# REASON: an endpoint without a bucket addresses the whole service, and every key
+# lands wherever the credential happens to have write access.
+name: box
+scope: user
+backend: s3
+summary: "x"
+addresses: [box]
+location:
+  endpoint: "https://objects.example.org"
+credentials:
+  access_key_ref: "keychain://box/access-key"
+  secret_key_ref: "keychain://box/secret-key"
+holds:
+  - class: export
+replicated: true
+recovery:
+  backed_up: true

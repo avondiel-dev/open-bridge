@@ -31,6 +31,7 @@ written down here.
 | `/remote` | `remote` | Remote management: status, health, logs, restart, sync |
 | `/workload` | `workload` | Declared runs: `declare`, `validate`, `render`, `provision`, `list`, `show`, `reconcile`, `view`, `publish`, `adopt`, `retire` |
 | `/schedule` | `schedule` | Scheduled tasks: list, create, deploy, disable |
+| `/object-store` | `object-store` | Object stores: `stores`, `stat`, `path`, `fetch`, `put`, `init`, `forget`. Resolves `object://<store>/<key>` to a path and never to content; a failed read names why, a write never queues |
 | `/secrets` | `secrets` | Secrets: `refs`, `check`, `run`, `where`, `store`, `stores`, `audit`. Resolves a reference and never prints a value, writes one without it passing through argv, and finds the plaintext that never became a reference |
 | `/promote` | `bridge-promote` | Promote CORE changes upstream (scope:core → `bks-lab/open-bridge`, scope:org → your optional org overlay) |
 | `/overlay` | `bridge-overlay` | Subscribe to org overlays + materialize scope:org content into the live tree (downstream inverse of `/promote`) |

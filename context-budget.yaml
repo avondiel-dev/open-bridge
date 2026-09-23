@@ -45,7 +45,7 @@ items:
     note: The entry file. Thin by design; it routes, it does not explain.
 
   AGENTS.md:
-    max_bytes: 33200
+    max_bytes: 33300
     note: >-
       The operating manual, and still the largest single always-on item. It
       routes; it does not restate. Every load-bearing pointer in it is a
@@ -71,6 +71,14 @@ items:
       always-on place, and because the question it answers, "where does this
       token go", is one a session asks before it has read anything else.
       16 bytes of headroom before, 16 after, again on purpose.
+      RAISED from 33200 on 2026-09-22 by 100 bytes for the
+      `infra/object-stores/` row (#226), which costs 107: 20 bytes of headroom
+      before, 13 after. The family carries the placement
+      policy the `object-store` skill reads: which class of content belongs in
+      which store. Its question, "where does this recording go, if not into
+      git", is asked at the moment a file is written, and a session that does
+      not know the family exists writes the file into the work tree, where the
+      only thing between it and a commit is an ignore entry somebody remembered.
 
   ecosystem.yaml:
     optional: true

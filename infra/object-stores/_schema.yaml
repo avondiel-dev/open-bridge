@@ -1,0 +1,200 @@
+# Object Store Schema: JSON Schema Draft 2020-12 in YAML
+#
+# An object store is a place where content that is not configuration lives:
+# recordings, filed documents, exports, deliverables that carry personal data.
+# The reference in an entry answers "which object" (object://<store>/<key>);
+# this file answers "where is that store, who can reach it from where, and
+# which kind of content belongs in it". The decision behind every rule here is
+# docs/object-store.md, and where the two disagree the ADR wins.
+#
+# This file is also the SOURCE of the object reference grammar: the store name
+# pattern, the backends and the shape of a reference. The resolver
+# (skills/object-store/) and the template carry copies, and
+# scripts/check-object-grammar.py fails CI the day one of them drifts.
+#
+# Validation:
+#   check-jsonschema --schemafile infra/object-stores/_schema.yaml \
+#                    infra/object-stores/*.yaml
+#   bash infra/object-stores/_tests/run.sh            # the controls
+#   bash infra/object-stores/_tests/run.sh --mutate   # the proof they bite
+#
+# IDE support: add this hint to a store file:
+#   # yaml-language-server: $schema=./_schema.yaml
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://bks-lab.github.io/open-bridge/schemas/object-store.yaml"
+title: ObjectStore
+description: |
+  One place content that is not configuration lives, with the placement policy
+  for the classes of content it holds.
+
+type: object
+required: [name, scope, backend, addresses, holds, replicated, recovery]
+additionalProperties: false   # top level: a field nobody declared is a typo, or a value
+
+properties:
+
+  name:
+    type: string
+    pattern: "^[a-z][a-z0-9-]*$"
+    description: "Slug, matching the filename. Also the shape of the <store> segment of a reference."
+
+  scope:
+    enum: [org, user, private]
+    description: |
+      Promote-routing scope, REQUIRED as a tripwire. A declaration names a
+      machine, a directory or a bucket, so it never ships to every instance:
+      `core` is left out of the enum on purpose, where the secret stores only
+      say it in prose. An organisation's shared store is `org`.
+
+  backend:
+    enum: [local, s3]
+    description: |
+      local  a directory on this machine. A store like any other, with the
+             poor properties it declares below.
+      s3     an S3 compatible service, self-hosted or not, addressed path-style.
+
+  summary:
+    type: string
+
+  addresses:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      pattern: "^(\\*|[a-z][a-z0-9-]*\\*?)$"
+    description: |
+      Which references this store answers. The <store> segment of
+      object://<store>/<key> is matched against this list, and the MOST
+      SPECIFIC address wins across all declarations: an exact name, then the
+      longest prefix (`rec*`), then `*`. Two stores claiming a name equally is
+      refused. This differs from `infra/secret-stores/`, where the first match
+      in file order wins: here a catch-all store must never take a reference
+      meant for a named one because its filename sorts first.
+
+  location:
+    type: object
+    additionalProperties: false   # location: one set of keys per backend
+    properties:
+      path:
+        type: string
+        pattern: "^[~/]"   # local path: absolute or ~, never relative
+        description: |
+          local: the root directory, absolute or starting with `~`. A relative
+          path resolves against whatever directory the resolver runs in, which
+          is usually the Bridge's own work tree. The directory has to exist and
+          carry the marker `init` writes; it is never created.
+      endpoint:
+        type: string
+        pattern: "^https?://"
+        description: "s3: the service endpoint, scheme included."
+      bucket:
+        type: string
+      region:
+        type: string
+        description: "s3: signing region. Defaults to us-east-1, which is what most self-hosted services accept."
+      prefix:
+        type: string
+        description: "s3: a key prefix this instance stays inside, one per instance or per customer."
+
+  credentials:
+    type: object
+    additionalProperties: false   # credentials: references only
+    description: |
+      How the store is opened. REFERENCES into a secret store, never values,
+      resolved through the secrets skill. A leaked declaration then leaks a
+      pointer, not access.
+    properties:
+      access_key_ref:
+        $ref: "#/$defs/locator"
+      secret_key_ref:
+        $ref: "#/$defs/locator"
+
+  reachable_from:
+    type: object
+    additionalProperties: false
+    description: |
+      Where the store is expected to be reachable. Documentation of intent: the
+      resolver measures reachability live, and names this in the hint of a
+      `not-reachable` miss.
+    properties:
+      machines:
+        type: array
+        items: {type: string}
+      contexts:
+        type: array
+        items:
+          enum: [interactive, launchd-gui, ssh, ci, any]
+
+  holds:
+    type: array
+    minItems: 1        # holds: an empty policy answers nothing
+    description: |
+      The placement policy: which classes of content belong in this store, and
+      how their keys are named. Decided once here, not per file by whoever is
+      writing it.
+    items:
+      type: object
+      required: [class]
+      properties:
+        class:
+          enum: [recording, filed-document, export, deliverable, special-category, corpus]
+          description: |
+            recording         a meeting recording, raw audio
+            filed-document    a contract, an invoice, a scan
+            export            a video pulled from a platform, a data export
+            deliverable       a generated report that carries personal data
+            special-category  a voiceprint, a scan with health data
+            corpus            a large unstructured body of content
+        naming:
+          type: string
+        note:
+          type: string
+
+  replicated:
+    type: boolean
+    description: "Whether the bytes exist in more than one place. A store may have poor properties; it may not hide them."
+
+  recovery:
+    type: object
+    required: [backed_up]
+    properties:
+      backed_up:
+        type: boolean
+      offsite:
+        type: boolean
+      break_glass:
+        type: string
+        description: "Where a human finds a copy in an emergency, as a description."
+      note:
+        type: string
+
+allOf:
+  - if:
+      properties: {backend: {const: local}}
+    then:
+      required: [location]
+      properties:
+        location:
+          required: [path]
+  - if:
+      properties: {backend: {const: s3}}
+    then:
+      required: [location, credentials]
+      properties:
+        location:
+          required: [endpoint, bucket]
+
+$defs:
+  locator:
+    type: string
+    pattern: "^[a-z0-9][a-z0-9-]*://\\S+$"   # a locator, never a value
+  reference:
+    type: string
+    pattern: '^object://[a-z][a-z0-9-]*/(?!\.\.?(?:/|$))[^/\s\\]+(?:/(?!\.\.?(?:/|$))[^/\s\\]+)*$'
+    description: |
+      The shape of an object reference, object://<store>/<key>. The key is one
+      or more segments, none of them empty, `.` or `..`, and none containing a
+      slash, whitespace or a backslash: a key must not climb out of its store.
+      Not used by a property of this file; it is the source the grammar check
+      holds the resolver to, by feeding both the same sample references.
