@@ -6,4 +6,4 @@
 set -u
 cd "$(dirname "$0")/../.."
 
-exec python3 -m pytest scripts/tests/test_learning_ledger.py -q
+exec python3 -m pytest scripts/tests/test_learning_ledger.py -q -rs
