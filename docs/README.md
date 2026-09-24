@@ -29,6 +29,9 @@ instead of a bespoke `_MOC.md` / `index.md` convention.
 - [`capability-registry.md`](capability-registry.md) — machine-global registry (`~/.bridge-capabilities/`) that lets a Bridge instance declare a shared capability (a transcription worker, a backup pipeline) exists and how to reach it, opt-in, without weakening data isolation.
 - [`knowledge-repo-pattern.md`](knowledge-repo-pattern.md) — pairing a Bridge instance with an optional knowledge/documentation repo.
 - [`skill-distribution-architecture.md`](skill-distribution-architecture.md) — ADR: where skills live across the tier model (framework repo vs org overlay marketplace).
+- [`install.md`](install.md): setting up a private Bridge, by prompt or by hand, and what the first session does.
+- [`updating.md`](updating.md): pulling CORE and overlay updates, by hand or unattended, and how a CORE fix flows back.
+- [`secrets.md`](secrets.md): reference URIs instead of values, where a new secret belongs, and what the secrets skill does.
 
 ## Subsystems
 

@@ -106,9 +106,10 @@ Three distinctions the skill makes, because each one was once a silent failure:
   `security -i` reads whole command lines there, and `keepassxc-cli` takes the
   master password the same way.
 
-Storing a new secret, an audit for plaintext, and the per-kind placement policy
-are the next slices and are not in the skill yet. Until they are, a new secret
-is placed by hand against the convention below.
+Storing a new secret (`store`), finding plaintext that should have been a
+reference (`audit`), and the per-kind placement policy (`where`) ship in the
+`secrets` skill ([`skills/secrets/SKILL.md`](../skills/secrets/SKILL.md)). The
+convention below is what those verbs follow.
 
 ## Hard rules
 

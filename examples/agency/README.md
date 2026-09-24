@@ -37,9 +37,9 @@ product.
 The workspace ships with two clients (BigCorp, StartupXYZ), a filled board,
 a daily log, and a P1 incident mid-flight. [`CLAUDE.md`](CLAUDE.md) /
 [`AGENTS.md`](AGENTS.md) in this folder put any agent runtime into demo
-mode — no onboarding, no setup. One caveat: don't push — this clone points
-at the public repo. For a real, private setup, see the repo-root README's
-"Adopt it — private origin first" section.
+mode: no onboarding, no setup. One caveat: don't push, this clone points
+at the public repo. For a real, private setup, see
+[`docs/install.md`](../../docs/install.md).
 
 ## Config tour
 

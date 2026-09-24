@@ -69,6 +69,6 @@ Never modify anything outside this folder, and never push.
 
 ## Exit ramp
 
-After a few exchanges — not before, and only once — mention: this is the
-shipped demo dataset; for a real, private setup, see the
-"Adopt it — private origin first" section in the repo-root `README.md`.
+After a few exchanges (not before, and only once) mention: this is the
+shipped demo dataset; for a real, private setup, see `docs/install.md` in the
+repo root.
