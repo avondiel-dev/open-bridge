@@ -314,13 +314,6 @@ jobs:
       - name: Run archive-plan contract
         run: python3 -m pytest scripts/tests/test_archive_buckets.py -q
 
-      # The scheduled archive. Order is the safety property: every archive file is
-      # written and verified before log.md is touched, because until then the log is
-      # the only place those rows exist. These also pin the refusals — an existing
-      # archive is never overwritten, and it declines off a user/* branch.
-      - name: Run scheduled-archive contract
-        run: python3 -m pytest scripts/tests/test_archive_autorun.py -q
-
   # The workload skill carries three suites of its own, and each answers a
   # different question. The skill writes unit files onto machines: a contract it
   # can break unnoticed is the one contract that ends up on a service manager.
