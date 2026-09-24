@@ -119,11 +119,12 @@ regions:
     what: |
       Markdown playbooks that explain to Claude how to operate a specific
       tracker (CLI calls, output parsing, schema mapping).
-      Today: `github.md` (gh CLI), `ado.md` (az CLI). Contract: `README.md`.
+      Today: `github.md` (gh CLI), `ado.md` (az CLI), `gitlab.md` (glab CLI). Contract: `README.md`.
       New tracker = new `<name>.md` file. No code needs to change anywhere else.
     examples:
       - "github.md (working)"
       - "ado.md (reference)"
+      - "gitlab.md (glab CLI)"
     related:
       - "skills/briefing/"
       - "bridge-config.yaml.integrations"

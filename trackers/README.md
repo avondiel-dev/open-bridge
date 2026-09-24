@@ -30,6 +30,7 @@ trackers/
   README.md        ← you are here — contract + schema
   github.md        ← working provider: gh CLI
   ado.md           ← example provider: az boards (Azure DevOps)
+  gitlab.md        ← provider: glab CLI (GitLab issues)
 ```
 
 New provider = new `{name}.md` file matching the contract below.
