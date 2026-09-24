@@ -313,6 +313,8 @@ footer{border-top:1px solid var(--border);padding-block:64px;background:var(--su
   .chip .chip-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .nav-chips .chip{padding:7px 9px}
   .page-hero{padding-block:48px 28px}
+  /* room for the chat launcher under the last footer line */
+  footer{padding-bottom:88px}
   :root{--section-y:72px}
 }
 
