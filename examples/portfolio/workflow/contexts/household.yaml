@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=../../../../workflow/contexts/_schema.yaml
+# Example: the private hat
+# No repos, no board, no client. Tax, the car, the utility contract, the
+# home server. Every task in this context is bridge_only: it never leaves
+# this repo, and nothing in it is ever sent to a work recipient.
+
+schema_version: 1
+scope: user
+id: household
+description: "Private household: tax return, vehicle logbook, utilities, home server"
+
+repos: []
+
+default_mandant: rivera-family
+persona_ref: sam-private

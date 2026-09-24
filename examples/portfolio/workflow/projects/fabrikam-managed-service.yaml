@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=../../../../workflow/projects/_schema.yaml
+# Example: the one shared board in this workspace
+# Northwind's board for the Fabrikam managed service. Read this file before
+# any board write: the Status strings and the Blocked flag below are the
+# exact option names on the board.
+
+schema_version: 1
+scope: user
+
+identity:
+  slug: fabrikam-managed-service
+  display_name: "Fabrikam Managed Service"
+  description: "Incidents, changes and upkeep of the Fabrikam order sync"
+
+project:
+  tracker: github
+  org: northwind-advisory
+  number: 3
+  issue_repo: northwind-advisory/fabrikam-ops
+  url: "https://github.com/orgs/northwind-advisory/projects/3"
+
+audit:
+  coverage_repos:
+    - northwind-advisory/fabrikam-ops
+
+context_ref: northwind
+mandant_ref: fabrikam
+
+fields:
+  Status:
+    type: single-select
+    values: [Backlog, "In Progress", "Waiting on Client", "In Review", Done, Declined]
+    default: Backlog
+
+  Priority:
+    type: single-select
+    values: [P1, P2, P3]
+    default: P2
+
+  Kind:
+    type: single-select
+    values: [Incident, Change, Upkeep, Report]
+    default: Change
+
+  Blocked:
+    type: single-select
+    values: ["Yes", "No"]
+    default: "No"
+
+  Billable:
+    type: single-select
+    values: ["In retainer", "Extra hours"]
+    default: "In retainer"
+
+state_map:
+  Backlog: new
+  "In Progress": in_progress
+  "Waiting on Client": blocked
+  "In Review": review
+  Done: done
+  Declined: removed
+
+status_mapping:
+  backlog: Backlog
+  doing: "In Progress"
+  review: "In Review"
+  done: Done
+  declined: Declined
+  blocked: { status_unchanged: true, set_flag: Blocked }
+
+governance:
+  level: standard
+  rules:
+    - done_requires_review
+    - assignee_on_in_progress
+  review_states: ["In Review"]
+  done_states: [Done, Declined]
+
+conventions:
+  field_language: en
+  english_only_fields: true

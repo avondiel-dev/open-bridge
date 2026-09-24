@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../../../identity/personas/_schema.yaml
+# Example persona: Sam as a private person running a household.
+# Fictional data. Carries the annual tax return, the car, the utility
+# contract. Nothing filed here ever syncs to a tracker.
+
+schema_version: 1
+scope: user
+id: sam-private
+type: individual
+role: self
+display_name: "Sam Rivera (private)"
+status: active
+
+mandant_refs:
+  - rivera-family
+
+persons:
+  - id: primary
+    display_name: "Sam Rivera"
+    channels:
+      email: "sam.rivera@mail.example"
+      phone: "+00 000 0000300"
+    address:
+      street: "12 Orchard Road"
+      zip: "00200"
+      city: "Example City"
+      country: "Example Country"
+
+tax:
+  applies_to: [income_tax]
+  tax_id: "00/000/30003"
+  tax_office: "Example City South"
+  tax_advisor:
+    name: "Ledger & Lamp Tax Advisors"
+    email: "office@ledger-lamp.example"
+  vehicle:
+    plate: "EX-SR 42E"
+    classification: "mixed"
+
+destinations:
+  private_tax_pending: "${onedrive_root}/Private/Tax/2025/pending"
+  private_tax_submitted: "${onedrive_root}/Private/Tax/2025/submitted"
+  household: "${onedrive_root}/Private/Household"
+  vehicle: "${onedrive_root}/Private/Vehicle"
+
+signature: |
+  Sam Rivera
+  12 Orchard Road, 00200 Example City
+
+notes: |
+  The private hat. The annual return for 2025 is due with the advisor in
+  October (work/tasks/tax-return-2025/). The car is used for both freelance
+  trips and private driving, so its logbook decides the split
+  (identity/vehicles/ex-sr-42e.yaml).

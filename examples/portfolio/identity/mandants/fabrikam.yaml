@@ -1,0 +1,45 @@
+# Example: Fabrikam Retail, the consultancy's managed-service client
+# Northwind runs Fabrikam's nightly order sync as a managed service.
+# Incident notices and the weekly health report go to these two people,
+# always as a draft that Sam sends (standing order outbound-draft-only).
+
+schema_version: 1
+scope: user
+id: fabrikam
+type: customer
+display_name: "Fabrikam Retail"
+
+context_ref: northwind
+
+default_channel: email
+
+persons:
+  - id: dana_okafor
+    display_name: "Dana Okafor"
+    role: "Head of e-commerce (service owner)"
+    channels:
+      email: "dana.okafor@fabrikam.example"
+    defaults:
+      language: en
+      timezone: Europe/Berlin
+      detail_level: summary
+      preferred_time_of_day: morning
+      quiet_hours: [19, 8]
+
+  - id: max_lindqvist
+    display_name: "Max Lindqvist"
+    role: "Warehouse IT lead (technical contact)"
+    channels:
+      email: "max.lindqvist@fabrikam.example"
+    defaults:
+      language: en
+      timezone: Europe/Berlin
+      detail_level: full
+      preferred_time_of_day: morning
+      quiet_hours: [20, 7]
+
+notes: |
+  Contract: managed operation of the order sync, response within four
+  business hours for a P1. Dana receives the weekly health report and any
+  incident notice; Max is the one who can rotate the warehouse API key,
+  which is what the open incident waits on.

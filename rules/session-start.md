@@ -281,7 +281,7 @@ claim on a public or unknown origin):
 
 | Lane | Routes to |
 |---|---|
-| **[1]** show me around | `cd examples/agency` + **restart the agent** (that folder's CLAUDE.md puts the runtime into a read-only demo — a live board with a P1 incident; it is cwd-scoped, so a restart there is required, not an in-chat branch). Exit-ramp loops back to [2]/[3]. |
+| **[1]** show me around | `cd examples/agency` + **restart the agent** (that folder's CLAUDE.md puts the runtime into a read-only demo — a live board with a P1 incident; it is cwd-scoped, so a restart there is required, not an in-chat branch). One person with several hats (company, freelance, private) plus a home server? Offer `examples/portfolio` instead, same restart. Exit-ramp loops back to [2]/[3]. |
 | **[2]** describe-purpose | `/bridge-onboard` → collapsed Phase A: the sentence becomes `purpose.statement` verbatim, identity auto-defaults, protection pre-flight, a confirm-back screen, then seed a first task + a **live** `/briefing`. **If the sentence names a resource** — a machine/device to dedicate, or several repos — the wizard connects it to what it unlocks (Phase A step 10 offer-advisory / step 9 workspace); this is confined-safe (derived from your words, not a scan). |
 | **[3]** make it private | the origin/private-home pre-flight (`rules/push-guard.md` § Remediation) — the guard is already armed; on a public/unknown origin, re-home to a private repo first, then hand back to [2]. |
 | **[4]** workspace / org | `skills/workspace` (`workspace create` + `subscribe … --role code`) or, for a shared org config, `skills/bridge-overlay` (`/overlay add <git-url>`) — runs a trimmed Phase A first if not yet onboarded. |

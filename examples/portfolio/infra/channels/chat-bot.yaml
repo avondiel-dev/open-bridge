@@ -1,0 +1,47 @@
+# Example: a chat bot on the home server
+# The one push channel. It carries the daily health digest (only when
+# something is red), house reminders to the family, and nothing else.
+# Silence is the normal state of this channel.
+
+schema_version: 1
+scope: user
+name: chat-bot
+display_name: "Home chat bot"
+description: "Pushes actionable alerts to Sam's phone and house reminders to the family chat. Silent when everything is green."
+type: bot
+
+implementation:
+  skill: null
+  plugin: null
+
+runtime:
+  remote: homebox
+  service: chat-bot
+  mode: systemd
+
+access:
+  policy: allowlist
+  self: ["@sam"]
+  contacts:
+    - name: "Alex"
+      handle: "@alex"
+    - name: "Robin"
+      handle: "@robin"
+  groups:
+    - name: "Rivera household"
+      id: "household-chat-01"
+
+checkin:
+  enabled: true
+  stream: "C"
+  priority: 20
+
+behavior:
+  auto_response: false
+  signature: false
+  business_hours_only: false
+
+verify:
+  service_check: "systemctl --user is-active chat-bot"
+
+status: active

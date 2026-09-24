@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=../../../../workflow/workloads/_schema.yaml
+# Example: the daily health digest on the home server
+# Checks backups (last_ok against max_age_hours), disk space, the chat bot,
+# the Fabrikam sync's last successful run and the contract deadline. When
+# everything is green it writes its report to the log and pushes NOTHING.
+# Only a red line reaches Sam's phone, phrased as what happened and what to
+# do. A digest that talks every morning gets muted within a week.
+
+schema_version: 1
+scope: user
+
+id: daily-health-digest
+title: Daily health digest
+purpose: "Morning check across all three hats that pushes to the phone only when something needs action"
+persona_ref: _shared   # one check across company, freelance and household on purpose: it is the operator's view
+
+placement:
+  host: homebox
+  kind: recurring
+  runtime: systemd
+  owner: bridge
+  provisioned_at: null
+
+schedule:
+  rrule: "FREQ=DAILY"
+  delivery_at: "06:45"
+  duration_estimate_min: 15
+  timezone: Europe/Berlin
+
+execution:
+  command: ["/home/sam/homebox-config/bin/health-digest", "--push-only-red", "--report", "/home/sam/logs/health-digest"]
+  working_dir: /home/sam/homebox-config
+  timeout_sec: 600
+  isolation: process-group
+  single_flight: true
+  on_timeout: report
+
+response:
+  evidence: log-trace
+  recipients:
+    - mandant: northwind-team
+      person: sam_rivera
+  notify_on: [failure, timeout, missing]
+  notify_via: chat-bot
+
+reconcile:
+  probe: "systemctl --user show health-digest.timer --property=ActiveState"
+  expect: "ActiveState=active"
+  hint: "systemctl --user daemon-reload, then enable --now health-digest.timer"
+
+learned_from: "The first version pushed a green summary every morning; it was muted after five days and missed a full backup disk"

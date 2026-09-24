@@ -1,0 +1,47 @@
+# Example: the meter behind the electricity contract
+# The contract (who bills, until when) is identity/contracts/example-power-electricity.yaml.
+# This file is the site: the meter number while standing at the meter, the
+# grid operator that asks for the reading, and where the letters are filed.
+
+name: home-electricity
+scope: user              # site and contract data, never promoted
+type: electricity
+status: active
+
+location:
+  label: "Home"
+  address: "12 Orchard Road, 00200 Example City"
+
+supplier:
+  name: "Example Municipal Power Ltd."
+  customer_number: "EP-0000-4711"
+  tariff: "CityGreen 24"
+  monthly_payment: "96.00 EUR"
+  billing_month: "November"
+
+# The grid operator requests the reading, not the supplier; different company,
+# different customer number.
+metering_operator:
+  name: "Example Grid Services"
+  customer_number: "GRID-88-20417"
+  reading_portal: "https://readings.example-grid.example"
+  portal_user: "sam.rivera@mail.example"
+  portal_password_ref: "keychain://household/example-grid-portal"
+
+meters:
+  - number: "1EXA0000123456"     # reading cards print it redacted as ** 123456
+    kind: "Electricity"
+    obis: "1.8.0"
+    location_hint: "Basement, meter cabinet on the left, second row"
+
+identifiers:
+  metering_location_id: "EX00000000000000000000000000000001"
+  market_location_id: "50000000001"
+
+documents:
+  invoices: "Private/Household/Electricity"
+
+notes: |
+  Last reading 2026-09-12: 48 213 kWh (work/done/2026-09/meter-reading-q3/).
+  The home server draws about 35 W around the clock, roughly 300 kWh a
+  year; that figure is the basis for the freelance share in the contract.

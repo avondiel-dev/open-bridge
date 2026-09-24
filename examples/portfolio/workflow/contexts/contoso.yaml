@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=../../../../workflow/contexts/_schema.yaml
+# Example: the freelance hat
+# Sam contributes to Contoso Logistics' own repo under a freelance contract.
+# Contoso tracks work in its own tracker, so tasks here record the pull
+# request and nothing else; no Northwind board, no company signature.
+
+schema_version: 1
+scope: user
+id: contoso
+description: "Freelance work for Contoso Logistics, plus the application pipeline for the next engagement"
+
+repos:
+  - name: route-planner
+    path: "${projects_root}/contoso/route-planner"
+    github: contoso-logistics/route-planner
+
+persona_ref: sam-freelance

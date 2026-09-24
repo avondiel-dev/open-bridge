@@ -1,0 +1,21 @@
+# Example: the laptop Sam works on
+# Where every session runs. Not always on, so nothing scheduled lives here;
+# scheduled runs go to the home server.
+
+name: sam-laptop
+scope: user              # personal hardware inventory
+type: macos
+os: "macOS 26"
+model: "Example 14-inch laptop"
+
+network:
+  hostname: sam-laptop
+  tailscale_ip: 100.64.0.11
+
+capabilities:
+  - git
+  - ssh
+
+services: []
+
+status: online

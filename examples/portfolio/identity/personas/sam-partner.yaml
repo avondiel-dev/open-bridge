@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=../../../../identity/personas/_schema.yaml
+# Example persona: Sam as partner of a small consultancy.
+# Fictional data. The consultancy is the legal entity, so this persona is a
+# company: invoices to Fabrikam leave under its name, its tax number and its
+# signature, never under the freelance one.
+
+schema_version: 1
+scope: user                # a persona is always user-tier
+id: sam-partner
+type: company
+role: self
+display_name: "Northwind Advisory GmbH (Sam Rivera, partner)"
+aliases: ["Northwind", "Northwind Advisory"]
+status: active
+
+mandant_refs:
+  - northwind-team         # Sam also appears in the partners' addressbook
+
+persons:
+  - id: primary
+    display_name: "Sam Rivera"
+    role: "Managing partner"
+    channels:
+      email: "sam@northwind-advisory.example"
+      phone: "+00 000 0000100"
+    address:
+      street: "7 Harbour Lane"
+      zip: "00100"
+      city: "Example City"
+      country: "Example Country"
+
+company:
+  legal_form: "GmbH"
+  seat: "Example City"
+  business_purpose: "IT consulting and managed operations for mid-size retailers"
+  fiscal_year: "calendar year"
+  shareholders:
+    - { name: "Jordan Lee", share_percent: 34 }
+    - { name: "Priya Nair", share_percent: 33 }
+    - { name: "Sam Rivera", share_percent: 33, persona_ref: sam-partner }
+
+tax:
+  applies_to: [corporate_tax, trade_tax, vat]
+  tax_id: "00/000/10001"
+  tax_office: "Example City North"
+  vat_id: "EX100000001"
+  tax_advisor:
+    name: "Ledger & Lamp Tax Advisors"
+    email: "office@ledger-lamp.example"
+
+# Filing paths for documents that belong to the company hat.
+destinations:
+  company_invoices_out: "${onedrive_root}/Northwind/Invoices/outgoing"
+  company_invoices_in: "${onedrive_root}/Northwind/Invoices/incoming"
+  company_contracts: "${onedrive_root}/Northwind/Contracts"
+
+signature: |
+  Sam Rivera
+  Managing Partner, Northwind Advisory GmbH
+  7 Harbour Lane, 00100 Example City
+  sam@northwind-advisory.example
+
+notes: |
+  The partner hat. Everything that touches Fabrikam (the managed-service
+  client) is signed and filed here. Company decisions are made with the
+  other two partners, so outbound to Fabrikam is drafted, shown, and sent
+  by a human (see protocols/standing-orders/user/outbound-draft-only.md).
