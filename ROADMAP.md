@@ -87,8 +87,12 @@ Discussion if something you need is missing.
 
 - **Persistent project memory**: context that survives across sessions, in plain
   markdown + YAML in git.
-- **Cross-tool skill discovery**: the same `SKILL.md` skills are found by Claude
-  Code, GitHub Copilot, Codex, Gemini and Cursor via standard discovery paths.
+- **Cross-tool skill discovery**: the same `SKILL.md` skills are found through
+  three committed symlinks to `skills/`: `.claude/skills` (Claude Code),
+  `.github/skills` (GitHub Copilot) and `.agents/skills` (Codex and Mistral
+  Vibe, per `docs/tool-mapping.md`; `GEMINI.md` points Gemini CLI there too).
+  Tools without a discovery path of their own, such as Cursor, read
+  `AGENTS.md` and load a skill from `skills/` by path.
 - **Task Management**: a generated board + an append-only work log, with
   a closed status model.
 - **Guided onboarding**: a four-lane front door (see it run, describe your

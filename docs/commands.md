@@ -13,9 +13,9 @@ related:
 In Claude Code every skill registers a slash command, and the command is the
 skill's name: the `bridge-promote` skill is `/bridge-promote`. There are no
 separate files in `.claude/commands/`, and invoking a skill via the Skill tool
-is equivalent to typing its command. Other tools (Codex, Copilot, Gemini,
-Cursor) load the skill from `skills/` directly and pick it up from the trigger
-phrases in its `description:`.
+is equivalent to typing its command. Other tools find the same skills through
+`.agents/skills` or `.github/skills`, or load them from `skills/` by path, and
+pick one up from the trigger phrases in its `description:`.
 
 Some skills also declare a shorter slash word among those trigger phrases
 (`/overlay`, `/contribute`, `/postmortem`). That short form is a phrase the
