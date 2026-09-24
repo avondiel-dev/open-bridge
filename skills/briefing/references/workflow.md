@@ -66,7 +66,7 @@ An instance with no `upstreams:` list (the OSS seed repo itself, or a fresh clon
 
 | Condition | Action |
 |-----------|--------|
-| Log spans **more than one `{CADENCE}` bucket** (oldest day-block's bucket < today's bucket) | **Archive overdue.** Loud warning: "log.md spans {N} {CADENCE} periods; oldest is {LABEL}. Archive it now?" → if y, run `/archive` inline (which handles oldest-period semantics, see archive workflow) |
+| Log spans **more than one `{CADENCE}` bucket** (oldest day-block's bucket < today's bucket) | **Archive overdue.** Loud warning: "log.md spans {N} {CADENCE} periods, {C} of them closed ({OLDEST_LABEL} to {NEWEST_CLOSED_LABEL}). Archive them now?" → if y, run `/archive` inline, which archives every closed period in one run and leaves the open one in the log (`scripts/archive-buckets.py` computes the plan) |
 | Header label disagrees with the day-blocks, but all blocks sit in **one** bucket | Header drift only, no archive due: silently correct the header to the current period's label and continue. Do not prompt — there is nothing to archive. |
 | Day block missing for today | Append new day block (see format below) |
 | Weekend (Sat/Sun) | Warning: "Weekend. Check in anyway?" — proceed if user confirms |
