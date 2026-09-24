@@ -41,15 +41,9 @@ EXAMPLES = REPO_ROOT / "examples"
 CLUSTERS = ("identity", "infra", "workflow")
 STATUS_SCHEMA = REPO_ROOT / "work" / "templates" / "_schema.status.yaml"
 
-# examples/agency predates the required `sync.bridge_only` key: its tasks bound
-# to GitHub omit it. Fixing that edits examples/agency, which is out of scope
-# for the change that added this suite.
-KNOWN_DRIFT = frozenset({
-    "examples/agency/work/tasks/bigcorp-api-payment-retry/STATUS.md",
-    "examples/agency/work/tasks/cart-a11y-pass/STATUS.md",
-    "examples/agency/work/tasks/startupxyz-onboarding/STATUS.md",
-    "examples/agency/work/done/2026-06/dark-mode-toggle/STATUS.md",
-})
+# Empty on purpose: a file listed here fails today and is owned by someone
+# else's change. It may only shrink.
+KNOWN_DRIFT: frozenset[str] = frozenset()
 
 
 def _plain(data):

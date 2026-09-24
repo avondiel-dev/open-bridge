@@ -7,6 +7,7 @@ created: 2026-06-16
 last_updated: 2026-06-22
 headline: "Dark-mode toggle shipped — persists via localStorage, falls back to OS preference"
 sync:
+  bridge_only: false
   github:
     repo: acme-dev/startupxyz-app
     project: { org: acme-dev, number: 2 }
