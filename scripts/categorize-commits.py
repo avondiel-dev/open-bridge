@@ -436,6 +436,12 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     # CORE auto-update above: the allowlist is deliberate, so a new CORE script
     # says so here or the next change to it silently fails to promote.
     "scripts/overlay-autosync.sh",
+    # Registered with the multi-period archive plan. The bucket arithmetic moved
+    # out of the skill's prose into code because ISO weeks are got wrong by hand,
+    # and an empty answer from a shell date reads as "nothing to archive" rather
+    # than as an error. validate.yml runs its contract.
+    "scripts/archive-buckets.py",
+    "scripts/tests/test_archive_buckets.py",
 })
 
 

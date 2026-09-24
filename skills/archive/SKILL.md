@@ -1,7 +1,7 @@
 ---
 name: archive
 description: >-
-  Archive the current period — collect log entries, generate summary, distil
+  Archive EVERY closed period still in the log, in one run — collect log entries, generate one summary per period, distil
   durable facts into the memory base (propose-then-confirm), reset log.md,
   check upstream. Period follows work.archive_cadence (weekly | bi-weekly |
   monthly | quarterly | yearly). Supports --force mode.
