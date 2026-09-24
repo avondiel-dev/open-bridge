@@ -203,3 +203,63 @@ def test_buckets_come_out_oldest_first():
     )
     assert labels(to_archive(ab.plan(text, "weekly", TODAY))) == [
         "Week 28", "Week 29", "Week 34"], "file order is not chronological order"
+
+
+# ----------------------------------------------------------- follow-ups to #248
+
+@pytest.mark.parametrize("cadence,today,start,end", [
+    ("weekly",    dt.date(2026, 9, 24), "2026-07-13", "2026-07-19"),
+    ("bi-weekly", dt.date(2026, 9, 24), "2026-07-13", "2026-07-26"),
+    ("monthly",   dt.date(2026, 9, 24), "2026-07-01", "2026-07-31"),
+    ("quarterly", dt.date(2026, 11, 1), "2026-07-01", "2026-09-30"),
+    ("yearly",    dt.date(2027, 1, 5),  "2026-01-01", "2026-12-31"),
+])
+def test_each_period_carries_its_own_bounds(cadence, today, start, end):
+    """Phase 3's `git log` window is the PERIOD, not the first and last day-block.
+
+    A single block on Wednesday of a week still stands for Monday to Sunday: a
+    commit on a day with no log row belongs to that period too.
+    """
+    text = log(block("Wed", "15", "07", "2026-07-15 09:00"))
+    (p,) = to_archive(ab.plan(text, cadence, today))
+    assert (p["start"], p["end"]) == (start, end)
+    assert (p["first"], p["last"]) == ("2026-07-15", "2026-07-15"), \
+        "first/last stay what they were: the day-blocks actually present"
+
+
+def test_a_rowless_block_is_never_placed_in_the_future():
+    """No row to date it, the header is January: 28.12 is last December."""
+    text = log(block("Mon", "28", "12"),
+               block("Mon", "04", "01", "2027-01-04 09:00"),
+               header="# Week 1 — 2027-01-04 to 2027-01-10")
+    rows = ab.plan(text, "monthly", dt.date(2027, 1, 6))
+    assert labels(rows) == ["December 2026", "January 2027"]
+    assert [r["archive"] for r in rows] == [True, False]
+
+
+def test_a_row_dated_year_is_trusted_even_if_it_looks_late():
+    """Only a GUESSED year is corrected; a year the row states is not second-guessed."""
+    text = log(block("Mon", "28", "12", "2026-12-28 09:00"))
+    rows = ab.plan(text, "monthly", dt.date(2026, 12, 29))
+    assert labels(rows) == ["December 2026"]
+
+
+def test_bi_weekly_week_53_stands_alone():
+    """2026 has an ISO week 53; there is no week 54 to pair it with."""
+    text = log(block("Mon", "28", "12", "2026-12-28 09:00"))
+    (p,) = to_archive(ab.plan(text, "bi-weekly", dt.date(2027, 2, 1)))
+    assert (p["label"], p["stem"]) == ("Week 53", "2026-W53")
+    assert (p["start"], p["end"]) == ("2026-12-28", "2027-01-03")
+
+
+def test_an_unreadable_config_cadence_is_said_out_loud(tmp_path, monkeypatch, capsys):
+    """The fallback to weekly is right; doing it silently is not."""
+    logf = tmp_path / "log.md"
+    logf.write_text(log(block("Mon", "13", "07", "2026-07-13 09:00")), encoding="utf-8")
+    cfg = tmp_path / "bridge-config.yaml"
+    cfg.write_text("work:\n  archive_cadence: monthly\n", encoding="utf-8")
+    monkeypatch.setitem(__import__("sys").modules, "yaml", None)   # ImportError
+    rc = ab.main(["--log", str(logf), "--config", str(cfg), "--today", "2026-09-24"])
+    assert rc == 0
+    err = capsys.readouterr().err
+    assert "bridge-config.yaml" in err and "weekly" in err

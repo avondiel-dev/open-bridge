@@ -43,7 +43,8 @@ python3 scripts/archive-buckets.py --json          # add --force for the open pe
 
 It resolves the cadence from config, parses every day-block, and returns one
 entry per period present in the log — oldest first — each carrying `label`,
-`dir`, `stem`, `rows`, `day_blocks`, `closed` and `archive`.
+`dir`, `stem`, `rows`, `day_blocks`, `first`/`last` (the day-blocks present),
+`start`/`end` (the period itself, inclusive), `closed` and `archive`.
 
 **One run archives every period with `archive: true`.** That is the whole
 contract, and it is worth stating plainly because the previous version of this
@@ -82,8 +83,10 @@ ones are what need draining.
 Loop over the plan's `archive: true` entries, oldest first. For each:
 
 1. Take that period's day-blocks (the plan names them in `day_blocks`)
-2. `git log --oneline --after="{first}" --before="{last}"` — the bounds come
-   from the plan entry, not from a hardcoded Mon/Sun
+2. `git log --oneline --since="{start} 00:00" --until="{end} 23:59:59"` — the
+   PERIOD bounds from the plan entry, not `first`/`last`. A commit on a day with
+   no log row still belongs to the period, and a bare date in `--before` cuts
+   the last day off.
 3. Read `work/archive/days/` for any daily insights in range
 4. Read board.md done section for the month
 
