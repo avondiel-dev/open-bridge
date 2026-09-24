@@ -134,6 +134,11 @@ your-bridge/
     └── done/2026-06/          closed, archived monthly
 ```
 
+The tree above stops at what a fresh instance edits day to day. It omits the
+tooling and reference layers, `bin/`, `scripts/`, `docs/`, `examples/`,
+`themes/`, `trackers/`, `rules/` and `agents/`, laid out in
+[docs/structure.md](docs/structure.md).
+
 A task's `STATUS.md` starts with YAML frontmatter ([template](work/templates/STATUS.md), [schema](work/templates/_schema.status.yaml)); `status` is a closed enum (`backlog`, `doing`, `review`, `done`):
 
 ```yaml
@@ -203,7 +208,7 @@ A `CLAUDE.md` is one flat instruction sheet. A Bridge is a structured workspace 
 
 ## Status
 
-Early and newly public. BKS open-bridge is used every day by the BKS-Lab team on its own instances, and besides those there are closed instances run for other companies. What is proven, what is still a bet, and what is open lives in one place: [ROADMAP.md](ROADMAP.md). React on the issues you want most; that is how priorities get decided. Found a rough edge? [Open an issue](https://github.com/bks-lab/open-bridge/issues).
+Early and newly public. BKS open-bridge is used every day by the BKS-Lab team on its own instances, and besides those there are closed instances run for other companies. Every merge to `main` ships as its own release ([releasing.md](docs/releasing.md)), so the version number moves fast by design; it tracks merges, not maturity. What is proven, what is still a bet, and what is open lives in one place: [ROADMAP.md](ROADMAP.md). React on the issues you want most; that is how priorities get decided. Found a rough edge? [Open an issue](https://github.com/bks-lab/open-bridge/issues).
 
 ## Returning?
 
