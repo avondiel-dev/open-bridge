@@ -1131,7 +1131,7 @@ auf PR #214.</div>
 
     <p class="cap-more reveal"><a href="https://github.com/bks-lab/open-bridge/tree/main/docs" target="_blank" rel="noopener"><span data-lang="en">And the full layout (every path, the CORE/USER split, the rest) is in the docs →</span><span data-lang="de">Und das ganze Layout (jeder Pfad, der CORE/USER-Split, der Rest) steht in den Docs →</span></a></p>
 
-    <p class="cap-honesty reveal"><span data-lang="en">Everything here ships and runs today. Roadmap items (workspace separation as the default, and more) live in the honesty board below, labelled as bets, not features.</span><span data-lang="de">Alles hier wird mitgeliefert und läuft heute. Roadmap-Punkte wie die Workspace-Trennung als Default stehen unten im Status-Board, als Wetten gekennzeichnet, nicht als Features.</span></p>
+    <p class="cap-honesty reveal"><span data-lang="en">Everything here ships and runs today. What is not built yet (workspace separation as the default, and more) is in the status section below, labelled as a bet or open, not as a feature.</span><span data-lang="de">Alles hier wird mitgeliefert und läuft heute. Was noch nicht gebaut ist, etwa die Workspace-Trennung als Default, steht unten im Status-Abschnitt, als Wette oder offen gekennzeichnet, nicht als Feature.</span></p>
   </div>
 </section>
 
@@ -1174,38 +1174,11 @@ auf PR #214.</div>
     <div class="sec-head reveal">
       <p class="eyebrow"><span data-lang="en">The evidence boundary</span><span data-lang="de">Die Beweis-Grenze</span></p>
       <h2 class="h1"><span data-lang="en">What's proven, what's a bet, what's open.</span><span data-lang="de">Was bewiesen ist, was eine Wette ist, was offen ist.</span></h2>
-      <p><span data-lang="en">BKS open-bridge runs the company that builds it; every feature exists because we needed it on a real workday. You're early: it's newly public, no external users yet. The ledger below says exactly what that means.</span><span data-lang="de">BKS open-bridge betreibt die Firma, die es baut. Jedes Feature existiert, weil wir es an einem echten Arbeitstag gebraucht haben. Du bist früh dran: frisch öffentlich, noch ohne externe Nutzer. Was genau das heißt, steht ehrlich im Status-Board.</span></p>
+      <p><span data-lang="en">BKS open-bridge is built and used on real workdays by the BKS-Lab team, on its own instances and on the closed instances it runs for other companies. Nobody outside those instances has reported using it yet, so none of this is a market test.</span><span data-lang="de">BKS open-bridge wird vom BKS-Lab-Team an echten Arbeitstagen gebaut und genutzt, auf den eigenen Instanzen und auf geschlossenen Instanzen, die das Team für andere Firmen betreibt. Außerhalb dieser Instanzen hat bisher niemand eine Nutzung gemeldet, ein Markttest ist das also nicht.</span></p>
     </div>
 
-    <div class="board3 reveal">
-      <div class="bcol proven">
-        <div class="head"><span class="dot"></span><span class="t">Proven</span><span class="s" data-lang="en">built · self-used N=2</span><span class="s" data-lang="de">gebaut · selbst genutzt N=2</span></div>
-        <ul>
-          <li><span data-lang="en">The three-cluster layout (<b>identity / infra / workflow</b>), the Task-Management system (board, log, per-task STATUS), the CORE/USER branch split, personas, standing orders, and the skills layer all run from a fresh clone today.</span><span data-lang="de">Das Drei-Cluster-Layout (<b>identity / infra / workflow</b>), das Task-Management (Board, Log, Per-Task-STATUS), der CORE/USER-Branch-Split, Personas, Standing Orders und die Skills-Schicht laufen heute direkt aus einem frischen Clone heraus.</span></li>
-          <li><span data-lang="en"><b>Scope-routing works in practice</b>: each file carries a scope (core / org / user); <code>/promote</code> routes per scope. Demonstrated, not theoretical.</span><span data-lang="de"><b>Scope-Routing funktioniert in der Praxis</b>: jede Datei trägt einen Scope (core / org / user); <code>/promote</code> routet pro Scope (demonstriert, nicht theoretisch).</span></li>
-          <li><span data-lang="en"><b>GitHub task sync works</b> for our own use: the agent already knows whether a task also exists in GitHub and syncs it. Jira is untested.</span><span data-lang="de"><b>GitHub-Task-Sync funktioniert</b> für unseren Eigengebrauch. Der Agent weiß bereits, ob ein Task auch in GitHub existiert, und syncht ihn. Jira ist ungetestet.</span></li>
-        </ul>
-      </div>
-
-      <div class="bcol bet">
-        <div class="head"><span class="dot"></span><span class="t">Bet</span><span class="s" data-lang="en">falsifiable wagers</span><span class="s" data-lang="de">falsifizierbare Wetten</span></div>
-        <ul>
-          <li><span data-lang="en"><b>Markdown + YAML + git</b> is the substrate each new generation of agent runtimes keeps reading natively, because models read text, not a vendor API. <em>Falsified if</em> the dominant stack forces a vendor schema (Notion-MCP / Linear-MCP) as the standard.</span><span data-lang="de"><b>Markdown + YAML + Git</b> ist das Substrat, das jede neue Generation von Agenten-Runtimes nativ weiterliest, weil Modelle Text lesen, keine Vendor-API. <em>Falsifiziert, wenn</em> der dominante Stack ein Vendor-Schema (Notion-MCP / Linear-MCP) als Standard erzwingt.</span></li>
-          <li><span data-lang="en">A <b>lean, opinionated, MIT-OSS method</b> beats a vendor workflow-builder for users who want to switch models freely. <em>Falsified if</em> Cursor/Anthropic ship a first-class markdown-in-git mode.</span><span data-lang="de">Eine <b>schlanke, meinungsstarke MIT-OSS-Methode</b> schlägt einen Vendor-Workflow-Builder für Nutzer, die Modelle frei wechseln wollen. <em>Falsifiziert, wenn</em> Cursor/Anthropic einen erstklassigen Markdown-in-Git-Modus liefern.</span></li>
-          <li><span data-lang="en"><b>Workspace separation as a hard default</b>, once built, is the right call for most users, not an opt-in switch (the default itself is still on the roadmap; see Open).</span><span data-lang="de"><b>Workspace-Trennung als harter Default</b> ist, sobald gebaut, für die meisten Nutzer die richtige Wahl, kein Opt-in-Schalter (der Default selbst steht noch auf der Roadmap; siehe Open).</span></li>
-        </ul>
-      </div>
-
-      <div class="bcol open">
-        <div class="head"><span class="dot"></span><span class="t">Open</span><span class="s" data-lang="en">unsolved</span><span class="s" data-lang="de">ungelöst</span></div>
-        <ul>
-          <li><span data-lang="en"><b>Zero external users today</b>: newly public, not yet adopted. Until real users arrive, every statement about a target audience is a hypothesis, not a market test.</span><span data-lang="de"><b>Heute null externe Nutzer</b>: frisch öffentlich, noch nicht verbreitet. Bis echte Nutzer kommen, ist jede Aussage über eine Zielgruppe eine Hypothese, kein Markttest.</span></li>
-          <li><span data-lang="en"><b>Workspace-separation-as-default and the "ask if unplaceable" rule are not yet built</b> into BKS open-bridge; the hard-silo vs soft-folder default is unresolved.</span><span data-lang="de"><b>Workspace-Trennung-als-Default und die „frage, wenn unzuordenbar"-Regel sind noch nicht</b> in BKS open-bridge eingebaut; harter Silo vs. weicher Ordner ist ungeklärt.</span></li>
-          <li><span data-lang="en"><b>First-session value is thin</b>: a fresh clone gives little reward until <code>work/log.md</code> is filled.</span><span data-lang="de"><b>Der Erst-Session-Wert ist dünn</b>: ein frischer Clone gibt wenig zurück, bis <code>work/log.md</code> gefüllt ist.</span></li>
-          <li><span data-lang="en"><b>Terminology cleanup is pending</b> (work-task → Task-Management; the <code>work/</code> folder made unambiguous).</span><span data-lang="de"><b>Begriffs-Bereinigung steht aus</b> (work-task → Task-Management; der <code>work/</code>-Ordner eindeutig gemacht).</span></li>
-        </ul>
-      </div>
-    </div>
+    <p class="cap-intro reveal"><span data-lang="en"><b>Proven</b> in that daily use: the three-cluster layout, Task Management, the CORE/USER split, personas, standing orders, the skills layer and scope routing. <b>A bet</b>: that markdown, YAML and git stay the substrate agent runtimes read natively. <b>Open</b>: workspace separation as the default, and a first session that pays off before the log fills up.</span><span data-lang="de"><b>Bewiesen</b> in diesem täglichen Gebrauch: das Drei-Cluster-Layout, Task Management, der CORE/USER-Split, Personas, Standing Orders, die Skills-Schicht und das Scope-Routing. <b>Eine Wette</b>: dass Markdown, YAML und Git das Substrat bleiben, das Agenten-Runtimes nativ lesen. <b>Offen</b>: Workspace-Trennung als Default und eine erste Session, die sich lohnt, bevor das Log gefüllt ist.</span></p>
+    <p class="cap-more reveal"><a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md#whats-proven-whats-a-bet-whats-open" target="_blank" rel="noopener"><span data-lang="en">The full ledger, each bet with what would falsify it, lives in ROADMAP.md →</span><span data-lang="de">Das vollständige Verzeichnis, jede Wette mit dem, was sie widerlegen würde, steht in ROADMAP.md →</span></a></p>
 
     <p class="cap-more reveal"><span data-lang="en">If this resonates: <a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">star the repo</a> and upvote the <a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP</a> issues you want most. That's literally the signal priorities are decided by.</span><span data-lang="de">Wenn dich das anspricht: <a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">Stern aufs Repo</a> und stimm für die <a href="https://github.com/bks-lab/open-bridge/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP</a>-Issues, die du am dringendsten willst. Genau daraus entsteht die Priorisierung.</span></p>
   </div>
@@ -1408,7 +1381,7 @@ auf PR #214.</div>
       </div>
       <div class="faq-item reveal">
         <h3 class="faq-q"><span data-lang="en">How early is this, really?</span><span data-lang="de">Wie früh ist das wirklich?</span></h3>
-        <p class="faq-a"><span data-lang="en">Early. It is newly public with no external users yet, and it runs the company that builds it every working day. That is the honest pair: proven in daily use by three people, unproven by anyone else. The status board above labels each piece as shipped, a bet, or open.</span><span data-lang="de">Früh. Es ist frisch öffentlich, bisher ohne externe Nutzer, und es betreibt die Firma, die es baut, an jedem Arbeitstag. Das ist das ehrliche Paar: im täglichen Gebrauch von drei Leuten bewährt, von sonst niemandem. Die Statustafel oben kennzeichnet jedes Stück als ausgeliefert, als Wette oder als offen.</span></p>
+        <p class="faq-a"><span data-lang="en">Early. It is newly public, and nobody outside the BKS-Lab team's own instances and the closed instances it runs for other companies has reported using it yet. That is the honest pair: proven in daily use there, unproven anywhere else. The ledger in ROADMAP.md labels each piece as proven, a bet, or open.</span><span data-lang="de">Früh. Es ist frisch öffentlich, und außerhalb der eigenen Instanzen des BKS-Lab-Teams und der geschlossenen Instanzen, die es für andere Firmen betreibt, hat bisher niemand eine Nutzung gemeldet. Das ist das ehrliche Paar: dort im täglichen Gebrauch bewährt, anderswo unbewiesen. Das Verzeichnis in ROADMAP.md kennzeichnet jedes Stück als bewiesen, als Wette oder als offen.</span></p>
       </div>
     </div>
   </div>

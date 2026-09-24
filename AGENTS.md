@@ -1,4 +1,4 @@
-# The Bridge — Agent Instructions
+# BKS open-bridge: Operating Manual
 
 This file is the **canonical, tool-agnostic operating manual** for this repo —
 session start flow, rules, task management, agents, standing orders, commands. It is
