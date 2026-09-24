@@ -22,8 +22,9 @@ that would otherwise be flat top-level folders, so dissolving them would make th
 *larger*, not smaller.)
 
 1. **Start here** — `README.md` + `AGENTS.md`, the two onboarding seeds
-   (`bridge-config.yaml.template`, `ecosystem.example.yaml`), and the full sample
-   instance `examples/agency/`.
+   (`bridge-config.yaml.template`, `ecosystem.example.yaml`), and the two full
+   sample instances `examples/agency/` (a two-client agency) and
+   `examples/portfolio/` (one person with several hats).
 2. **Configuration — the 3 cluster-wrappers** (the anti-sprawl move): `identity/`
    (WHO am I, to WHOM), `infra/` (WHERE runs what), `workflow/` (WHAT happens when).
 3. **Behaviour** — `skills/`, `rules/`, `protocols/`, `themes/`, `trackers/`.

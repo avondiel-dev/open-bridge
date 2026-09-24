@@ -19,4 +19,4 @@
 - [ ] Works with both `professional` and `professional-de` themes
 - [ ] YAML frontmatter has all required fields
 - [ ] Existing commands/protocols still work
-- [ ] Examples updated if applicable (examples/agency/)
+- [ ] Examples updated if applicable (examples/agency/, examples/portfolio/)
