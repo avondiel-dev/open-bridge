@@ -81,7 +81,8 @@ Run this every time, in order:
 | `workflow/calendars/*.yaml` | `workflow/calendars/_template.yaml` | `workflow/calendars/_schema.yaml` | `examples/agency/workflow/calendars/entries.yaml` |
 | `work/tasks/<slug>/STATUS.md` | `work/templates/STATUS.md` | `work/templates/_schema.status.yaml` | any current finite task |
 | `protocols/standing-orders/<name>.md` | `protocols/standing-orders/_template.md` | — | `protocols/standing-orders/task-sync.md` |
-| `skills/<name>/SKILL.md` | — | — | any existing skill, e.g. `skills/mandants/SKILL.md` |
+| `skills/<name>/SKILL.md` | — | — | any existing skill, e.g. `skills/mandants/SKILL.md`; then § Writing skill steps below |
+| `skills/<name>/LEARNINGS.md` + its routing block | `docs/skill-learnings.md` § Templates | `scripts/check-skill-learnings.py` | the template itself |
 | Doc with frontmatter (`docs/*.md`, `<folder>/README.md`) | — | — | shape in CLAUDE.md § Documentation Navigation |
 
 ## Common gotchas (real history)
@@ -111,6 +112,56 @@ Run this every time, in order:
 - **English-only in `open-bridge` scope.** Templates, schemas, and `core`-scope
   docs/skills must be English. Mixed DE/EN is OK in `org`/`user` scope only.
   When in doubt: write English in the template, German in the user-instance.
+
+## Writing skill steps: procedure or workaround
+
+A skill is usually written in one session by whatever model runs it, then
+executed by others: a sub-agent on a smaller tier, or another harness entirely.
+Two kinds of step read alike and age differently:
+
+- **Procedure:** what to do and why. "Read the project config, then check the
+  field the step names." Any capable model can follow it and can improve on it.
+- **Workaround:** a step that exists only to keep one model from failing: a bare
+  literal command in place of a described intent, a string-conversion rule, a
+  fallback for one model's parsing quirk. It helps the model it was written for
+  and can hold a stronger one back from doing the step properly.
+
+**Mark every workaround** directly above the line it guards, naming who it is
+for (a model tier such as `small models`, or a harness name) and the failure it
+prevents:
+
+```markdown
+<!-- workaround(small models): they split this pipeline across calls and lose
+     the intermediate file; a larger model can write one script instead -->
+Run exactly: `jq -r '.items[].id' out.json > ids.txt && wc -l ids.txt`
+```
+
+A procedure gets no marker. Keep a workaround when it is the only reliable path
+for a step every model trips on; the marker is what lets a later author, or a
+stronger executor, tell it apart from the intent and replace it when the reason
+is gone.
+
+**Worked example.** A first draft of a report step read:
+
+```markdown
+3. Run `python3 -c "import json;print(len(json.load(open('r.json'))['rows']))"`
+   and paste the number. Never compute it in your head.
+```
+
+Rewritten, the intent leads and the workaround is labelled:
+
+```markdown
+3. Count the rows in `r.json` and state the number with its source.
+   <!-- workaround(small models): they estimate counts from a truncated read;
+        the one-liner forces a real count -->
+   On a small-tier executor, run `python3 -c "import json;print(len(json.load(open('r.json'))['rows']))"`.
+```
+
+This is a **hypothesis carried over from benchmark runs, not a measured
+open-bridge result.** WikiSkill (Tang et al., arXiv:2608.27454v1, section 4.2.2,
+page 9, Table 2 on page 10) reports a skill written by a small model dropping a
+stronger model's score from 50.5% to 18.1% on one benchmark, traced to such
+low-level workarounds. Nothing in this repo has measured the effect yet.
 
 ## When you legitimately don't have a template
 

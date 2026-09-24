@@ -53,7 +53,8 @@ properties:
           trigger-correction: from work/_learning/trigger-corrections.md
           manual: user wrote it directly via /bridge-learn
           curator-suggestion: from bridge-curator weekly consolidation pass
-            (Library / Queue / User-Pattern phases — see skills/bridge-curator/)
+            (Library / Queue / User-Pattern phases, plus the on-request
+            Learnings pass; see skills/bridge-curator/)
           archive-distill: from /archive Phase 5 — a durable fact distilled
             out of the log rows for the period being archived, before log.md
             is reset. Always target.type=memory. Proposed, never written

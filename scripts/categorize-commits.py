@@ -82,6 +82,12 @@ USER_PATTERNS = [
     # This is the FALLBACK for undeclared branding; a theme that declares
     # `meta.scope:` re-tiers itself (and its logo) earlier — see _declared_branding_scope.
     r"^skills/bridge-greeting/assets/logos/(?!bridge\.txt$)",
+    # A skill's lesson journal and provenance record hold THIS instance's
+    # lessons, proposal ids and reasons, even inside a scope:core skill folder
+    # (docs/skill-learnings.md). A lesson that matured is promoted into
+    # references/, which ships; the journal and the record never do.
+    r"^skills/[^/]+/LEARNINGS\.md$",
+    r"^skills/[^/]+/references/provenance\.md$",
     # themes/ is whole-folder CORE, so an instance theme is a structural exception.
     r"^themes/(?!_)(?!professional(?:-de)?\.yaml$)[^/]+\.yaml$",
     # workflow/checks/ — the whole surface is instance-local (decision 2026-08-01).
@@ -242,6 +248,7 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     "scripts/check-figure-counts.py",
     "scripts/check-inline-scripts.py",
     "scripts/check-site-links.py",
+    "scripts/check-skill-learnings.py",
     "scripts/extract-bridge-state.py",
     "scripts/extract-frontmatter.py",
     "scripts/gen-board.py",
@@ -300,6 +307,7 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     "scripts/tests/test-workspace-skill.sh",
     "scripts/tests/test-workspace.sh",
     "scripts/tests/test_learning_ledger.py",
+    "scripts/tests/test_skill_learnings.py",
     "scripts/tests/test_memory_location.py",
     "scripts/tests/test_okf_export.py",
     "scripts/tracker-sync.py",

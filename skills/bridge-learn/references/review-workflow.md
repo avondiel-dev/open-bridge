@@ -97,9 +97,8 @@ What the script fills in and where from:
 For a `target.type: skill` proposal, `--to implemented` also appends one line
 to `skills/<name>/references/provenance.md`, in the format `SKILL.md` accept
 step 8 defines. That is the skill's own record of which proposal put a rule there and why,
-readable without the trail. The skill-local learning journal proposed in #163
-would live in the same directory; its routing block should point here rather
-than repeat it.
+readable without the trail. A skill that keeps a lesson journal points at this
+file from its routing block ([`docs/skill-learnings.md`](../../../docs/skill-learnings.md)).
 
 It refuses when the file's folder or `status:` does not match `--to` yet (move
 the file and set the status first), when the proposal is already recorded in

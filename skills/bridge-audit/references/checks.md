@@ -592,6 +592,20 @@ run inside it?* If the answer is "this one's", the pointer is wrong.
 
 ---
 
+## Check 14: Skill learnings pairing
+
+A skill's lesson journal (`skills/<name>/LEARNINGS.md`) and its routing block
+in `SKILL.md` (marked `<!-- lessons-routing -->`) exist together or not at all
+([`docs/skill-learnings.md`](../../../docs/skill-learnings.md)). A journal with
+no block is never read; a block with no journal sends lessons nowhere.
+
+**Algorithm:** run `python3 scripts/check-skill-learnings.py`. Each line it
+prints before the summary is one **P2** finding. Exit 0 means none. A skill with
+neither half is not a finding: the convention is opt-in.
+
+**Fix mode:** none. Adding the missing half means writing either the routing
+block (template in the doc) or the first journal entry, a content decision.
+
 ## --cross-repo mode
 
 **Prerequisites:** `bridge-config.yaml.upstreams[]` defines targets and `gh` is authenticated.
@@ -626,3 +640,4 @@ not marked fixable below: print the suggested fix, leave application to the user
 | 9 Skill-tree sync | No | Cross-repo mutation — defer to `/bridge-sync` Step 0 |
 | 11 Memory-gate | No | Promotion needs translation + tier choice — human-authored move |
 | 12 Config-driven | No | Move-to-config is a content move — advisory only |
+| 14 Skill learnings | No | The missing half is content: a routing block or a first entry |

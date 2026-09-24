@@ -21,6 +21,9 @@ discipline that keeps generic CORE separate from instance-specific content.
 **Decision:**
 - Gate or workflow the agent must follow → `rules/`.
 - Explanation a human reads to understand the system → `docs/`.
+- A lesson about **one skill** (a trap, convention or example of using it),
+  needed by that skill's next run → its `LEARNINGS.md` (§ A lesson about one
+  skill). Checked first: it is the narrower case of the next line.
 - Non-obvious fact / workaround / decision → memory.
 - Pointer/routing rule needed every session → a short `CLAUDE.md` line
   linking to the `rules/` or `docs/` detail.
@@ -77,6 +80,23 @@ Examples that are **facts → memory** (instance-specific or hard-won detail):
 Litmus test: if a teammate cloning the Bridge would have to **behave**
 differently, it's a gate → `rules/`. If they'd only need to **know**
 something to avoid a trap, it's a fact → memory.
+
+## A lesson about one skill
+
+Route a lesson by **who needs it next**, to exactly one place:
+
+| Who needs it next | Destination |
+|---|---|
+| The next run of one specific skill (a trap, a convention, a worked example of that skill) | `skills/<name>/LEARNINGS.md`, dated; appended in-session when the user names the lesson, no proposal |
+| Every session, whatever it runs; or a fact about the world, not a skill | memory (write-time gate above) |
+| A change to how a skill, rule or standing order behaves, or a lesson spanning skills | a `/bridge-learn` proposal |
+
+Writing the same lesson to two of these is a failure, not thoroughness. The
+journal is opt-in: the first entry creates `LEARNINGS.md` and the routing block
+in `SKILL.md` together, from the templates in
+[`docs/skill-learnings.md`](../docs/skill-learnings.md); a skill with neither is
+fine. Matured entries move into `references/` through
+`/bridge-curator --pass learnings <skill>`.
 
 ## Rules are tiered by folder
 
