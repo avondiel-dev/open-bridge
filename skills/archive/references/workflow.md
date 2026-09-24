@@ -1,4 +1,4 @@
-# Week Archive — Workflow
+# Archive — Workflow
 
 Trigger: `/archive`, `/archive --force`
 
@@ -33,48 +33,69 @@ migrate anything when this key is introduced.
 The raw backup sits beside the summary with a `-raw` suffix
 (`{stem}-raw.md`), whatever the cadence.
 
-### 2b. Pick the target period
+### 2b. Read the plan — EVERY closed period, in one run
 
-**Content-driven, not calendar-driven.** Look at what's actually in
-`work/log.md`, not at today's weekday:
+**Do not compute this by hand.** The plan comes from one command:
 
-1. Parse the header — `# Week {N}` (or legacy `# KW {N}`).
-2. Parse all day-block headers — `^## \S+ ([0-9]{2})\.([0-9]{2})([^0-9.]|$)`
-   (any locale weekday token — see rules/language-policy.md). The weekday
-   name is display-only; derive the date from the DD.MM capture, never the
-   token.
-3. Map each day-block date to its **bucket** under the resolved cadence
-   (per the table above), and do the same for the header's week.
-4. **Archive target = the oldest bucket with content still in the log.**
-5. If `target_bucket < TODAY_bucket` → archive it.
-6. If `target_bucket == TODAY_bucket` → "no closed {period} to archive; pass
-   `--force` to archive the current (in-progress) {period}" — exit unless
-   `--force`.
+```bash
+python3 scripts/archive-buckets.py --json          # add --force for the open period
+```
 
-Under `weekly` this is identical to the previous week-only logic; the
-bucket function is just `ISO week`.
+It resolves the cadence from config, parses every day-block, and returns one
+entry per period present in the log — oldest first — each carrying `label`,
+`dir`, `stem`, `rows`, `day_blocks`, `closed` and `archive`.
 
-Why this beats the day-of-week heuristic: heading drift (header says
-KW{N} but day-blocks reach KW{N+1}) is the common case after a missed
-Sunday archive. The heuristic "Saturday → archive CURRENT week" picks
-the wrong target when the user actually wants the old one drained out
-first.
+**One run archives every period with `archive: true`.** That is the whole
+contract, and it is worth stating plainly because the previous version of this
+phase said "archive target = the oldest bucket" and Phase 6 then reset the WHOLE
+log. On a log holding twelve periods that wrote one summary, filed all twelve
+periods' rows under that one period's `-raw` name, and reset the rest away. The
+run was not repeatable either: after the reset there was nothing left to archive.
 
-`--force` overrides everything and archives whatever the header says.
+Three properties the command owns, so this file does not have to:
 
-## Phase 3: Collect
+- **The year comes from the rows, not from today.** A day-block header is
+  `## Mon 14.04` with no year by design; the rows inside carry a full
+  `| YYYY-MM-DD HH:MM |` stamp, which is why that format is frozen. Guessing the
+  current year turns every January archive of a December period into a block a
+  year in the future.
+- **The weekday token is display-only** (`Mon` / `Mo` / `lun.`), per
+  rules/language-policy.md. The date comes from the DD.MM capture.
+- **An impossible date is skipped, not guessed.** `## Mon 31.02` is a typo, and
+  inventing March 3rd for it would file real rows under a period they do not
+  belong to.
 
-1. Parse log.md day-blocks for the target period
-2. `git log --oneline --after="{period_start}" --before="{period_end}"` —
-   the bounds come from the resolved bucket, not from a hardcoded Mon/Sun
-3. Read `work/archive/days/` for any daily insights
+If nothing has `archive: true` → "no closed {period} to archive; pass `--force`
+to archive the current (in-progress) {period}" and exit.
+
+**`--force` means: also take the period that is still open.** It does not change
+which closed periods are taken — those are always all of them. A scheduled run
+never forces: it would be archiving a half-written day.
+
+Why content-driven beats a day-of-week heuristic: heading drift (header says
+KW{N} but day-blocks reach KW{N+1}) is the common case after a missed archive,
+and "Saturday → archive the CURRENT week" picks the wrong target when the old
+ones are what need draining.
+
+## Phase 3: Collect — once per planned period
+
+Loop over the plan's `archive: true` entries, oldest first. For each:
+
+1. Take that period's day-blocks (the plan names them in `day_blocks`)
+2. `git log --oneline --after="{first}" --before="{last}"` — the bounds come
+   from the plan entry, not from a hardcoded Mon/Sun
+3. Read `work/archive/days/` for any daily insights in range
 4. Read board.md done section for the month
 
-## Phase 4: Generate Summary
+## Phase 4: Generate Summaries — one file per period
 
-Create the summary at the cadence-resolved path from Phase 2a
-(`work/archive/{bucket_dir}/{stem}.md`) using
-`work/templates/week-summary.md`:
+For each planned period, create its summary at the path the plan gives
+(`{dir}/{stem}.md`) using `work/templates/week-summary.md`.
+
+**Every summary AND every raw backup is written before Phase 6 touches
+`log.md`.** Verify each file exists and is non-empty first. A reset that runs
+while one archive failed to write loses that period outright, and the log is the
+only place those rows still exist.
 - Overview metrics (commits, tasks completed, repos touched)
 - Daily overview
 - Completed tasks
@@ -91,6 +112,17 @@ longer cadence, read them as "the archived period".
 `log.md`.** The summary from Phase 4 is a *narrative* of a period; this
 phase extracts the handful of facts that should still be true, and still
 recalled, long after that period stops being interesting.
+
+**ONE pass over every archived period, not one pass each.** Durable facts do not
+respect period boundaries: an insight spanning two weeks would otherwise be
+proposed twice or missed, and asking a human for N separate confirm-cycles over
+the same 60 rows exhausts the judgement this phase depends on. So: gather the
+candidates across all planned periods, de-duplicate, and present one list. Each
+candidate's `evidence` still points at the raw file of the period it came from,
+so provenance stays per-period even though the decision is not.
+
+Expect the filter to bite harder here, not less: twelve periods of bookkeeping
+still yield only a handful of durable facts.
 
 Why it exists: `work/archive/` has **no reader**. Nothing in the Bridge
 loads an archived summary back into context — not session-start, not
@@ -154,6 +186,14 @@ Per candidate:
 Offer `[A] accept all` / `[R] reject all` once the list is shown, for the
 common case where the filter did its job.
 
+**Unattended runs take `[d]` for every candidate.** A scheduled archive has no
+human at the prompt, and `rules/learning-autonomy.md` is not relaxed by the
+absence of one: the Bridge proposes, the human decides. So the mechanical phases
+complete and every candidate lands as a pending proposal, reviewed later through
+`/bridge-learn` — which `/briefing` surfaces once the pending count passes
+`learning.proposals.auto_surface_threshold`. Nothing is written to the memory
+base on the Bridge's own authority, scheduled or not.
+
 **Deferred candidates** become normal learning proposals in
 `work/_learning/proposals/`, so the existing review surface handles them
 with no parallel queue:
@@ -199,10 +239,15 @@ is indistinguishable from an invented one.
 or when the memory base is unreachable — warn, continue to the reset, and
 say plainly that nothing was distilled. Never block the archive on it.
 
-## Phase 6: Reset log.md
+## Phase 6: Reset log.md — per-period raws, then ONE reset
 
-1. Backup to `work/archive/{bucket_dir}/{stem}-raw.md`
-2. New log.md with a fresh header for the current period + today's day-block
+1. **Per planned period**, write `{dir}/{stem}-raw.md` containing **only that
+   period's day-blocks**. Not the whole log under one period's name: that was
+   the defect, and it is what made twelve periods of history unrecoverable as
+   themselves. Verify every raw exists and is non-empty before step 2.
+2. New log.md with a fresh header for the current period, **retaining the
+   day-blocks of any period the plan left open** (`archive: false`) plus today's
+   day-block. Only what was archived leaves the log.
 3. Carry over only unchecked `[ ]` items
 4. **Regenerate the `**Active Focus:**` line** — don't keep the stale one
    from the archived period. Build it from the top 3-4 entries in
@@ -233,8 +278,19 @@ hand-maintained timestamp that can drift from what actually happened.
 
 ## Phase 8: Confirmation
 
-Show: "Archived {period_label}: {n} commits, {n} tasks, {n} memories distilled.
-Summary: work/archive/{bucket_dir}/{file}."
+Show one line per archived period, then the totals:
+
+```
+Archived 9 period(s), 66 rows:
+  Week 27   5 rows → work/archive/weeks/2026-W27.md
+  Week 28   1 row  → work/archive/weeks/2026-W28.md
+  …
+  3 memories distilled, 2 deferred to /bridge-learn
+  Week 39 (open, 4 rows) stays in the log
+```
+
+Name the open period that stayed, so "it was not archived" and "it was lost" can
+never read the same.
 
 `{period_label}` follows the cadence — "Week 27", "Weeks 27+28", "July 2026",
 "Q3 2026", "2026". Report the distilled count even when zero, so a period
