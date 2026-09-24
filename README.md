@@ -53,8 +53,8 @@ Your data needs a private home before you write any of it: your own private repo
 
 ```text
 Set up BKS open-bridge for me: https://github.com/bks-lab/open-bridge
-(a plain-text git repo that a coding agent reads at the start of every session.
-The full steps are in its docs/install.md).
+(a plain-text git repo a coding agent reads at the start of every session,
+full steps in its docs/install.md).
 Before you touch anything: check git and gh, ask me what to call my private
 copy (default: my-bridge), show me your plan and wait for my go. Then:
 1. git clone https://github.com/bks-lab/open-bridge.git <name> && cd <name>
