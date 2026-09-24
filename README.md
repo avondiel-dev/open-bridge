@@ -53,7 +53,8 @@ Your data needs a private home before you write any of it: your own private repo
 
 ```text
 Set up BKS open-bridge for me: https://github.com/bks-lab/open-bridge
-(plain-text memory for coding agents; the full steps are in its docs/install.md).
+(a plain-text git repo that a coding agent reads at the start of every session.
+The full steps are in its docs/install.md).
 Before you touch anything: check git and gh, ask me what to call my private
 copy (default: my-bridge), show me your plan and wait for my go. Then:
 1. git clone https://github.com/bks-lab/open-bridge.git <name> && cd <name>
@@ -208,7 +209,7 @@ A `CLAUDE.md` is one flat instruction sheet. A Bridge is a structured workspace 
 
 ## Status
 
-Early and newly public. BKS open-bridge is used every day by the BKS-Lab team on its own instances, and besides those there are closed instances run for other companies. Every merge to `main` ships as its own release ([releasing.md](docs/releasing.md)), so the version number moves fast by design; it tracks merges, not maturity. What is proven, what is still a bet, and what is open lives in one place: [ROADMAP.md](ROADMAP.md). React on the issues you want most; that is how priorities get decided. Found a rough edge? [Open an issue](https://github.com/bks-lab/open-bridge/issues).
+Early and newly public. BKS open-bridge is used every day by the BKS-Lab team on its own instances, and besides those there are closed instances run for other companies. One maintainer's own instance, measured on 24 September 2026: 4,072 work-log rows since 4 July, 164 closed tasks, 2,426 commits since 20 June. The first outside contribution, a GitLab tracker playbook, was merged the same day ([#244](https://github.com/bks-lab/open-bridge/pull/244)). Why BKS-Lab runs on it, and what changed since June: [blog post](https://bks-lab.com/en/blog/open-bridge-open-source/), and the [lab page](https://bks-lab.com/en/labor/open-bridge/) shows it in operation. Every merge to `main` ships as its own release ([releasing.md](docs/releasing.md)), so the version number moves fast by design; it tracks merges, not maturity. What is proven, what is still a bet, and what is open lives in one place: [ROADMAP.md](ROADMAP.md). React on the issues you want most; that is how priorities get decided. Found a rough edge? [Open an issue](https://github.com/bks-lab/open-bridge/issues).
 
 ## Returning?
 
