@@ -12,18 +12,18 @@
 <title>BKS open-bridge: Use cases &amp; solutions</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="assets/favicon.ico" sizes="16x16 32x32 48x48">
-<meta name="description" content="Seven concrete jobs teams run on BKS open-bridge: each pairs a problem you'll recognise with what the bridge does about it, the primitives involved, and where to read more. Plain files in git, nothing to host.">
+<meta name="description" content="Concrete jobs teams run on BKS open-bridge, plus five moments from a long-running instance: each pairs a problem you'll recognise with what the bridge does about it, the primitives involved, and where to read more. Plain files in git, nothing to host.">
 <!-- Social / Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="BKS open-bridge: Use cases &amp; solutions">
-<meta property="og:description" content="Seven concrete jobs teams run on BKS open-bridge: problem, solution, primitives, and a link to read more.">
+<meta property="og:description" content="Concrete jobs teams run on BKS open-bridge, and a day with it: problem, solution, primitives, and a link to read more.">
 <meta property="og:url" content="https://bks-lab.github.io/open-bridge/use-cases.html">
 <meta property="og:image" content="https://bks-lab.github.io/open-bridge/social-preview.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="BKS open-bridge: Use cases &amp; solutions">
-<meta name="twitter:description" content="Seven concrete jobs teams run on BKS open-bridge: problem, solution, primitives, and a link to read more.">
+<meta name="twitter:description" content="Concrete jobs teams run on BKS open-bridge, and a day with it: problem, solution, primitives, and a link to read more.">
 
 <!-- Anti-FOUC pre-paint: theme + language set BEFORE the stylesheet paints. -->
 <script>
@@ -140,6 +140,7 @@ header.nav{
 
 /* ---- use-case grid ---- */
 .uc-section{padding-block:8px 96px}
+#a-day-with-it{padding-top:var(--section-y)}
 .uc-grid{
   max-width:var(--container);margin:0 auto;
   display:grid;grid-template-columns:repeat(2,1fr);gap:24px;
@@ -260,13 +261,13 @@ header.nav{
           <span data-lang="en">What teams actually do with it.</span>
           <span data-lang="de">Was Teams wirklich damit tun.</span>
         </h1>
-        <p class="lede" data-lang="en">BKS open-bridge is a framework, not a product with one fixed workflow. Below are eight concrete jobs teams run on it. Each names a problem you'll recognise, what your bridge does about it, the primitives involved, and where to read more. Everything here works on plain files in git: nothing to host, and the agent never sends or merges anything without a human gate.</p>
-        <p class="lede" data-lang="de">BKS open-bridge ist ein Framework, kein Produkt mit einem festen Ablauf. Unten stehen acht konkrete Aufgaben, die Teams damit erledigen. Jede nennt ein Problem, das du wiedererkennst, was deine Bridge dagegen tut, die beteiligten Primitive und einen Link zum Weiterlesen. Alles hier läuft auf schlichten Dateien in Git: nichts zu hosten, und der Agent sendet oder merged nie etwas ohne menschliches Gate.</p>
+        <p class="lede" data-lang="en">BKS open-bridge is a framework, not a product with one fixed workflow. Below are eight concrete jobs teams run on it, then five moments from a day with a long-running instance. Each names a problem you'll recognise, what your bridge does about it, the primitives involved, and where to read more. Everything here works on plain files in git: nothing to host, and the agent never sends or merges anything without a human gate.</p>
+        <p class="lede" data-lang="de">BKS open-bridge ist ein Framework, kein Produkt mit einem festen Ablauf. Unten stehen acht konkrete Aufgaben, die Teams damit erledigen, danach fünf Momente aus einem Tag mit einer lange laufenden Instanz. Jede nennt ein Problem, das du wiedererkennst, was deine Bridge dagegen tut, die beteiligten Primitive und einen Link zum Weiterlesen. Alles hier läuft auf schlichten Dateien in Git: nichts zu hosten, und der Agent sendet oder merged nie etwas ohne menschliches Gate.</p>
       </div>
     </div>
   </section>
 
-  <!-- ---- the eight use cases ---- -->
+  <!-- ---- the eight use cases, then a day with it ---- -->
   <section class="uc-section alt">
     <div class="container">
       <div class="uc-grid">
@@ -463,8 +464,8 @@ header.nav{
           </p>
           <p class="uc-solution">
             <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
-            <span data-lang="en">Agent Skills follow the open SKILL.md standard, discoverable by Claude Code, Copilot CLI, Codex, Cursor and Gemini through one shared tree. A three-tier promote/contribute flow routes every change by its scope, so private content stays local while generic CORE content flows upstream, decided by structure, not by a tag you can forget.</span>
-            <span data-lang="de">Agent-Skills folgen dem offenen SKILL.md-Standard, auffindbar für Claude Code, Copilot CLI, Codex, Cursor und Gemini über einen gemeinsamen Baum. Ein dreistufiger Promote/Contribute-Fluss routet jede Änderung nach ihrem Scope, sodass private Inhalte lokal bleiben und generische CORE-Inhalte upstream fließen, entschieden durch Struktur, nicht durch ein Tag, das man vergessen kann.</span>
+            <span data-lang="en">Agent Skills follow the open SKILL.md standard, discoverable by Claude Code, Codex and Copilot CLI through one shared tree, symlinked into <code>.claude/</code>, <code>.agents/</code> and <code>.github/</code>. A three-tier promote/contribute flow routes every change by its scope, so private content stays local while generic CORE content flows upstream, decided by structure, not by a tag you can forget.</span>
+            <span data-lang="de">Agent-Skills folgen dem offenen SKILL.md-Standard, auffindbar für Claude Code, Codex und Copilot CLI über einen gemeinsamen Baum, verlinkt nach <code>.claude/</code>, <code>.agents/</code> und <code>.github/</code>. Ein dreistufiger Promote/Contribute-Fluss routet jede Änderung nach ihrem Scope, sodass private Inhalte lokal bleiben und generische CORE-Inhalte upstream fließen, entschieden durch Struktur, nicht durch ein Tag, das man vergessen kann.</span>
           </p>
           <div class="uc-prim">
             <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
@@ -512,6 +513,183 @@ header.nav{
     </div>
   </section>
 
+  <!-- ---- a day with it: five moments from a long-running instance ---- -->
+  <section class="uc-section" id="a-day-with-it" aria-label="A day with it / Ein Tag damit">
+    <div class="container">
+      <div class="sec-head">
+        <h2 class="h2">
+          <span data-lang="en">A day with it</span>
+          <span data-lang="de">Ein Tag damit</span>
+        </h2>
+        <p>
+          <span data-lang="en">Five moments from a long-running instance, told generically. Each one maps to a mechanism that ships in CORE.</span>
+          <span data-lang="de">Fünf Momente aus einer lange laufenden Instanz, allgemein erzählt. Jeder beruht auf einem Mechanismus, der in CORE mitgeliefert wird.</span>
+        </p>
+      </div>
+      <div class="uc-grid">
+
+        <article class="uc reveal" id="morning-triage">
+          <div class="uc-head">
+            <span class="uc-num">09</span>
+            <span class="uc-badge"><span data-lang="en">A day with it</span><span data-lang="de">Ein Tag damit</span></span>
+          </div>
+          <h3 class="uc-title">
+            <span data-lang="en">Morning triage</span>
+            <span data-lang="de">Morgen-Triage</span>
+          </h3>
+          <p class="uc-problem">
+            <span class="lab"><span data-lang="en">Problem</span><span data-lang="de">Problem</span></span>
+            <span data-lang="en">A morning starts with a dozen dashboards, inboxes and boards to check before you know what actually needs you.</span>
+            <span data-lang="de">Ein Morgen beginnt mit einem Dutzend Dashboards, Postfächern und Boards, bevor klar ist, was dich wirklich braucht.</span>
+          </p>
+          <p class="uc-solution">
+            <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
+            <span data-lang="en">“good morning” returns one list: a client’s overnight error report has two new failure clusters, a backup target is three days stale, a tax document is due Friday, two applications have had no reply for over ten days. Nothing else is shown, because the rest is green.</span>
+            <span data-lang="de">„Guten Morgen“ liefert eine Liste: der nächtliche Fehlerbericht eines Kunden hat zwei neue Fehlercluster, ein Backup-Ziel ist drei Tage alt, ein Steuerdokument ist Freitag fällig, zwei Bewerbungen sind seit über zehn Tagen unbeantwortet. Mehr wird nicht gezeigt, weil der Rest grün ist.</span>
+          </p>
+          <div class="uc-prim">
+            <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
+            <div class="chips">
+              <code>briefing</code>
+              <code>work/log.md</code>
+              <code>infra/backups</code>
+            </div>
+          </div>
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/skills/briefing/SKILL.md" target="_blank" rel="noopener">
+            <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
+          </a>
+        </article>
+
+        <article class="uc reveal" id="after-a-call">
+          <div class="uc-head">
+            <span class="uc-num">10</span>
+            <span class="uc-badge"><span data-lang="en">A day with it</span><span data-lang="de">Ein Tag damit</span></span>
+          </div>
+          <h3 class="uc-title">
+            <span data-lang="en">After a call</span>
+            <span data-lang="de">Nach einem Gespräch</span>
+          </h3>
+          <p class="uc-problem">
+            <span class="lab"><span data-lang="en">Problem</span><span data-lang="de">Problem</span></span>
+            <span data-lang="en">The call ended an hour ago, and the protocol, the follow-up tasks and the recap mail are still in your head.</span>
+            <span data-lang="de">Das Gespräch ist seit einer Stunde vorbei, und Protokoll, Folgeaufgaben und Zusammenfassung stecken noch im Kopf.</span>
+          </p>
+          <p class="uc-solution">
+            <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
+            <span data-lang="en">The recording becomes a transcript, the transcript a protocol in the team wiki, three proposed board items waiting for your approval, and a recap mail as a draft. The agent does not send it; you press send.</span>
+            <span data-lang="de">Aus der Aufnahme wird ein Transkript, daraus ein Protokoll im Team-Wiki, drei vorgeschlagene Board-Einträge, die auf deine Freigabe warten, und eine Zusammenfassungs-Mail als Entwurf. Der Agent sendet sie nicht; du drückst auf Senden.</span>
+          </p>
+          <div class="uc-prim">
+            <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
+            <div class="chips">
+              <code>debrief</code>
+              <code>meeting-transcription</code>
+            </div>
+          </div>
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/transcription-worker.md" target="_blank" rel="noopener">
+            <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
+          </a>
+        </article>
+
+        <article class="uc reveal" id="incident-context">
+          <div class="uc-head">
+            <span class="uc-num">11</span>
+            <span class="uc-badge"><span data-lang="en">A day with it</span><span data-lang="de">Ein Tag damit</span></span>
+          </div>
+          <h3 class="uc-title">
+            <span data-lang="en">An incident without context loss</span>
+            <span data-lang="de">Ein Vorfall ohne Kontextverlust</span>
+          </h3>
+          <p class="uc-problem">
+            <span class="lab"><span data-lang="en">Problem</span><span data-lang="de">Problem</span></span>
+            <span data-lang="en">A log search floods the session with thousands of lines, and by tomorrow nobody remembers what was found.</span>
+            <span data-lang="de">Eine Log-Suche flutet die Session mit Tausenden Zeilen, und morgen weiß niemand mehr, was gefunden wurde.</span>
+          </p>
+          <p class="uc-solution">
+            <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
+            <span data-lang="en">“What happened to invoice X?” A sub-agent searches the logs and returns a short delta table instead of a log dump. The finding lands in the task’s <code>STATUS.md</code> and a log row, so tomorrow’s session resumes mid-thought.</span>
+            <span data-lang="de">„Was ist mit Rechnung X passiert?“ Ein Sub-Agent durchsucht die Logs und liefert eine kurze Delta-Tabelle statt eines Log-Dumps. Der Befund landet in der <code>STATUS.md</code> der Aufgabe und in einer Log-Zeile, sodass die Session morgen mitten im Gedanken weitermacht.</span>
+          </p>
+          <div class="uc-prim">
+            <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
+            <div class="chips">
+              <code>.claude/agents</code>
+              <code>STATUS.md</code>
+              <code>work/log.md</code>
+            </div>
+          </div>
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/work-system.md" target="_blank" rel="noopener">
+            <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
+          </a>
+        </article>
+
+        <article class="uc reveal" id="quiet-server">
+          <div class="uc-head">
+            <span class="uc-num">12</span>
+            <span class="uc-badge"><span data-lang="en">A day with it</span><span data-lang="de">Ein Tag damit</span></span>
+          </div>
+          <h3 class="uc-title">
+            <span data-lang="en">The quiet server</span>
+            <span data-lang="de">Der ruhige Server</span>
+          </h3>
+          <p class="uc-problem">
+            <span class="lab"><span data-lang="en">Problem</span><span data-lang="de">Problem</span></span>
+            <span data-lang="en">Dozens of scheduled jobs run on a small home server, and a config file that says “running” proves nothing.</span>
+            <span data-lang="de">Dutzende geplante Jobs laufen auf einem kleinen Heimserver, und eine Config-Datei, in der „running“ steht, beweist nichts.</span>
+          </p>
+          <p class="uc-solution">
+            <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
+            <span data-lang="en">Every job is declared in one file. The agent never trusts a status field; it asks the service manager, and only a broken or stale job becomes a morning line with a fix hint.</span>
+            <span data-lang="de">Jeder Job ist in einer Datei deklariert. Der Agent vertraut nie einem Statusfeld; er fragt den Service-Manager, und nur ein kaputter oder veralteter Job wird zu einer Morgenzeile mit Reparaturhinweis.</span>
+          </p>
+          <div class="uc-prim">
+            <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
+            <div class="chips">
+              <code>workload</code>
+              <code>workflow/workloads</code>
+            </div>
+          </div>
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/workloads.md" target="_blank" rel="noopener">
+            <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
+          </a>
+        </article>
+
+        <article class="uc reveal" id="another-hat">
+          <div class="uc-head">
+            <span class="uc-num">13</span>
+            <span class="uc-badge"><span data-lang="en">A day with it</span><span data-lang="de">Ein Tag damit</span></span>
+          </div>
+          <h3 class="uc-title">
+            <span data-lang="en">Wearing another hat</span>
+            <span data-lang="de">Ein anderer Hut</span>
+          </h3>
+          <p class="uc-problem">
+            <span class="lab"><span data-lang="en">Problem</span><span data-lang="de">Problem</span></span>
+            <span data-lang="en">You work for a company, for freelance clients and for yourself, and each needs a different signature, filing place and board.</span>
+            <span data-lang="de">Du arbeitest für eine Firma, für Freelance-Kunden und für dich selbst, und jede Rolle braucht eine andere Signatur, Ablage und ein anderes Board.</span>
+          </p>
+          <p class="uc-solution">
+            <span class="lab"><span data-lang="en">What the bridge does</span><span data-lang="de">Was die Bridge tut</span></span>
+            <span data-lang="en">Switching to a freelance client swaps the signature, the filing path and the board. A private task never syncs to any tracker, because its <code>STATUS.md</code> says <code>bridge_only: true</code>.</span>
+            <span data-lang="de">Der Wechsel zu einem Freelance-Kunden tauscht Signatur, Ablagepfad und Board. Eine private Aufgabe synchronisiert nie mit einem Tracker, weil in ihrer <code>STATUS.md</code> <code>bridge_only: true</code> steht.</span>
+          </p>
+          <div class="uc-prim">
+            <span class="lab"><span data-lang="en">Primitives</span><span data-lang="de">Primitive</span></span>
+            <div class="chips">
+              <code>identity/personas</code>
+              <code>workflow/contexts</code>
+              <code>task-sync</code>
+            </div>
+          </div>
+          <a class="uc-more" href="https://github.com/bks-lab/open-bridge/blob/main/docs/personas.md" target="_blank" rel="noopener">
+            <span data-lang="en">Learn more</span><span data-lang="de">Mehr erfahren</span><span class="arrow">→</span>
+          </a>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
   <!-- ---- funnel CTA ---- -->
   <section aria-label="Next steps / Nächste Schritte">
     <div class="container">
@@ -548,8 +726,8 @@ header.nav{
   <div class="foot-grid">
     <div class="foot-blurb">
       <a class="wordmark" href="index.html">open<span class="text-gradient">-bridge</span></a>
-      <span data-lang="en">Built at BKS-Lab (a small team) and used daily to run it. Present tense, no hero arc: this is method and substrate.</span>
-      <span data-lang="de">Gebaut bei BKS-Lab (einem kleinen Team) und täglich genutzt, um genau diese Firma zu betreiben. Präsens, kein Heldenbogen: das ist Methode und Substrat.</span>
+      <span data-lang="en">Built by the BKS-Lab team and used daily to run its own work; besides the team's own instances, closed instances run for other companies. Present tense, no hero arc: this is method and substrate.</span>
+      <span data-lang="de">Gebaut vom BKS-Lab-Team und täglich genutzt, um die eigene Arbeit zu betreiben; neben den eigenen Instanzen laufen geschlossene Instanzen für andere Firmen. Präsens, kein Heldenbogen: das ist Methode und Substrat.</span>
       <table class="license-table">
         <tr><td><span data-lang="en">Code &amp; content</span><span data-lang="de">Code &amp; Inhalt</span></td><td>MIT</td><td><a href="https://github.com/bks-lab/open-bridge/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a></td></tr>
         <tr><td><span data-lang="en">Brand</span><span data-lang="de">Marke</span></td><td><span data-lang="en">Trademark policy</span><span data-lang="de">Markenrichtlinie</span></td><td><a href="https://github.com/bks-lab/open-bridge/blob/main/TRADEMARK.md" target="_blank" rel="noopener">TRADEMARK.md</a></td></tr>
