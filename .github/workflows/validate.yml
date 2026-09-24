@@ -147,6 +147,9 @@ jobs:
       - name: Run learning-ledger test suite
         run: pip install "jsonschema>=4.18" && bash scripts/tests/test-learning-ledger.sh
 
+      - name: Every worked example validates against the CORE schemas
+        run: pip install "jsonschema>=4.18" && python3 -m pytest scripts/tests/test_examples_schema.py -q -rs
+
       - name: Run reachability test suite
         run: bash scripts/tests/test-reachability.sh
 
