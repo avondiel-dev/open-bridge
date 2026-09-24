@@ -21,16 +21,53 @@
    the dissenting page keeps its own copy inline, where it wins. That is
    intended, not drift.
 
-   NOT IN HERE
-   The :root light-token block, which still differs between pages, and
-   demo.html, which is built on a different shell (its own tokens, .wrap
-   instead of .container) and shares almost nothing with these rules. Both are
-   deliberate — see the commit message.
+   WHAT MOVED IN LATER
+   The :root light tokens (every page had come to carry the same block), the
+   sticky header, the shared .page-hero intro, the responsive header rules and
+   the 16px phone gutter. A page links this file and then only says what is
+   its own. demo.html links it too, for the header; its terminal stage keeps
+   its own inline rules.
 
    Self-contained by policy: no @import, no external fonts, no CDN, no network
    request of any kind.
    ============================================================================ */
 
+:root{
+  /* ---- tokens.css (generated from DESIGN.md) ---- */
+  --ink:#111827; --muted:#6B7280;
+  --surface:#FFFFFF; --surface-subtle:#F9FAFB; --surface-muted:#F3F4F6;
+  --on-primary:#FFFFFF; --on-surface:#374151;
+  --line:#E5E7EB; --line-subtle:#F3F4F6;
+  --accent-from:#667EEA; --accent-to:#764BA2;
+  --accent:#6366F1; --accent-secondary:#8B5CF6;
+  --ok:#10B981; --info:#3B82F6;
+  --font-sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-mono:"SF Mono",Monaco,"Cascadia Code","Roboto Mono",Consolas,"Liberation Mono",monospace;
+
+  /* ---- AA-correct text tokens (added on top of tokens.css) ---- */
+  --accent-text:#4F46E5;        /* links + the one accent word, AA on white */
+  --accent-soft:#EEF2FF;
+  --ok-text:#047857;            /* status text, AA */
+  --info-text:#1D4ED8;
+  --attention-text:#7C3AED;
+  --code-bg:#F9FAFB;
+
+  /* legacy aliases the markup uses */
+  --primary:var(--ink); --secondary:var(--muted);
+  --border:var(--line); --border-subtle:var(--line-subtle);
+  --on-surface-muted:var(--muted);
+  --success:var(--ok); --attention:var(--accent-secondary);
+  --feature-indigo-from:#4F46E5; --feature-indigo-to:#9333EA;
+  --mono:var(--font-mono);
+
+  /* shadows, whisper quiet */
+  --shadow-soft:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
+  --shadow-hover:0 20px 25px -5px rgba(0,0,0,.08),0 10px 10px -5px rgba(0,0,0,.04);
+
+  --section-y:96px;
+  --container:80rem; --hero-w:72rem; --prose-w:48rem;
+  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-full:9999px;
+}
 html.dark{
   --ink:#F9FAFB; --muted:#9CA3AF;
   --surface:#111827; --surface-subtle:#1F2937; --surface-muted:#374151;
@@ -69,6 +106,7 @@ html[data-active-lang="de"] :is(span,code,strong,em,a,b,i,small,kbd,mark,tspan)[
 .prose{max-width:var(--prose-w);margin-inline:auto}
 /* ---- Typography ---- */
 h1,h2,h3,h4{color:var(--primary);letter-spacing:-0.02em}
+h1,h2,.display,.h1,.h2{text-wrap:balance}
 .display{font-size:clamp(38px,5.4vw,64px);font-weight:300;line-height:1.06;letter-spacing:-0.02em}
 .h1{font-size:clamp(30px,4.4vw,46px);font-weight:300;line-height:1.12}
 .h2{font-size:clamp(26px,3.6vw,34px);font-weight:300;line-height:1.15;letter-spacing:-0.01em}
@@ -178,6 +216,62 @@ section{padding-block:var(--section-y)}
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--r-lg);padding:32px;box-shadow:var(--shadow-soft);
 }
+/* ---- Header shell ----
+   Sticky, translucent, one hairline. Glass is allowed here and only here
+   (DESIGN.md, Elevation). Inside index.html's .topbar the wrapper is the
+   sticky element, so the header itself stays static there. */
+header.nav{
+  position:sticky;top:0;z-index:50;height:auto;min-height:64px;
+  display:flex;align-items:center;
+  background:color-mix(in srgb,var(--surface) 82%,transparent);
+  backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.topbar header.nav{position:static}
+.wordmark{transition:opacity .2s ease}
+.wordmark:hover{opacity:.8}
+.chip .chip-label{display:inline}
+
+/* Nine page links, a GitHub chip and two toggles no longer fit one row below
+   ~1200px. Instead of wrapping into two or three ragged rows, the links drop
+   to a second row of their own that scrolls sideways, with a faded edge that
+   says there is more. Controls stay on the first row next to the wordmark. */
+@media (max-width:1240px){
+  header.nav{min-height:0}
+  .nav-inner{padding-top:10px;padding-bottom:0;row-gap:4px}
+  .site-nav{
+    order:3;flex:1 0 100%;flex-wrap:nowrap;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+    margin-inline:-24px;padding:2px 18px 8px;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0,black 20px,black calc(100% - 32px),transparent);
+            mask-image:linear-gradient(90deg,transparent 0,black 20px,black calc(100% - 32px),transparent);
+  }
+  .site-nav::-webkit-scrollbar{display:none}
+  .site-nav a{flex:0 0 auto}
+}
+
+/* ---- Page intro (every page but the landing) ----
+   The one decorative surface the brand allows: the dotted pattern, faded out
+   toward the content so it frames the headline and never sits behind text
+   that has to be read at length. */
+.page-hero{position:relative;isolation:isolate;padding-block:72px 44px}
+.page-hero::before,.hero::before{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background-image:radial-gradient(circle at 1px 1px,color-mix(in srgb,var(--ink) 16%,transparent) 1px,transparent 1.5px);
+  background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(ellipse 75% 85% at 50% 0%,black 0%,transparent 72%);
+          mask-image:radial-gradient(ellipse 75% 85% at 50% 0%,black 0%,transparent 72%);
+  opacity:.55;
+}
+html.dark .page-hero::before,html.dark .hero::before{opacity:.45}
+.page-hero .eyebrow{margin-bottom:14px}
+.page-hero p.lede{margin-top:18px;font-size:18px;font-weight:300;color:var(--on-surface)}
+
+/* Long paths inside running text (workflow/workspaces/<id>.yaml) are one
+   unbreakable word to the browser; on a phone that was the widest thing on
+   the page. */
+:where(p,li,dd,td,figcaption) code{overflow-wrap:anywhere}
+
 /* ---- Footer ---- */
 footer{border-top:1px solid var(--border);padding-block:64px;background:var(--surface-subtle)}
 .foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;max-width:var(--container);margin:0 auto;padding-inline:24px}
@@ -199,9 +293,33 @@ footer{border-top:1px solid var(--border);padding-block:64px;background:var(--su
   .foot-grid{grid-template-columns:1fr}
 }
 
+/* Footer roadmap list (concepts, use-cases, changelog, explore) */
+.roadmap{list-style:none;display:flex;flex-direction:column;gap:9px}
+.roadmap li{font-size:14px;color:var(--on-surface);display:flex;gap:9px}
+.roadmap li .ph{font-family:var(--mono);font-size:12px;color:var(--accent-text);flex:none}
+
+@media (max-width:860px){
+  .foot-grid>*{min-width:0}
+}
+
+/* Phone width: a 16px gutter everywhere the shell sets one, the MIT chip
+   folds away (the footer carries the licence) and GitHub keeps its mark. */
+@media (max-width:560px){
+  .container,.nav-inner,.foot-grid,.foot-bottom{padding-inline:16px}
+  .site-nav{margin-inline:-16px;padding-inline:10px}
+  .nav-inner{gap:8px}
+  .nav-chips{gap:6px}
+  .nav-chips a.chip[href$="#license"]{display:none}
+  .chip .chip-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .nav-chips .chip{padding:7px 9px}
+  .page-hero{padding-block:48px 28px}
+  :root{--section-y:72px}
+}
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important}
   html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none}
 }
 
 @media print{
@@ -212,4 +330,7 @@ footer{border-top:1px solid var(--border);padding-block:64px;background:var(--su
     }
   *{print-color-adjust:exact;-webkit-print-color-adjust:exact}
   section{padding-block:32px}
+  header.nav,.icon-btn,.seg,.copy-btn{display:none!important}
+  .reveal{opacity:1!important;transform:none!important}
+  .page-hero::before,.hero::before{display:none}
 }

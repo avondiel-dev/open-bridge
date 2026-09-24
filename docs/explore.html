@@ -62,80 +62,6 @@
 
 <link rel="stylesheet" href="assets/brand.css">
 <noscript><style>.reveal,.reset-line{opacity:1!important;transform:none!important}</style></noscript>
-<style>
-/* ============================================================
-   BKS open-bridge shared shell: single file, fully offline.
-   Colour / type / space tokens lifted from DESIGN.md (Editorial
-   Minimalism) via landing/tokens.css. AA-correct text tokens
-   (--accent-text, --code-bg, --ok-text …) layered on top. These
-   are NOT in tokens.css and must be preserved.
-   No external fonts, no CDN, no network calls.
-   ============================================================ */
-
-:root{
-  /* ---- tokens.css (generated from DESIGN.md) ---- */
-  --ink:#111827; --muted:#6B7280;
-  --surface:#FFFFFF; --surface-subtle:#F9FAFB; --surface-muted:#F3F4F6;
-  --on-primary:#FFFFFF; --on-surface:#374151;
-  --line:#E5E7EB; --line-subtle:#F3F4F6;
-  --accent-from:#667EEA; --accent-to:#764BA2;
-  --accent:#6366F1; --accent-secondary:#8B5CF6;
-  --ok:#10B981; --info:#3B82F6;
-  --font-sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
-  --font-mono:"SF Mono",Monaco,"Cascadia Code","Roboto Mono",Consolas,"Liberation Mono",monospace;
-
-  /* ---- AA-correct text tokens (added on top of tokens.css) ---- */
-  --accent-text:#4F46E5;        /* links + the one accent word, AA on white */
-  --accent-soft:#EEF2FF;
-  --ok-text:#047857;            /* status text, AA */
-  --info-text:#1D4ED8;
-  --attention-text:#7C3AED;
-  --code-bg:#F9FAFB;
-
-  /* legacy aliases the markup uses */
-  --primary:var(--ink); --secondary:var(--muted);
-  --border:var(--line); --border-subtle:var(--line-subtle);
-  --on-surface-muted:var(--muted);
-  --success:var(--ok); --attention:var(--accent-secondary);
-  --feature-indigo-from:#4F46E5; --feature-indigo-to:#9333EA;
-  --mono:var(--font-mono);
-
-  /* shadows: whisper quiet */
-  --shadow-soft:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-  --shadow-hover:0 20px 25px -5px rgba(0,0,0,.08),0 10px 10px -5px rgba(0,0,0,.04);
-
-  --section-y:96px;
-  --container:80rem; --hero-w:72rem; --prose-w:48rem;
-  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-full:9999px;
-}
-
-/* ---- Toggles & header ---- */
-header.nav{
-  position:sticky;top:0;z-index:50;height:auto;min-height:64px;
-  display:flex;align-items:center;
-  background:color-mix(in srgb,var(--surface) 82%,transparent);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--border);
-}
-
-/* ---- Footer ---- */
-.roadmap{list-style:none;display:flex;flex-direction:column;gap:9px}
-.roadmap li{font-size:14px;color:var(--on-surface);display:flex;gap:9px}
-.roadmap li .ph{font-family:var(--mono);font-size:12px;color:var(--accent-text);flex:none}
-
-/* ---- Reveal on scroll ---- */
-
-@media (max-width:860px){
-  .foot-grid>*{min-width:0}
-}
-@media (prefers-reduced-motion:reduce){
-  .reveal{opacity:1;transform:none}
-}
-@media print{
-  header.nav,.icon-btn,.seg,.copy-btn{display:none!important}
-  .reveal{opacity:1!important;transform:none!important}
-}
-</style>
 
 <!-- ===================== EXPLORE: page-specific styles ===================== -->
 <style>
@@ -387,7 +313,7 @@ html.dark .stage{
     <div class="nav-chips">
       <a class="chip" href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener" aria-label="GitHub repository">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        GitHub
+        <span class="chip-label">GitHub</span>
       </a>
       <a class="chip" href="index.html#license" aria-label="MIT license">MIT</a>
       <div class="seg" role="group" aria-label="Language / Sprache">
@@ -402,6 +328,7 @@ html.dark .stage{
     </div>
   </div>
 </header>
+<script defer src="assets/site-nav.js"></script>
 
 <!-- ============================ PAGE CONTENT ============================ -->
 <main>
@@ -452,12 +379,12 @@ html.dark .stage{
             <canvas id="brain" aria-hidden="true"></canvas>
             <button type="button" class="brain-spin" id="brain-spin" aria-pressed="true">Pause</button>
             <p class="brain-foot">
-              <span data-lang="en"><b>940 files ship. 27 are yours.</b> Each bright dot is one tracked file; the faint field is the body, not data. Drag to turn it.</span>
-              <span data-lang="de"><b>940 Dateien kommen mit, 27 sind deine.</b> Jeder helle Punkt ist eine versionierte Datei, das schwache Feld ist der Körper, keine Daten. Zum Drehen ziehen.</span>
+              <span data-lang="en"><b>941 files ship. 27 are yours.</b> Each bright dot is one tracked file; the faint field is the body, not data. Drag to turn it.</span>
+              <span data-lang="de"><b>941 Dateien kommen mit, 27 sind deine.</b> Jeder helle Punkt ist eine versionierte Datei, das schwache Feld ist der Körper, keine Daten. Zum Drehen ziehen.</span>
             </p>
             <p class="brain-sr">
-              <span data-lang="en">Two halves of one bridge, side by side. The left half is CORE, everything open-bridge ships: 940 tracked files, one dot each, grouped by top level folder, with skills at 426 files and scripts at 143 the largest by far. The right half is USER, one instance of your own, here the shipped example in examples/agency: 27 files, one dot each. Six folder names appear in both halves and are joined across the middle: the repository root, identity, infra, workflow, protocols and work. On the CORE side each holds a template and a schema. On the USER side each holds files you name yourself, for example infra/channels/email.yaml. Use the folder list in the panel beside the figure to read each pair.</span>
-              <span data-lang="de">Zwei Hälften einer Bridge, nebeneinander. Die linke Hälfte ist CORE, alles was open-bridge mitliefert: 940 versionierte Dateien, je Datei ein Punkt, nach Ordner der obersten Ebene gruppiert, mit skills bei 426 Dateien und scripts bei 143 als mit Abstand größten. Die rechte Hälfte ist USER, eine eigene Instanz, hier das mitgelieferte Beispiel in examples/agency: 27 Dateien, je Datei ein Punkt. Sechs Ordnernamen kommen in beiden Hälften vor und sind über die Mitte verbunden: die Repo-Wurzel, identity, infra, workflow, protocols und work. Auf der CORE-Seite hält jeder eine Vorlage und ein Schema. Auf der USER-Seite hält jeder Dateien, die du selbst benennst, etwa infra/channels/email.yaml. Die Ordnerliste im Panel neben der Grafik führt jedes Paar auf.</span>
+              <span data-lang="en">Two halves of one bridge, side by side. The left half is CORE, everything open-bridge ships: 941 tracked files, one dot each, grouped by top level folder, with skills at 426 files and scripts at 143 the largest by far. The right half is USER, one instance of your own, here the shipped example in examples/agency: 27 files, one dot each. Six folder names appear in both halves and are joined across the middle: the repository root, identity, infra, workflow, protocols and work. On the CORE side each holds a template and a schema. On the USER side each holds files you name yourself, for example infra/channels/email.yaml. Use the folder list in the panel beside the figure to read each pair.</span>
+              <span data-lang="de">Zwei Hälften einer Bridge, nebeneinander. Die linke Hälfte ist CORE, alles was open-bridge mitliefert: 941 versionierte Dateien, je Datei ein Punkt, nach Ordner der obersten Ebene gruppiert, mit skills bei 426 Dateien und scripts bei 143 als mit Abstand größten. Die rechte Hälfte ist USER, eine eigene Instanz, hier das mitgelieferte Beispiel in examples/agency: 27 Dateien, je Datei ein Punkt. Sechs Ordnernamen kommen in beiden Hälften vor und sind über die Mitte verbunden: die Repo-Wurzel, identity, infra, workflow, protocols und work. Auf der CORE-Seite hält jeder eine Vorlage und ein Schema. Auf der USER-Seite hält jeder Dateien, die du selbst benennst, etwa infra/channels/email.yaml. Die Ordnerliste im Panel neben der Grafik führt jedes Paar auf.</span>
             </p>
           </div>
         </div>
@@ -1189,10 +1116,10 @@ html.dark .stage{
       ex:["scripts/validate-bridge.py","scripts/gen-board.py","scripts/measure-context.py","scripts/check-figure-counts.py","scripts/categorize-commits.py"],
       d_en:"143 files. The validators and generators. They are what makes a claim in this repo checkable rather than asserted.",
       d_de:"143 Dateien. Die Prüfer und Generatoren. Sie sind der Grund, warum eine Behauptung in diesem Repo nachprüfbar ist statt behauptet." },
-    { id:"docs",     n:"docs/",     c:77,  x:-0.66, y:-0.18, z:0.14, key:1,
+    { id:"docs",     n:"docs/",     c:78,  x:-0.66, y:-0.18, z:0.14, key:1,
       ex:["docs/structure.md","docs/extension-model.md","docs/commands.md","docs/workloads.md","docs/memory.md"],
-      d_en:"77 files. The guides for humans, plus this site.",
-      d_de:"77 Dateien. Die Anleitungen für Menschen, dazu diese Website." },
+      d_en:"78 files. The guides for humans, plus this site.",
+      d_de:"78 Dateien. Die Anleitungen für Menschen, dazu diese Website." },
     { id:"agents",   n:"agents/",   c:45,  x:-0.34, y:-0.32, z:-0.10, key:1,
       ex:["agents/README.md","agents/_gateway/SPEC.md"],
       d_en:"45 files. The Bridge-Agent runtime: persistent endpoints that front a persona to peer bridges, always behind a human gate.",
@@ -1555,7 +1482,7 @@ html.dark .stage{
     // the two headers, in the bottom corners, clear of the view tabs above
     var hy = H - fs*2 - 54;
     ctx.textAlign="left"; ctx.fillStyle=CORECOL; ctx.fillText("main (CORE)", 14, hy);
-    ctx.fillStyle=DIM; ctx.fillText(L()==="de" ? "940 Dateien, alle mitgeliefert" : "940 files, all shipped", 14, hy+fs+4);
+    ctx.fillStyle=DIM; ctx.fillText(L()==="de" ? "941 Dateien, alle mitgeliefert" : "941 files, all shipped", 14, hy+fs+4);
     ctx.textAlign="right"; ctx.fillStyle=USERCOL; ctx.fillText("user/<you>", W-14, hy);
     ctx.fillStyle=DIM; ctx.fillText(L()==="de" ? "27 Dateien, alle deine" : "27 files, all yours", W-14, hy+fs+4);
 
