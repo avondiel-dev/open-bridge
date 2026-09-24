@@ -150,7 +150,7 @@ def check(root: Path) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--root", default=str(Path(__file__).resolve().parent.parent))
     args = parser.parse_args(argv)
     findings = check(Path(args.root))

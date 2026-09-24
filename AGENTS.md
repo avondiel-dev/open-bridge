@@ -21,7 +21,7 @@ invariants and guardrails, says what each system *is* and *when it matters*, and
 points at the `rules/` and `docs/` files that carry the mechanics.
 
 > **Strategic status:** `bks-lab/open-bridge` (OSS, MIT) is the public CORE layer.
-> Downstream forks (org overlays, personal instances) add overlays via the `/promote`
+> Downstream forks (org overlays, personal instances) add overlays via the `/bridge-promote`
 > flow with `scope:` routing.
 
 ## Required Reading
@@ -277,7 +277,7 @@ Distribution, Windows setup and the plugin path:
 > correct). To make a standalone tool available everywhere, ship it as a plugin.
 
 **Tier lives in `metadata.scope`**, because skills are flat and cannot be
-foldered. It is what `/promote` and `/bridge-sync` route by, kept honest by
+foldered. It is what `/bridge-promote` and `/bridge-sync` route by, kept honest by
 `scripts/validate-skill-scope.py` (CI + pre-commit).
 
 | Scope | Ships to |
@@ -360,7 +360,7 @@ construction. Per-path table: [`docs/structure.md`](docs/structure.md).
 - NEVER commit secrets or credentials on any branch.
 - **NEVER push a `user/*` branch (or USER content) to a PUBLIC upstream.** Your
   private data lives on a private `origin`; CORE reaches a public upstream only
-  via `/promote`, a fork-based content-scanned PR. Cloned the public repo
+  via `/bridge-promote`, a fork-based content-scanned PR. Cloned the public repo
   directly? Re-home `origin` to your own private repo and keep open-bridge as a
   read-only `upstream`. Enforced behaviourally and deterministically by
   `scripts/hooks/pre-push`: [`rules/push-guard.md`](rules/push-guard.md).
@@ -379,7 +379,7 @@ keeps its own layout. [`docs/multi-instance.md`](docs/multi-instance.md).
 Two-pole by default — `bks-lab/open-bridge` (OSS, MIT, generic CORE only) plus
 your own private Bridge. The middle tier is an optional convention: an org that
 wants a shared overlay creates a private fork it names itself, and `scope: org`
-routes there. `bridge-config.yaml.upstreams` is a list; `/promote` routes per
+routes there. `bridge-config.yaml.upstreams` is a list; `/bridge-promote` routes per
 `scope:`. Full model, including the subscribe direction:
 [`docs/org-overlays.md`](docs/org-overlays.md).
 
@@ -631,5 +631,5 @@ documentation under `docs/`.
 
 - Don't commit secrets or credentials to any branch
 - Don't push to `main` without user approval
-- Don't modify CORE files on a `user/` branch commit (use `/promote`)
+- Don't modify CORE files on a `user/` branch commit (use `/bridge-promote`)
 - Don't skip the work log — document insights, not just actions
