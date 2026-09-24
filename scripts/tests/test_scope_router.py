@@ -739,5 +739,12 @@ def test_skill_lessons_and_provenance_are_user(path: str):
     assert tier(path) == "user", f"{path} classifies {tier(path)!r}, expected user"
 
 
+def test_the_instance_rows_of_the_question_map_are_user():
+    # The map ships; an instance's own rows live under work/ and never do
+    # (docs/where-things-live.md § Adding rows).
+    assert tier("work/where-things-live.md") == "user"
+    assert tier("docs/where-things-live.md") == "core"
+
+
 def test_a_skills_other_references_still_ship():
     assert tier("skills/bridge-learn/references/review-workflow.md") == "core"

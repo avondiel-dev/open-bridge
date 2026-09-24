@@ -45,7 +45,7 @@ items:
     note: The entry file. Thin by design; it routes, it does not explain.
 
   AGENTS.md:
-    max_bytes: 33300
+    max_bytes: 33500
     note: >-
       The operating manual, and still the largest single always-on item. It
       routes; it does not restate. Every load-bearing pointer in it is a
@@ -79,6 +79,13 @@ items:
       git", is asked at the moment a file is written, and a session that does
       not know the family exists writes the file into the work tree, where the
       only thing between it and a commit is an ignore entry somebody remembered.
+      RAISED from 33300 on 2026-09-24 by 200 bytes for the one line that
+      points at `docs/where-things-live.md` (#164), at the end of Required
+      Reading, which costs 173: 13 bytes of headroom before, 40 after. The map answers the question asked most
+      often, "which file answers this", before anything else has been read,
+      and the answer usually sits in a skill reference nobody thought to open.
+      A pointer that lives anywhere but here is found only by somebody who
+      already knows where to look, which is the case the map exists for.
 
   ecosystem.yaml:
     optional: true
