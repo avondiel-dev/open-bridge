@@ -144,6 +144,7 @@ created: 2026-06-23
 last_updated: 2026-06-24
 headline: "Stripe webhook signatures failing in prod (P1)"
 sync:
+  bridge_only: false
   github: { repo: acme-dev/bigcorp-issues, issues: [142] }
 ---
 ```
