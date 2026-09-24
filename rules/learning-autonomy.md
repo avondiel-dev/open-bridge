@@ -59,6 +59,17 @@ they do not *apply*.
 
 ## Per-layer doctrine
 
+### The skill journal is not Layer B
+
+`skills/<name>/LEARNINGS.md` lives in a skill folder but is a **journal**, in
+the same class as `work/log.md`: append-only, dated, never loaded when the
+skill runs, only pointed at by the skill's routing block. A session may append
+an entry directly when the user names a lesson; no proposal. The gate sits where
+behaviour changes: moving an entry into `references/` (or anywhere `SKILL.md`
+routes to) is a curator proposal and a `/bridge-learn` accept like any other
+Layer B change. Decided 2026-09-24 with #163; model in
+[`docs/skill-learnings.md`](../docs/skill-learnings.md).
+
 ### Layer A — in-context
 
 Acceptable to mutate freely *within* a session. Examples: loading a

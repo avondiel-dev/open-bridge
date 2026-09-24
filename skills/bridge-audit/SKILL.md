@@ -19,12 +19,12 @@ metadata:
 # Bridge Audit — Drift Detection
 
 `bridge-audit` is the systematic version of "let me re-read the README
-and see what doesn't match anymore". It runs 13 categorical checks
+and see what doesn't match anymore". It runs 14 categorical checks
 against the current repo state and returns a stratified report.
 Check 9 only runs with `--cross-repo` (it fetches sister-repo trunks);
 Check 10 (agent-identity health), Check 11 (gate-shaped memory),
-Check 12 (config-driven CORE skills), and Check 13 (user-level skill
-shadowing) always run.
+Check 12 (config-driven CORE skills), Check 13 (user-level skill
+shadowing) and Check 14 (skill learnings pairing) always run.
 
 Read the referenced file ONLY when triggered.
 
@@ -33,7 +33,7 @@ Read the referenced file ONLY when triggered.
 | Argument | Effect | Default |
 |----------|--------|---------|
 | `(none)` | Full audit, all checks | — |
-| `--check <name>` | Run only one check (license / skill-tree / protocol-count / renames / xrefs / scopes / routing-sot / typos / agent-identity / memory-gate / config-driven / skill-shadowing) | all |
+| `--check <name>` | Run only one check (license / skill-tree / protocol-count / renames / xrefs / scopes / routing-sot / typos / agent-identity / memory-gate / config-driven / skill-shadowing / skill-learnings) | all |
 | `--cross-repo` | Also clone configured upstreams and compare README/AGENTS for divergence | false |
 | `--strict-oss` | When run on an OSS variant: flag hardcoded internal vocabulary (delegates to `bridge-leak-check`) | false |
 | `--fix` | Where unambiguous, apply the suggested fix | false (advisory only) |
@@ -57,6 +57,7 @@ Read the referenced file ONLY when triggered.
 | 11 | Gate-shaped memory without a `rules/` home | Memory files whose body uses gate language (imperative + always/never/immer/nie, or "when X → do Y" routing) but have NO corresponding rule in `rules/` (core/bks/user) — a behavioral rule trapped in the private store. Also runs the index lint and the session-link count (`memory-location.py check`, `links`) | P2 (index lint P1, dead session links P3) |
 | 12 | Config-driven CORE skills | `scope: core` skill files (`SKILL.md` + `references/`) that hardcode instance specifics — org/project IDs, tracker queries, persona names, pipeline IDs, absolute instance paths — instead of reading them from `bridge-config.yaml` / `workflow/` / `infra/` / `identity/` (CLAUDE.md § Generic CORE Skills) | P2 |
 | 13 | User-level skill shadowing | `~/.claude/skills/` (resolved) ↔ this repo's `skills/` — the user level overrides the project level, so a pointer at a Bridge repo silently serves one instance's skills to every other instance (AGENTS.md § Skills). Both directions: this instance shadowing others, and others shadowing this one (with `diff -rq` drift per colliding name). Also reports scripts that resolve the path as a filesystem location | P0 if own skills are shadowed or instance-bound skills (scope org or user) leak machine-wide, else P1 |
+| 14 | Skill learnings pairing | `python3 scripts/check-skill-learnings.py`: a skill with `LEARNINGS.md` but no routing block in SKILL.md, a routing block without a journal, or an undated journal heading (`docs/skill-learnings.md`) | P2 |
 
 ## Decision Tree
 

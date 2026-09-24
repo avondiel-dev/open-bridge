@@ -9,7 +9,9 @@ description: >-
   relations; (3) User-pattern pass — synthesizes 3-8 bullet observations
   about user preferences from postmortems + audit-trail + trigger-corrections
   of the last 30 days, writes append-only to
-  work/_learning/user-patterns.md. All findings land as proposals
+  work/_learning/user-patterns.md; (4) Learnings pass, per skill on request,
+  promotes matured LEARNINGS.md entries into references/ and moves skill traps
+  out of global memory. All findings land as proposals
   (source.type=curator-suggestion) in work/_learning/proposals/ — **never
   direct edits to Bridge files**. Trigger: "/bridge-curator", "bridge curator",
   "curator", "curation", "weekly review", "library consolidation",
@@ -64,6 +66,7 @@ the full design rationale.
 | `--pass library` | Only library consolidation | all |
 | `--pass queue` | Only proposal-queue consolidation | all |
 | `--pass user-patterns` | Only user-pattern synthesis | all |
+| `--pass learnings <skill>` | Only the learnings pass, for one skill (`--all` for every skill with a journal). Never part of the default run | off |
 | `--dry-run` | Surface findings, do NOT write proposals or user-patterns | false |
 | `--since <date>` | Scan window starts at this date (default: last curator run) | last run |
 
@@ -143,6 +146,19 @@ proposal flow.
 **Minimum-signal threshold:** if window contains fewer than 5 postmortems
 and 5 accept/reject events combined, the user-pattern pass produces an
 "insufficient signal" note instead of forced observations.
+
+### Pass 4: Learnings (per skill, on request)
+
+Full procedure in [`references/learnings-pass.md`](references/learnings-pass.md);
+the model is [`docs/skill-learnings.md`](../../docs/skill-learnings.md).
+
+Reads one skill's `LEARNINGS.md` and the global memory base. Writes:
+
+- one proposal per `references/*.md` file that matured journal entries belong
+  in, whose body tells `/bridge-learn` to trim those entries from the journal
+  in the same commit;
+- one proposal per global memory fact that is really a trap of this skill,
+  moving it into the skill's journal. The memory fact stays until accepted.
 
 ## Output: Curator Report
 
@@ -235,4 +251,5 @@ which files / scans led to the finding. No invented proposals.
 - `skills/bridge-learn/` — the review surface that closes the loop
 - `work/_learning/README.md` — aggregation layer layout
 - `work/_learning/user-patterns.md` — output target for Pass 3
+- `docs/skill-learnings.md`: the skill-local journal that Pass 4 promotes from
 - `bridge-config.yaml.learning.curator` — config block (schedule + pass toggles)
