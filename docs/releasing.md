@@ -1,10 +1,11 @@
 ---
 summary: "How releases work — fully automatic, conventional-commit-driven (push to main -> version computed -> tag + GitHub release)"
 type: guide
-last_updated: 2026-07-13
+last_updated: 2026-09-24
 related:
   - ../.github/workflows/release.yml
   - ../.github/workflows/validate.yml
+  - ../CHANGELOG.md
 ---
 
 # Releasing
@@ -33,7 +34,10 @@ own. The "what changed" lives on the
 **[GitHub Releases page](https://github.com/bks-lab/open-bridge/releases)** —
 auto-generated on each merge — and is browsable on the site's
 **[changelog page](https://bks-lab.github.io/open-bridge/changelog.html)** (a
-live view of the Releases API). There is no hand-maintained `CHANGELOG.md`.
+live view of the Releases API). The root [`CHANGELOG.md`](../CHANGELOG.md) is
+not a third copy of that history: it is a short, periodically refreshed
+pointer to both, plus a hand-picked theme summary, for a reader on GitHub who
+has not clicked through.
 
 ## What you do
 
