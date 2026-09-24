@@ -52,80 +52,6 @@
 
 <link rel="stylesheet" href="assets/brand.css">
 <noscript><style>.reveal,.reset-line{opacity:1!important;transform:none!important}</style></noscript>
-<style>
-/* ============================================================
-   BKS open-bridge shared shell: single file, fully offline.
-   Colour / type / space tokens lifted from DESIGN.md (Editorial
-   Minimalism) via landing/tokens.css. AA-correct text tokens
-   (--accent-text, --code-bg, --ok-text …) layered on top. These
-   are NOT in tokens.css and must be preserved.
-   No external fonts, no CDN, no network calls.
-   ============================================================ */
-
-:root{
-  /* ---- tokens.css (generated from DESIGN.md) ---- */
-  --ink:#111827; --muted:#6B7280;
-  --surface:#FFFFFF; --surface-subtle:#F9FAFB; --surface-muted:#F3F4F6;
-  --on-primary:#FFFFFF; --on-surface:#374151;
-  --line:#E5E7EB; --line-subtle:#F3F4F6;
-  --accent-from:#667EEA; --accent-to:#764BA2;
-  --accent:#6366F1; --accent-secondary:#8B5CF6;
-  --ok:#10B981; --info:#3B82F6;
-  --font-sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
-  --font-mono:"SF Mono",Monaco,"Cascadia Code","Roboto Mono",Consolas,"Liberation Mono",monospace;
-
-  /* ---- AA-correct text tokens (added on top of tokens.css) ---- */
-  --accent-text:#4F46E5;        /* links + the one accent word, AA on white */
-  --accent-soft:#EEF2FF;
-  --ok-text:#047857;            /* status text, AA */
-  --info-text:#1D4ED8;
-  --attention-text:#7C3AED;
-  --code-bg:#F9FAFB;
-
-  /* legacy aliases the markup uses */
-  --primary:var(--ink); --secondary:var(--muted);
-  --border:var(--line); --border-subtle:var(--line-subtle);
-  --on-surface-muted:var(--muted);
-  --success:var(--ok); --attention:var(--accent-secondary);
-  --feature-indigo-from:#4F46E5; --feature-indigo-to:#9333EA;
-  --mono:var(--font-mono);
-
-  /* shadows: whisper quiet */
-  --shadow-soft:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-  --shadow-hover:0 20px 25px -5px rgba(0,0,0,.08),0 10px 10px -5px rgba(0,0,0,.04);
-
-  --section-y:96px;
-  --container:80rem; --hero-w:72rem; --prose-w:48rem;
-  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-full:9999px;
-}
-
-/* ---- Toggles & header ---- */
-header.nav{
-  position:sticky;top:0;z-index:50;height:auto;min-height:64px;
-  display:flex;align-items:center;
-  background:color-mix(in srgb,var(--surface) 82%,transparent);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--border);
-}
-
-/* ---- Footer ---- */
-.roadmap{list-style:none;display:flex;flex-direction:column;gap:9px}
-.roadmap li{font-size:14px;color:var(--on-surface);display:flex;gap:9px}
-.roadmap li .ph{font-family:var(--mono);font-size:12px;color:var(--accent-text);flex:none}
-
-/* ---- Reveal on scroll ---- */
-
-@media (max-width:860px){
-  .foot-grid>*{min-width:0}
-}
-@media (prefers-reduced-motion:reduce){
-  .reveal{opacity:1;transform:none}
-}
-@media print{
-  header.nav,.icon-btn,.seg{display:none!important}
-  .reveal{opacity:1!important;transform:none!important}
-}
-</style>
 
 <!-- ============ page-specific styles (use-cases.html) ============ -->
 <style>
@@ -134,9 +60,6 @@ header.nav{
 [id]{scroll-margin-top:84px}
 
 /* ---- intro / hero of the page ---- */
-.page-hero{padding-block:64px 36px}
-.page-hero .eyebrow{margin-bottom:14px}
-.page-hero p.lede{margin-top:18px;font-size:18px;font-weight:300;color:var(--on-surface)}
 
 /* ---- use-case grid ---- */
 .uc-section{padding-block:8px 96px}
@@ -196,7 +119,9 @@ header.nav{
 .uc.flagship{
   grid-column:1 / -1;
   border-left:3px solid var(--accent-text);
-  background:linear-gradient(180deg,var(--accent-soft),var(--surface) 62%);
+  /* A tint of the accent over the card surface, not a coloured panel: in
+     dark mode --accent-soft is a saturated indigo that turned the card purple. */
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 7%,var(--surface)),var(--surface) 70%);
 }
 .uc.flagship h3.uc-title{font-size:26px}
 .uc.flagship .uc-problem,.uc.flagship .uc-solution{font-size:16.5px}
@@ -232,7 +157,7 @@ header.nav{
     <div class="nav-chips">
       <a class="chip" href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener" aria-label="GitHub repository">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        GitHub
+        <span class="chip-label">GitHub</span>
       </a>
       <a class="chip" href="index.html#license" aria-label="MIT license">MIT</a>
       <div class="seg" role="group" aria-label="Language / Sprache">
@@ -247,6 +172,7 @@ header.nav{
     </div>
   </div>
 </header>
+<script defer src="assets/site-nav.js"></script>
 
 <!-- ============================ PAGE CONTENT ============================ -->
 <main id="top">

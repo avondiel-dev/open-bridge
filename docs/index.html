@@ -64,42 +64,7 @@
    own scoped palette, no longer exists.
    ============================================================ */
 
-:root{
-  /* ---- tokens.css (generated from DESIGN.md) ---- */
-  --ink:#111827; --muted:#6B7280;
-  --surface:#FFFFFF; --surface-subtle:#F9FAFB; --surface-muted:#F3F4F6;
-  --on-primary:#FFFFFF; --on-surface:#374151;
-  --line:#E5E7EB; --line-subtle:#F3F4F6;
-  --accent-from:#667EEA; --accent-to:#764BA2;
-  --accent:#6366F1; --accent-secondary:#8B5CF6;
-  --ok:#10B981; --info:#3B82F6;
-  --font-sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
-  --font-mono:"SF Mono",Monaco,"Cascadia Code","Roboto Mono",Consolas,"Liberation Mono",monospace;
-
-  /* ---- AA-correct text tokens (added on top of tokens.css) ---- */
-  --accent-text:#4F46E5;        /* links + the one accent word, AA on white */
-  --accent-soft:#EEF2FF;
-  --ok-text:#047857;            /* status text, AA */
-  --info-text:#1D4ED8;
-  --attention-text:#7C3AED;
-  --code-bg:#F9FAFB;
-
-  /* legacy aliases the markup uses */
-  --primary:var(--ink); --secondary:var(--muted);
-  --border:var(--line); --border-subtle:var(--line-subtle);
-  --on-surface-muted:var(--muted);
-  --success:var(--ok); --attention:var(--accent-secondary);
-  --feature-indigo-from:#4F46E5; --feature-indigo-to:#9333EA;
-  --mono:var(--font-mono);
-
-  /* shadows, whisper quiet */
-  --shadow-soft:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.03);
-  --shadow-hover:0 20px 25px -5px rgba(0,0,0,.08),0 10px 10px -5px rgba(0,0,0,.04);
-
-  --section-y:96px;
-  --container:80rem; --hero-w:72rem; --prose-w:48rem;
-  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-full:9999px;
-}
+/* Tokens (:root) and the dark pair live in assets/brand.css. */
 
 /* ---- Toggles & header ---- */
 .topbar{position:sticky;top:0;z-index:50}
@@ -154,8 +119,43 @@ section{padding-block:var(--section-y);scroll-margin-top:112px}
 /* in-page anchors that target a figure/sub-block inside a section */
 [id="mechanic-viz"]{scroll-margin-top:112px}
 
-/* ---- Hero (split) ---- */
-.hero{position:relative;overflow:hidden;padding-block:clamp(56px,9vh,104px)}
+/* ---- Hero ----
+   Centred, as DESIGN.md asks of a hero: badge, headline, one paragraph, the
+   two CTAs. The proof (a real answer from the shipped workspace, and the
+   workspace itself drawn to scale) sits below the fold line as a pair of
+   equal cards. The dotted backdrop comes from brand.css (.hero::before). */
+.hero{position:relative;isolation:isolate;overflow:hidden;padding-block:clamp(56px,10vh,112px) clamp(56px,8vh,96px)}
+.hero-copy{text-align:center}
+.hero .eyebrow{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:6px 14px 6px 8px;border-radius:var(--r-full);
+  background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--border);
+  font-size:12px;letter-spacing:.07em;color:var(--on-surface);
+  box-shadow:var(--shadow-soft);
+}
+.hero .eyebrow::before{
+  content:"";width:18px;height:18px;border-radius:var(--r-full);flex:none;
+  background:linear-gradient(135deg,var(--accent-from),var(--accent-to));
+  -webkit-mask:radial-gradient(circle,transparent 3.5px,black 4px);mask:radial-gradient(circle,transparent 3.5px,black 4px);
+}
+.hero .display{
+  margin:22px auto 0;max-width:58rem;text-wrap:balance;
+  font-size:clamp(38px,6vw,72px);line-height:1.04;
+}
+.hero .cta-row,.hero .honesty-strip{justify-content:center}
+.hero .beta-line{margin-inline:auto;text-align:center}
+@media (max-width:560px){
+  .hero .eyebrow{font-size:12.5px;letter-spacing:0;text-transform:none;font-weight:500}
+  .honesty-strip{border-radius:16px;justify-content:center}
+  .hero .cta-row{flex-direction:column;align-items:stretch}
+  .hero .cta-row .btn{justify-content:center}
+}
+.hero-term .code-label>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* On a phone the page row is the third sticky bar; the section headings do
+   the same job there, so it steps aside and gives the height back. */
+@media (max-width:720px){
+  .page-nav{display:none}
+}
 /* Copy on the left, a small instantly-readable "your world, connected" net on
    the right. The detailed 18-node constellation moved down to #substrate, where
    it has the full width its labels need. */
@@ -163,8 +163,7 @@ section{padding-block:var(--section-y);scroll-margin-top:112px}
   max-width:var(--hero-w);margin:0 auto;
 }
 .hero-copy{min-width:0}
-.hero .display{margin-top:10px;max-width:62rem}
-.hero-sub{margin:24px 0 0;max-width:48rem;font-size:19px;font-weight:300;line-height:1.6;color:var(--on-surface)}
+.hero-sub{margin:26px auto 0;max-width:44rem;font-size:clamp(17px,1.6vw,20px);font-weight:300;line-height:1.6;color:var(--on-surface);text-wrap:pretty}
 .honesty-strip{
   margin-top:26px;display:inline-flex;align-items:center;gap:0;flex-wrap:wrap;
   font-size:13.5px;color:var(--on-surface);
@@ -173,7 +172,8 @@ section{padding-block:var(--section-y);scroll-margin-top:112px}
 }
 .honesty-strip .sep,.beta-line .sep{color:var(--secondary);margin:0 9px}
 .honesty-strip b{color:var(--primary);font-weight:600}
-.cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
+.cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}
+.hero .btn-primary{box-shadow:0 8px 20px -8px color-mix(in srgb,var(--accent) 55%,transparent)}
 .beta-line{margin-top:18px;font-size:14px;color:var(--secondary);max-width:48rem}
 
 /* ---- the large-type moment ---- */
@@ -189,19 +189,29 @@ section{padding-block:var(--section-y);scroll-margin-top:112px}
    block still arrives on the shared .reveal, which is now the only one. */
 @media (max-width:640px){ #tagline .tl{display:inline} }
 
-/* hero demo row: the code example and the CORE ⟷ USER brain, side by side */
-.hero-demo{
-  margin-top:clamp(28px,4.5vw,48px);
-  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-  align-items:start;gap:clamp(22px,3vw,40px);
-}
-.hero-visual{min-width:0;width:100%}
-
-@media (max-width:920px){
-  /* stack the code example + brain on tablet/mobile */
-  .hero-demo{grid-template-columns:1fr;gap:28px}
-  .hero-sub,.beta-line{max-width:none}
-  .hero-visual{max-width:520px;margin-inline:auto}
+/* Hero proof. One column (copy, answer, ring) until there is room for two;
+   from 1100px the answer moves up beside the copy so it is in the first
+   screen at 1280x800, and the ring of the same workspace sits centred under
+   both. */
+.hero-lead{min-width:0}
+.hero-term{margin:clamp(40px,6vw,64px) auto 0;max-width:44rem;text-align:left}
+.hero-visual{min-width:0;width:100%;max-width:560px;margin:28px auto 0;text-align:left}
+@media (min-width:1100px){
+  .hero{padding-block:clamp(40px,6vh,72px) clamp(56px,8vh,96px)}
+  .hero-copy{
+    display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
+    column-gap:clamp(40px,4vw,64px);align-items:center;text-align:left;
+  }
+  .hero-lead{grid-column:1;grid-row:1}
+  .hero-term{grid-column:2;grid-row:1;margin:0;max-width:none}
+  .hero-visual{grid-column:1 / -1;grid-row:2;max-width:620px;margin-top:clamp(48px,7vh,80px)}
+  .hero .display{margin:20px 0 0;font-size:clamp(44px,4.2vw,62px);max-width:none}
+  .hero-sub{margin:22px 0 0;font-size:18px;max-width:36rem}
+  .hero .cta-row,.hero .honesty-strip{justify-content:flex-start}
+  .hero .cta-row{margin-top:28px}
+  .hero .honesty-strip{margin-top:22px}
+  .hero .beta-line{margin-inline:0;text-align:left}
+  .hero .display .text-gradient{white-space:nowrap}
 }
 
 /* ---- #hero-net (animated CORE ⟷ USER brain), scoped ----
@@ -453,12 +463,35 @@ html.dark .tile .demo{background:var(--code-bg)}
 .tertiary-cta a{color:var(--accent-text);text-decoration:none;font-weight:500}
 .tertiary-cta a:hover{text-decoration:underline}
 
-/* ---- Hero terminal (the magic-moment exchange), reuses .code grammar,
-   tokens only. pre-wrap so the transcript never widens the hero column. ---- */
-.hero-term{margin-top:0;max-width:44rem}      /* top-aligned with the brain in .hero-demo */
-.hero-term .code{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
-.hero-term .code .k{font-weight:600}
-.hero-term-cap{margin-top:10px;font-size:13.5px;color:var(--secondary)}
+/* ---- Hero terminal (the magic-moment exchange) ----
+   A window: a title bar carrying the workspace path, then the transcript as
+   flowing text (normal wrapping, so it never breaks mid-sentence on a narrow
+   column). Tokens only; the three bar dots are neutral on purpose, the accent
+   stays reserved for the prompt. */
+.hero-term{
+  display:flex;flex-direction:column;min-width:0;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  box-shadow:var(--shadow-hover);overflow:hidden;
+}
+html.dark .hero-term{background:var(--code-bg)}
+.hero-term .code-label{
+  padding:11px 16px;border-bottom:1px solid var(--border);background:var(--surface-subtle);
+  justify-content:flex-start;gap:14px;
+}
+html.dark .hero-term .code-label{background:var(--surface-subtle)}
+.hero-term .code-label::before{
+  content:"";flex:none;width:10px;height:10px;border-radius:50%;
+  background:var(--border);box-shadow:16px 0 0 var(--border),32px 0 0 var(--border);
+  margin-right:34px;
+}
+.hero-term .code{
+  flex:1;border:0;border-radius:0;background:transparent;
+  white-space:normal;overflow-wrap:anywhere;font-size:13.5px;line-height:1.75;padding:20px 22px;
+}
+html.dark .hero-term .code{background:transparent}
+.hero-term .code .k{display:block;font-weight:600;margin-bottom:12px}
+.hero-term .code .k::after{content:"";display:inline-block;width:7px;height:1.05em;margin-left:4px;vertical-align:-2px;background:var(--accent-text);opacity:.8}
+.hero-term-cap{margin:0;padding:12px 22px 16px;font-size:13.5px;color:var(--secondary);border-top:1px solid var(--border)}
 .hero-term-cap a{color:var(--accent-text);text-decoration:none;font-weight:500}
 .hero-term-cap a:hover{text-decoration:underline}
 
@@ -531,7 +564,7 @@ html.dark .path-prompts code{background:var(--code-bg)}
     <div class="nav-chips">
       <a class="chip" href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener" aria-label="GitHub repository">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        GitHub
+        <span class="chip-label">GitHub</span>
       </a>
       <a class="chip" href="#license" aria-label="MIT license">MIT</a>
       <div class="seg" role="group" aria-label="Language / Sprache">
@@ -546,6 +579,7 @@ html.dark .path-prompts code{background:var(--code-bg)}
     </div>
   </div>
 </header>
+<script defer src="assets/site-nav.js"></script>
 
 <!-- ======================= IN-PAGE SECTION NAV (landing only) ======================= -->
 <nav class="page-nav" id="page-nav" aria-label="On this page / Auf dieser Seite">
@@ -569,12 +603,13 @@ html.dark .path-prompts code{background:var(--code-bg)}
 <section class="hero">
   <div class="hero-grid container">
     <div class="hero-copy">
+      <div class="hero-lead">
       <p class="eyebrow"><span data-lang="en">Persistent context for your AI coding agent</span><span data-lang="de">Bleibender Kontext für deinen KI-Coding-Agenten</span></p>
 
-      <h1 class="display" data-lang="en">Stop re-explaining your project to your AI agent. It <span class="text-gradient">already knows</span> your repos.</h1>
+      <h1 class="display" data-lang="en">Stop re-explaining your project to your AI agent. It&nbsp;<span class="text-gradient">already knows</span> your&nbsp;repos.</h1>
       <h1 class="display" data-lang="de">Erklär deinem KI-Agenten nicht jedes Mal alles neu. Er <span class="text-gradient">kennt</span> deine Repos <span class="text-gradient">schon</span>.</h1>
 
-      <p class="hero-sub"><span data-lang="en">Your repos, clients, conventions, last week's decisions. Your coding agent reads them at the start of every session, so context compounds instead of resetting. Just plain markdown and YAML in git, any model or frontend.</span><span data-lang="de">Deine Repos, Kunden, Konventionen, die Entscheidungen von letzter Woche. Dein Coding-Agent liest sie zu Beginn jeder Session wieder ein, damit Kontext wächst, statt sich zurückzusetzen. Nur Plain-Markdown und YAML in Git, egal welches Modell oder Frontend.</span></p>
+      <p class="hero-sub"><span data-lang="en">Your repos, clients, conventions and last week's decisions, kept as plain markdown and YAML in git. Your coding agent reads them at the start of every session, so context compounds instead of resetting. Any model, any frontend.</span><span data-lang="de">Deine Repos, Kunden, Konventionen und die Entscheidungen von letzter Woche, als Plain-Markdown und YAML in Git. Dein Coding-Agent liest sie zu Beginn jeder Session wieder ein, damit Kontext wächst, statt sich zurückzusetzen. Egal welches Modell, egal welches Frontend.</span></p>
 
       <p class="honesty-strip">
         <span data-lang="en">Public<span class="sep">·</span>MIT<span class="sep">·</span>clone &amp; read it yourself<span class="sep">·</span><b><a href="#honesty">runs our company daily</a></b></span>
@@ -591,28 +626,21 @@ html.dark .path-prompts code{background:var(--code-bg)}
         </a>
       </div>
 
-      <!-- ===== HERO DEMO ROW: the code example paired with the CORE ⟷ USER brain =====
-           Two cards on one horizontal line: the shipped-workspace terminal (left)
-           and the animated brain (right), top-aligned. -->
-      <div class="hero-demo">
+      <p class="beta-line">
+        <span data-lang="en"><a href="demo.html">▶ See it work (90 sec)</a><span class="sep">·</span><a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">Read the code on GitHub</a><span class="sep">·</span>Newly public, hit a rough edge? <a href="https://github.com/bks-lab/open-bridge/issues" target="_blank" rel="noopener">Tell us</a>.</span>
+        <span data-lang="de"><a href="demo.html">▶ Sieh es arbeiten (90 Sek.)</a><span class="sep">·</span><a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">Lies den Code auf GitHub</a><span class="sep">·</span>Frisch öffentlich, irgendwo hakt es? <a href="https://github.com/bks-lab/open-bridge/issues" target="_blank" rel="noopener">Sag's uns</a>.</span>
+      </p>
+      </div><!-- /.hero-lead -->
+
+      <!-- ===== HERO PROOF: the shipped-workspace answer sits beside the copy on
+           a desktop, so it is in the first screen; the ring of the same
+           workspace follows below it. One column on smaller screens. -->
       <!-- The magic-moment exchange: real answers from the shipped demo
            workspace (examples/agency/work/), not invented copy. -->
       <div class="hero-term">
         <div class="code-label"><span>examples/agency · <span data-lang="en">shipped demo workspace</span><span data-lang="de">mitgelieferter Demo-Workspace</span></span></div>
-        <div class="code" data-lang="en"><span class="k">&gt; good morning</span>
-
-Morning. You're mid-incident on bigcorp: Stripe webhook retries are
-failing in prod (P1, opened yesterday). Root cause traced to the
-webhook secret; next step is the retry fix. startupxyz onboarding:
-email-verification wired, 6 tests green. Board: 2 doing · 1 review ·
-cart-a11y waits on PR #214.</div>
-        <div class="code" data-lang="de"><span class="k">&gt; guten morgen</span>
-
-Morgen. Auf bigcorp läuft ein P1: Stripe-Webhook-Retries schlagen in
-prod fehl. Root Cause gestern gefunden (Webhook-Secret); nächster
-Schritt ist der Retry-Fix. startupxyz-Onboarding: E-Mail-Verifikation
-steht, 6 Tests grün. Board: 2 doing · 1 review · cart-a11y wartet
-auf PR #214.</div>
+        <div class="code" data-lang="en"><span class="k">&gt; good morning</span>Morning. You're mid-incident on bigcorp: Stripe webhook retries are failing in prod (P1, opened yesterday). Root cause traced to the webhook secret; next step is the retry fix. startupxyz onboarding: email-verification wired, 6 tests green. Board: 2 doing · 1 review · cart-a11y waits on PR #214.</div>
+        <div class="code" data-lang="de"><span class="k">&gt; guten morgen</span>Morgen. Auf bigcorp läuft ein P1: Stripe-Webhook-Retries schlagen in prod fehl. Root Cause gestern gefunden (Webhook-Secret); nächster Schritt ist der Retry-Fix. startupxyz-Onboarding: E-Mail-Verifikation steht, 6 Tests grün. Board: 2 doing · 1 review · cart-a11y wartet auf PR #214.</div>
         <p class="hero-term-cap">
           <span data-lang="en">This is the shipped demo workspace answering. <a href="#get-started">Run it yourself in 2 minutes</a>.</span>
           <span data-lang="de">Das ist der mitgelieferte Demo-Workspace. <a href="#get-started">Führ ihn in 2 Minuten selbst aus</a>.</span>
@@ -649,12 +677,7 @@ auf PR #214.</div>
           </div>
         </figure>
       </div>
-      </div><!-- /.hero-demo -->
 
-      <p class="beta-line">
-        <span data-lang="en"><a href="demo.html">▶ See it work (90 sec)</a><span class="sep">·</span><a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">Read the code on GitHub</a><span class="sep">·</span>Newly public, hit a rough edge? <a href="https://github.com/bks-lab/open-bridge/issues" target="_blank" rel="noopener">Tell us</a>.</span>
-        <span data-lang="de"><a href="demo.html">▶ Sieh es arbeiten (90 Sek.)</a><span class="sep">·</span><a href="https://github.com/bks-lab/open-bridge" target="_blank" rel="noopener">Lies den Code auf GitHub</a><span class="sep">·</span>Frisch öffentlich, irgendwo hakt es? <a href="https://github.com/bks-lab/open-bridge/issues" target="_blank" rel="noopener">Sag's uns</a>.</span>
-      </p>
     </div>
   </div>
 </section>

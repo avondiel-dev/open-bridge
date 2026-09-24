@@ -357,7 +357,12 @@
       '#obw-maximize{display:none;}',
       '#obw-header{padding-left:16px;}',
       '.obw-row{max-width:94%;}',
-      '#obw-label{right:1rem;bottom:5.15rem;max-width:min(230px,calc(100vw - 2rem));font-size:.72rem;opacity:.92;}',
+      /* A phone has no spare corner: the label pill sat on top of the hero
+         buttons. Only the round launcher stays, a size smaller, and it waits
+         until the reader has scrolled past the first screen (obw-away). */
+      '#obw-label{display:none !important;}',
+      '#obw-launcher{width:48px;height:48px;bottom:1rem;right:1rem;transition:opacity .2s ease-out,transform .2s ease-out,visibility .2s;}',
+      '#obw-launcher.obw-away{opacity:0;visibility:hidden;transform:translateY(8px) scale(.9);}',
       '.obw-msg.obw-agent .obw-md-table{font-size:.75rem;}',
       '}',
 
@@ -1311,6 +1316,27 @@
     }
 
     applyStrings();
+
+    // Phone width: keep the launcher out of the first screen, where it would
+    // cover the page's own calls to action. It shows once the reader scrolls
+    // past ~60% of a screen, or reaches the end of a short page.
+    (function gateLauncher() {
+      var mq = window.matchMedia ? window.matchMedia('(max-width:639px)') : null;
+      var ticking = false;
+      function update() {
+        ticking = false;
+        var y = window.scrollY || window.pageYOffset || 0;
+        var h = window.innerHeight || 0;
+        var atEnd = y + h >= document.documentElement.scrollHeight - 4;
+        var away = !!(mq && mq.matches) && y < h * 0.6 && !atEnd;
+        launcher.classList.toggle('obw-away', away);
+      }
+      function onScroll() { if (!ticking) { ticking = true; window.requestAnimationFrame(update); } }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+      update();
+    })();
+
     launcher.addEventListener('click', function () { openPanel(); });
     if (launcherLabel) launcherLabel.addEventListener('click', function () { openPanel(); });
     closeBtn.addEventListener('click', closePanel);
