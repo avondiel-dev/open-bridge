@@ -184,18 +184,19 @@ flowchart LR
 
 Sub-agents (Claude Code) take heavy reads out of the main session and return a summary; one reference sub-agent ships in [`.claude/agents/`](.claude/agents/archivist.md). What a session loads before its first answer has a declared budget that CI enforces: [docs/context-index.md](docs/context-index.md).
 
-## Why not just a CLAUDE.md?
+## Why not just a CLAUDE.md, or a notes vault?
 
-A `CLAUDE.md` is one flat instruction sheet. A Bridge is a structured workspace that keeps a work record across sessions, keeps clients apart, and takes template updates without touching your data.
+A `CLAUDE.md` is one flat instruction sheet. A personal notes vault wired to an agent (the Obsidian-style second brain) remembers well for one person. A Bridge is a structured workspace that keeps a work record across sessions, keeps clients and companies apart in separate instances, and shares one company layer across a team: a new colleague starts with a Bridge that already knows the clients and the routines ([org overlays](docs/org-overlays.md)). Template updates arrive without touching your data.
 
-| | a `CLAUDE.md` | memory-MCP server | Notion/Linear + MCP | BKS open-bridge |
-|---|---|---|---|---|
-| Survives across sessions | partly: static instructions | yes | yes | yes |
-| Plain files you own, diffable, no lock-in | yes | usually a DB or vendor store | no, SaaS | yes |
-| Same context in Claude Code, Codex, Copilot CLI | partly | per-tool wiring | per-tool wiring | yes: one `skills/` tree |
-| Shipped work structure (board, log, task status) | no | no | you build it yourself | yes |
-| Separate per-client worlds | no | no | manual discipline | yes: one instance per client |
-| Safety gates written in (propose-confirm, push guard) | no | no | no | yes |
+| | a `CLAUDE.md` | memory-MCP server | Notion/Linear + MCP | notes vault + agent | BKS open-bridge |
+|---|---|---|---|---|---|
+| Survives across sessions | partly: static instructions | yes | yes | yes | yes |
+| Plain files you own, diffable, no lock-in | yes | usually a DB or vendor store | no, SaaS | yes | yes |
+| Same context in Claude Code, Codex, Copilot CLI | partly | per-tool wiring | per-tool wiring | depends on the setup | yes: one `skills/` tree |
+| Shipped work structure (board, log, task status) | no | no | you build it yourself | notes and daily pages | yes |
+| Separate per-client worlds | no | no | manual discipline | one personal vault | yes: one instance per client or company |
+| Shared company layer for a team | no | no | shared workspace, SaaS | no | yes: an org overlay every instance subscribes to |
+| Safety gates written in (propose-confirm, push guard) | no | no | no | no | yes |
 
 ## Safety
 
