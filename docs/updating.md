@@ -44,6 +44,13 @@ upstream/main` once. Details: [install.md](install.md).
 Before a merge, `python3 scripts/bridge-divergence-check.py` lists every CORE
 file you changed locally and flags the ones upstream changed too.
 
+**If your instance is private and versions its own data**, look at the
+`.gitignore` hunk of every update. When upstream starts ignoring another USER
+folder, files you already track stay tracked, but a **new** file there is
+silently left out of your commits and your backup. Re-allow that block in your
+`.gitignore` the same way you did for the others. `git check-ignore -v
+<folder>/new.yaml` shows which rule wins.
+
 ## Unattended, once a day
 
 [`scripts/upstream-autoupdate.sh`](../scripts/upstream-autoupdate.sh) merges

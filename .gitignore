@@ -64,6 +64,55 @@ workflow/projects/*.yaml
 infra/remotes/*.yaml
 !infra/remotes/_template.yaml
 !infra/remotes/_schema.yaml
+# The remaining cluster-wrapper instance folders. AGENTS.md § Scope: inside
+# identity/ infra/ workflow/, `_template.yaml` / `_schema.yaml` are CORE and
+# every other *.yaml is a USER instance. These were unprotected, so an instance
+# file authored into them is TRACKED and can reach a public upstream.
+# infra/channels/ is the sharp one: it carries recipients, phone numbers and
+# addresses for outbound messaging.
+identity/contracts/*.yaml
+!identity/contracts/_template.yaml
+!identity/contracts/_schema.yaml
+infra/channels/*.yaml
+!infra/channels/_template.yaml
+!infra/channels/_schema.yaml
+infra/backups/*.yaml
+!infra/backups/_template.yaml
+!infra/backups/_schema.yaml
+infra/transcriptions/*.yaml
+!infra/transcriptions/_template.yaml
+!infra/transcriptions/_schema.yaml
+infra/instances/*.yaml
+!infra/instances/_template.yaml
+!infra/instances/_schema.yaml
+# The rest of the families under the same rule. vehicles carries plates and
+# VINs, utilities meter numbers and supply addresses, workloads host names and
+# paths, secret-stores and object-stores where private material lives,
+# workspaces local checkout paths. The patterns match direct children only, so
+# the shipped _tests/ fixtures under workloads/ and object-stores/ stay tracked.
+identity/vehicles/*.yaml
+!identity/vehicles/_template.yaml
+!identity/vehicles/_schema.yaml
+infra/utilities/*.yaml
+!infra/utilities/_template.yaml
+!infra/utilities/_schema.yaml
+infra/secret-stores/*.yaml
+!infra/secret-stores/_template.yaml
+!infra/secret-stores/_schema.yaml
+infra/object-stores/*.yaml
+!infra/object-stores/_template.yaml
+!infra/object-stores/_schema.yaml
+workflow/workloads/*.yaml
+!workflow/workloads/_template.yaml
+!workflow/workloads/_schema.yaml
+workflow/workspaces/*.yaml
+!workflow/workspaces/_template.yaml
+!workflow/workspaces/_schema.yaml
+# The orchestrator's live identity. Onboarding writes IDENTITY.md and SOUL.md
+# from the shipped _template.*.md seeds; the live files are USER.
+identity/agent/*.md
+!identity/agent/README.md
+!identity/agent/_*.md
 # Org-namespaced rules + the org ecosystem fragment — overlay-materialized,
 # org-internal. (rules/*.md at the repo root are CORE and stay tracked.)
 rules/org/**
