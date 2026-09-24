@@ -74,6 +74,7 @@ searches again.
 |---|---|
 | How are GitHub issues read and normalised for the briefing? | [`trackers/github.md`](../trackers/github.md) |
 | How are Azure DevOps work items read and normalised for the briefing? | [`trackers/ado.md`](../trackers/ado.md) |
+| How are GitLab issues read and normalised for the briefing? | [`trackers/gitlab.md`](../trackers/gitlab.md) |
 | Which GraphQL call does a GitHub Projects operation need? | [`skills/github-projects-manager/references/graphql-patterns.md`](../skills/github-projects-manager/references/graphql-patterns.md) |
 | What is a tool called in the agent client I am running in? | [`docs/tool-mapping.md`](tool-mapping.md) |
 | Which colour, font or spacing does a page or slide use? | [`DESIGN.md`](../DESIGN.md) |
