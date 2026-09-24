@@ -59,23 +59,17 @@ instances has reported using it yet, so none of this is a market test.
   [#91](https://github.com/bks-lab/open-bridge/issues/91)) were closed as
   duplicates without the default being built.
 - First-session value is thin: a fresh clone gives little reward until
-  `work/log.md` is filled. More worked examples
-  ([#45](https://github.com/bks-lab/open-bridge/issues/45)) are the current
-  answer.
+  `work/log.md` is filled. Two worked examples (`examples/agency`,
+  `examples/portfolio`) are the current answer; a third shape follows when
+  someone asks for it ([#45](https://github.com/bks-lab/open-bridge/issues/45)).
 - Rolling an instance out to someone else, with a structured way to learn
   from how it behaves, is set aside for now
   ([#56](https://github.com/bks-lab/open-bridge/issues/56)).
 
 ## Next
 
-- **A documentation overhaul** (in flight, no issue): one name for the
-  product, a docs index that lists every page once, a complete command
-  reference held to the skill tree by CI, install, update and secrets guides,
-  and this file as the single home of the ledger above.
-- **More worked examples**
-  ([#45](https://github.com/bks-lab/open-bridge/issues/45)): end-to-end
-  example setups beyond `examples/agency`, so a fresh clone starts from a
-  closer shape and the cold-start problem shrinks.
+Nothing is in flight. The next item is whatever the OPEN column above or a
+new issue earns first.
 
 ## Later
 
@@ -85,6 +79,17 @@ Discussion if something you need is missing.
 
 ## Shipped
 
+- **Documentation overhaul**
+  ([#234](https://github.com/bks-lab/open-bridge/pull/234),
+  [#235](https://github.com/bks-lab/open-bridge/pull/235)): the README as a
+  front door, install, update and secrets guides, a docs index that lists
+  every page once, a command reference held to the skill tree by CI, and this
+  file as the single home of the ledger.
+- **A second worked example**
+  ([#45](https://github.com/bks-lab/open-bridge/issues/45),
+  [#236](https://github.com/bks-lab/open-bridge/pull/236)):
+  `examples/portfolio`, one person with several hats and a home server, with
+  every example validated against the CORE schemas in CI.
 - **Persistent project memory**: context that survives across sessions, in plain
   markdown + YAML in git.
 - **Cross-tool skill discovery**: the same `SKILL.md` skills are found through
