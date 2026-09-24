@@ -30,7 +30,7 @@ proposes durable facts for the memory base — which *is* loaded every session
 
 | Argument | Effect | Default |
 |----------|--------|---------|
-| `(none)` | Archive **every closed period** still in the log, one file each, per `work.archive_cadence` | — |
+| `(none)` | Archive every closed period in the log, one file each, per `work.archive_cadence` | — |
 | `--force` | Archive the current (in-progress) period too | false |
 | `--no-distil` | Skip Phase 5; archive without proposing memories | false |
 

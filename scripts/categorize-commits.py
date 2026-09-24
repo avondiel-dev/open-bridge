@@ -442,13 +442,6 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     # than as an error. validate.yml runs its contract.
     "scripts/archive-buckets.py",
     "scripts/tests/test_archive_buckets.py",
-    # Registered with the scheduled archive. It runs DAILY and does only the
-    # mechanical half; the judgement half is recorded as owed. lib/bridge-python.sh
-    # is the one interpreter resolver the currency jobs share, so a fix lands once.
-    "scripts/archive-autorun.py",
-    "scripts/archive-autorun.sh",
-    "scripts/lib/bridge-python.sh",
-    "scripts/tests/test_archive_autorun.py",
 })
 
 
