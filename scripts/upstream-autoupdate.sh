@@ -95,7 +95,20 @@ git fetch "$UPSTREAM_REMOTE" -q 2>/dev/null || true
 behind=$(git rev-list --count "HEAD..$UPSTREAM_REF" 2>/dev/null || echo x)
 is_int "$behind" || { report "- 🔴 cannot resolve \`$UPSTREAM_REF\` (fetch failed?)"; echo "autoupdate: no upstream ref"; exit 1; }
 if [ "$behind" -eq 0 ]; then
-  report "- ✓ up to date (0 behind \`$UPSTREAM_REF\`)"; echo "autoupdate: up to date"; exit 0
+  # The mirror still has to be asked, and this is the path where it matters most.
+  # mirror_core_branch() used to be reachable ONLY after a successful auto-merge,
+  # so an instance whose HEAD was brought up to date by hand — the case where a
+  # human had to resolve a conflict — left origin/main behind for good: every
+  # later run took this early exit and never looked. Measured on 2026-09-24,
+  # seven days after the mirror step shipped: HEAD current, mirror 36 commits
+  # behind, and the next user-branch push would have carried all of it again.
+  # The call is idempotent (it checks ancestry and no-ops when already current),
+  # so running it here costs nothing on a genuinely quiet day.
+  mirror_line=$(mirror_core_branch)
+  report "- ✓ up to date (0 behind \`$UPSTREAM_REF\`)" "$mirror_line"
+  echo "autoupdate: up to date"
+  echo "autoupdate: mirror — ${mirror_line#- }"
+  exit 0
 fi
 
 # informational divergence count for the report (NOT a gate; unknown → '?')

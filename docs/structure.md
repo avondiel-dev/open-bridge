@@ -227,7 +227,7 @@ USER paths (`user/{name}` branch):
 
 ## gitignore policy
 
-Personas, mandants, contexts and workflow data are USER-layer files. In OSS-public forks they are gitignored; in private downstream instances they may be tracked as offsite backup:
+Every instance file under the cluster wrappers is a USER-layer file. The shipped `.gitignore` ignores `*.yaml` directly inside each family folder (`identity/`, `infra/`, `workflow/`) and keeps only `_template.yaml` and `_schema.yaml`, plus the live `identity/agent/*.md` except `README.md` and the `_template.*.md` seeds. A public fork therefore cannot commit them by accident. A **private** instance may re-allow the blocks it wants versioned as offsite backup, in its own `.gitignore` ([updating.md](updating.md#manually) says what to check after an update adds a block). The pattern, for one family:
 
 ```
 identity/personas/*.yaml             # USER PII
