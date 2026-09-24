@@ -141,6 +141,9 @@ jobs:
       - name: Run question-map test suite and check
         run: python3 -m pytest scripts/tests/test_where_things_live.py -q -rs && python3 scripts/check-where-things-live.py
 
+      - name: Run command-reference test suite and check
+        run: python3 -m pytest scripts/tests/test_commands_doc.py -q -rs && python3 scripts/check-commands-doc.py
+
       - name: Run learning-ledger test suite
         run: pip install "jsonschema>=4.18" && bash scripts/tests/test-learning-ledger.sh
 
