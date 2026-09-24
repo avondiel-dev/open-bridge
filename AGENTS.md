@@ -330,6 +330,10 @@ is the difference between authoring a rule and losing it silently):
 python3 scripts/validate-bridge.py     # validates, then writes .bridge/rule-scope.md
 ```
 
+**A question and no idea which file answers it?** Look it up in
+[`docs/where-things-live.md`](docs/where-things-live.md) first; not there,
+answer it, then propose the row.
+
 **The rules that fire before you would think to look them up**, since knowing
 they exist is the whole point of naming any of them here:
 

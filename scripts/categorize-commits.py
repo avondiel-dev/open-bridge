@@ -38,6 +38,7 @@ USER_PATTERNS = [
     r"^work/",                                        # incl. the job-application pipeline stream
     r"^rules/user/",                                  # user-tier rules (applications, …) — folder = tier
     r"^docs/applications\.md$",                       # personal applications feature — user-tier
+    r"^docs/where-things-live\.local\.md$",           # an instance's own rows of the question map
     r"^bridge-config\.yaml$",
     r"^bridge-deck\.config\.yaml$",
     r"^overlays\.lock\.yaml$",                         # generated org-overlay lockfile — local-only, never promoted
@@ -249,6 +250,7 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     "scripts/check-inline-scripts.py",
     "scripts/check-site-links.py",
     "scripts/check-skill-learnings.py",
+    "scripts/check-where-things-live.py",
     "scripts/extract-bridge-state.py",
     "scripts/extract-frontmatter.py",
     "scripts/gen-board.py",
@@ -308,6 +310,7 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     "scripts/tests/test-workspace.sh",
     "scripts/tests/test_learning_ledger.py",
     "scripts/tests/test_skill_learnings.py",
+    "scripts/tests/test_where_things_live.py",
     "scripts/tests/test_memory_location.py",
     "scripts/tests/test_okf_export.py",
     "scripts/tracker-sync.py",

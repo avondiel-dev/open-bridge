@@ -157,6 +157,11 @@ turns), document across the five layers — fill the ones that apply:
 4. **Code / config → commit** (atomic, scope-split CORE → BKS → USER); push when the tree is clean.
 5. **Cross-session insight → memory, with a session-link** — `reference` (gotcha) / `project` (ongoing) / `feedback` (rule), each carrying its `<session-id>.jsonl` path for traceability; keep the `MEMORY.md` index line short. The link resolves only while the harness keeps that transcript (30 days by default), so write the fact to stand on its own text: [`docs/memory.md`](../docs/memory.md) § Retention.
 
+A question whose answer took a search to find is a sixth thing to keep: propose it
+as a row of [`docs/where-things-live.md`](../docs/where-things-live.md), phrased the
+way you asked it, so the next person finds the file without the search. An answer
+that lives only in this instance goes into `where-things-live.local.md` (§ Adding rows).
+
 ## Live inventory
 
 The current scoped inventory is whatever the validator reports — read it

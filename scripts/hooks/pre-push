@@ -120,7 +120,7 @@ ZERO="0000000000000000000000000000000000000000"
 # rule below is the primary guard; this content net is the backstop that catches
 # USER instance files smuggled onto ANY other branch name (main, feature/*, a
 # renamed user branch, …) — names are not trusted, content is.
-USER_PATHS='^(work/(log\.md|board\.md|tasks/|streams/|done/|archive/|memory/)|identity/agent/[^_]|identity/(personas|mandants|accounts|contracts)/[^_]|identity/voiceprints/|infra/(remotes|channels|backups|instances|utilities|transcriptions)/[^_]|workflow/(calendars|contexts|projects|checks|workspaces|workloads)/[^_]|agents/[^_]|skills/[^/]+/(LEARNINGS\.md|references/provenance\.md)$|ecosystem\.[a-z0-9-]+\.yaml$|(overlays|workspaces)\.lock\.yaml$|bridge-config\.yaml$)'
+USER_PATHS='^(work/(log\.md|board\.md|tasks/|streams/|done/|archive/|memory/)|identity/agent/[^_]|identity/(personas|mandants|accounts|contracts)/[^_]|identity/voiceprints/|infra/(remotes|channels|backups|instances|utilities|transcriptions)/[^_]|workflow/(calendars|contexts|projects|checks|workspaces|workloads)/[^_]|agents/[^_]|skills/[^/]+/(LEARNINGS\.md|references/provenance\.md)$|docs/where-things-live\.local\.md$|ecosystem\.[a-z0-9-]+\.yaml$|(overlays|workspaces)\.lock\.yaml$|bridge-config\.yaml$)'
 
 # CORE companions that live INSIDE the USER_PATHS prefixes and must keep flowing
 # upstream. Stripped before the match, so this list is the only thing standing

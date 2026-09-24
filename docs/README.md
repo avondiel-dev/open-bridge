@@ -16,6 +16,7 @@ instead of a bespoke `_MOC.md` / `index.md` convention.
 
 - The onboarding wizard lives in the `bridge-onboard` skill (`skills/bridge-onboard/`) — trigger via `/bridge-onboard`.
 - [`feature-tour.md`](feature-tour.md) — per-cluster-wrapper "create your first X" guide (post-onboarding).
+- [`where-things-live.md`](where-things-live.md): a question in your own words on the left, the file that answers it on the right. Start here when you have a question and no idea where its answer lives.
 - [`structure.md`](structure.md) — Cluster-wrapper layout in prose form (Default-to-Folder).
 - [`repo-layout.md`](repo-layout.md) — Visualisations. The primary C-prime view is generated on demand; brain-metaphor variants v1–v4 are alternatives.
 - [`extension-model.md`](extension-model.md) — how CORE extends, how USER customises.

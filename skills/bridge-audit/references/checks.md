@@ -606,6 +606,23 @@ neither half is not a finding: the convention is opt-in.
 **Fix mode:** none. Adding the missing half means writing either the routing
 block (template in the doc) or the first journal entry, a content decision.
 
+## Check 15: Question map
+
+The map from a question to the file that answers it
+([`docs/where-things-live.md`](../../../docs/where-things-live.md)), plus the
+instance's own rows in `docs/where-things-live.local.md`, is worth something
+only while every left cell is a question and every right cell resolves. CI
+holds the CORE file to that; an instance's file is checked here and nowhere else.
+
+**Algorithm:** run `python3 scripts/check-where-things-live.py`. Each line it
+prints before the summary is one **P2** finding: a row phrased as a topic, a
+link that does not resolve, a `#section` the target does not have, or an
+instance row that repeats a CORE question. Exit 0 means none. A missing
+instance file is not a finding: it is created the first time it is needed.
+
+**Fix mode:** none. Rephrasing a topic as the question somebody asks, and
+finding where a moved answer went, are both content decisions.
+
 ## --cross-repo mode
 
 **Prerequisites:** `bridge-config.yaml.upstreams[]` defines targets and `gh` is authenticated.
@@ -641,3 +658,4 @@ not marked fixable below: print the suggested fix, leave application to the user
 | 11 Memory-gate | No | Promotion needs translation + tier choice — human-authored move |
 | 12 Config-driven | No | Move-to-config is a content move — advisory only |
 | 14 Skill learnings | No | The missing half is content: a routing block or a first entry |
+| 15 Question map | No | Rephrasing a row or finding a moved answer is content |
