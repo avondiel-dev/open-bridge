@@ -42,6 +42,10 @@ points at the `rules/` and `docs/` files that carry the mechanics.
    present on a fresh clone as the registry template — onboarding uses it as the starting
    point (copy + auto-populate → the gitignored `ecosystem.yaml`); do not hand-copy it.
 
+**A question and no idea which file answers it?** Look it up in
+[`docs/where-things-live.md`](docs/where-things-live.md) first; not there,
+answer it, then propose the row.
+
 ## Session Start Detection (automatic)
 
 Before responding to ANY user message at session start, run Phase 0 from
@@ -329,10 +333,6 @@ is the difference between authoring a rule and losing it silently):
 ```bash
 python3 scripts/validate-bridge.py     # validates, then writes .bridge/rule-scope.md
 ```
-
-**A question and no idea which file answers it?** Look it up in
-[`docs/where-things-live.md`](docs/where-things-live.md) first; not there,
-answer it, then propose the row.
 
 **The rules that fire before you would think to look them up**, since knowing
 they exist is the whole point of naming any of them here:

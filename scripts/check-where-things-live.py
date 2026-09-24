@@ -4,13 +4,14 @@
 
 `docs/where-things-live.md` maps a question, in the words somebody asks it, to
 the file that answers it. An instance appends its own rows in
-`docs/where-things-live.local.md`. The map is worth something only while two
+`work/where-things-live.md`. The map is worth something only while two
 properties hold, and both decay quietly:
 
   - the left column is a question. A row phrased as a topic ("Tracker
     conventions") makes the reader deduce whether it is theirs, which is the
     work the map exists to save;
-  - the right column resolves. A link at a renamed file or a vanished section
+  - the right column resolves, inside this repository and with the exact
+    case of every path segment, since CI runs on a case-sensitive disk. A link at a renamed file or a vanished section
     sends the reader nowhere at the moment they needed it.
 
     python3 scripts/check-where-things-live.py [--root DIR]
@@ -24,15 +25,27 @@ Contract: `scripts/tests/test_where_things_live.py`.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 CORE_MAP = "docs/where-things-live.md"
-LOCAL_MAP = "docs/where-things-live.local.md"
+LOCAL_MAP = "work/where-things-live.md"
 
-MD_LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
-SEPARATOR = re.compile(r"^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$")
+# `[text](target)`, `[text](target "title")` and `[text](<target with spaces>)`;
+# a target may hold one level of balanced parentheses.
+MD_LINK = re.compile(r"\[[^\]]*\]\(\s*(?:<([^>]*)>|((?:[^()\s]|\([^()\s]*\))+))"
+                     r"(?:\s+(?:\"[^\"]*\"|'[^']*'))?\s*\)")
+SEPARATOR = re.compile(r"^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$")
+
+# A row is a question when it ends in "?" AND opens the way a question does.
+# "Tracker conventions?" is a topic with a question mark; the property this
+# guards is that a reader recognises their own question, not deduces it.
+INTERROGATIVES = frozenset(
+    "how what where which who whom whose why when may can could do does did is "
+    "are am was were should must will would has have".split())
 
 
 def unfenced(text: str) -> list[tuple[int, str]]:
@@ -96,25 +109,52 @@ def anchors(path: Path) -> set[str]:
     return result
 
 
+def is_question(text: str) -> bool:
+    words = re.findall(r"[A-Za-z']+", text)
+    return text.rstrip().endswith("?") and bool(words) and words[0].lower() in INTERROGATIVES
+
+
+def links(cell: str) -> list[str]:
+    return [angled or bare for angled, bare in MD_LINK.findall(cell)]
+
+
+def case_mismatch(root: Path, target: Path) -> str | None:
+    """The first path segment whose spelling differs from the disk's, or None.
+    macOS resolves `Rules/Gate.md` happily; Linux CI does not."""
+    current = root
+    for part in target.relative_to(root).parts:
+        try:
+            names = os.listdir(current)
+        except OSError:
+            return None
+        if part not in names:
+            return part
+        current = current / part
+    return None
+
+
 def normalise(question: str) -> str:
     return " ".join(question.lower().split())
 
 
 def check_file(root: Path, rel: str, core_questions: set[str] | None) -> tuple[list[str], set[str]]:
     path = root / rel
+    repo = root.resolve()
     findings: list[str] = []
     questions: set[str] = set()
     for lineno, question, answer in rows(path.read_text(encoding="utf-8", errors="replace")):
         where = f"{rel}:{lineno}"
-        if not question.rstrip().endswith("?"):
+        if not is_question(question):
             findings.append(f"{where}: {question!r} is a topic, not a question; "
                             "phrase it the way somebody would ask it")
         key = normalise(question)
         if core_questions is not None and key in core_questions:
             findings.append(f"{where}: {question!r} is already asked in {CORE_MAP}; "
                             "an instance row adds a question, it does not repeat one")
+        elif key in questions:
+            findings.append(f"{where}: {question!r} is already asked earlier in this file")
         questions.add(key)
-        targets = MD_LINK.findall(answer)
+        targets = links(answer)
         if not targets:
             findings.append(f"{where}: the answer column has no link; "
                             "write it as [`path`](relative/path)")
@@ -122,13 +162,29 @@ def check_file(root: Path, rel: str, core_questions: set[str] | None) -> tuple[l
             if "://" in target or target.startswith("mailto:"):
                 continue
             file_part, _, anchor = target.partition("#")
-            resolved = (path.parent / file_part).resolve() if file_part else path
+            file_part = unquote(file_part.split("?", 1)[0])
+            resolved = (path.parent / file_part).resolve() if file_part else path.resolve()
+            if not resolved.is_relative_to(repo):
+                findings.append(f"{where}: {target} points outside the repository, "
+                                "so it resolves on one machine at most")
+                continue
             if not resolved.exists():
                 findings.append(f"{where}: {target} does not exist")
-            elif anchor and resolved.is_file() and resolved.suffix == ".md" \
-                    and anchor not in anchors(resolved):
-                findings.append(f"{where}: {target} names a section (#{anchor}) "
-                                f"that {resolved.name} does not have")
+                continue
+            wrong = case_mismatch(repo, resolved)
+            if wrong is not None:
+                findings.append(f"{where}: {target} does not exist with that spelling "
+                                f"({wrong!r} differs in case), which a case-sensitive disk refuses")
+                continue
+            if anchor and resolved.is_file() and resolved.suffix == ".md":
+                try:
+                    known = anchors(resolved)
+                except OSError as err:
+                    findings.append(f"{where}: {target} cannot be read ({err.strerror})")
+                    continue
+                if anchor not in known:
+                    findings.append(f"{where}: {target} names a section (#{anchor}) "
+                                    f"that {resolved.name} does not have")
     return findings, questions
 
 

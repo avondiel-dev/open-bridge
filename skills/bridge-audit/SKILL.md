@@ -59,7 +59,7 @@ Read the referenced file ONLY when triggered.
 | 12 | Config-driven CORE skills | `scope: core` skill files (`SKILL.md` + `references/`) that hardcode instance specifics — org/project IDs, tracker queries, persona names, pipeline IDs, absolute instance paths — instead of reading them from `bridge-config.yaml` / `workflow/` / `infra/` / `identity/` (CLAUDE.md § Generic CORE Skills) | P2 |
 | 13 | User-level skill shadowing | `~/.claude/skills/` (resolved) ↔ this repo's `skills/` — the user level overrides the project level, so a pointer at a Bridge repo silently serves one instance's skills to every other instance (AGENTS.md § Skills). Both directions: this instance shadowing others, and others shadowing this one (with `diff -rq` drift per colliding name). Also reports scripts that resolve the path as a filesystem location | P0 if own skills are shadowed or instance-bound skills (scope org or user) leak machine-wide, else P1 |
 | 14 | Skill learnings pairing | `python3 scripts/check-skill-learnings.py`: a skill with `LEARNINGS.md` but no routing block in SKILL.md, a routing block without a journal, or an undated journal heading (`docs/skill-learnings.md`) | P2 |
-| 15 | Question map | `python3 scripts/check-where-things-live.py`: a row of `docs/where-things-live.md` or the instance's `where-things-live.local.md` that is a topic instead of a question, a link or `#section` that does not resolve, or an instance row repeating a CORE question | P2 |
+| 15 | Question map | `python3 scripts/check-where-things-live.py`: a row of `docs/where-things-live.md` or the instance's `work/where-things-live.md` that is a topic instead of a question, a link or `#section` that does not resolve, or a question asked twice | P2 |
 
 ## Decision Tree
 

@@ -610,14 +610,15 @@ block (template in the doc) or the first journal entry, a content decision.
 
 The map from a question to the file that answers it
 ([`docs/where-things-live.md`](../../../docs/where-things-live.md)), plus the
-instance's own rows in `docs/where-things-live.local.md`, is worth something
-only while every left cell is a question and every right cell resolves. CI
-holds the CORE file to that; an instance's file is checked here and nowhere else.
+instance's own rows in `work/where-things-live.md`, is worth something only
+while every left cell is a question and every right cell resolves. CI runs the
+same check on every push; the audit catches an instance whose CI is off or whose
+rows went stale without a push.
 
 **Algorithm:** run `python3 scripts/check-where-things-live.py`. Each line it
 prints before the summary is one **P2** finding: a row phrased as a topic, a
-link that does not resolve, a `#section` the target does not have, or an
-instance row that repeats a CORE question. Exit 0 means none. A missing
+link that does not resolve, a `#section` the target does not have, or a
+question asked twice. Exit 0 means none. A missing
 instance file is not a finding: it is created the first time it is needed.
 
 **Fix mode:** none. Rephrasing a topic as the question somebody asks, and

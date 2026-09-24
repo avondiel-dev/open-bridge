@@ -38,7 +38,6 @@ USER_PATTERNS = [
     r"^work/",                                        # incl. the job-application pipeline stream
     r"^rules/user/",                                  # user-tier rules (applications, …) — folder = tier
     r"^docs/applications\.md$",                       # personal applications feature — user-tier
-    r"^docs/where-things-live\.local\.md$",           # an instance's own rows of the question map
     r"^bridge-config\.yaml$",
     r"^bridge-deck\.config\.yaml$",
     r"^overlays\.lock\.yaml$",                         # generated org-overlay lockfile — local-only, never promoted

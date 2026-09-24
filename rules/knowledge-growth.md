@@ -160,7 +160,7 @@ turns), document across the five layers — fill the ones that apply:
 A question whose answer took a search to find is a sixth thing to keep: propose it
 as a row of [`docs/where-things-live.md`](../docs/where-things-live.md), phrased the
 way you asked it, so the next person finds the file without the search. An answer
-that lives only in this instance goes into `where-things-live.local.md` (§ Adding rows).
+that lives only in this instance goes into `work/where-things-live.md` (§ Adding rows).
 
 ## Live inventory
 

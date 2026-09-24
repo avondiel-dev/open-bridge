@@ -7,7 +7,7 @@ CONTRACT, this file is the authoritative spec for that surface.
 WHY THIS EXISTS. `docs/where-things-live.md` answers "I have this question
 right now, where is the answer?" with a two-column table: a question in the
 asker's own words on the left, the file that answers it on the right. An
-instance appends its own rows in `docs/where-things-live.local.md`. Two
+instance appends its own rows in `work/where-things-live.md`. Two
 properties decay first and are checked here:
 
   - the left column is a QUESTION (ends in "?"), not a topic;
@@ -58,7 +58,8 @@ def tree(root: Path, core_rows: str, local_rows: str | None = None) -> None:
     (root / "docs" / "where-things-live.md").write_text(
         "# Where things live\n\n## Config\n\n" + HEADER + core_rows, encoding="utf-8")
     if local_rows is not None:
-        (root / "docs" / "where-things-live.local.md").write_text(
+        (root / "work").mkdir(exist_ok=True)
+        (root / "work" / "where-things-live.md").write_text(
             "# This instance\n\n" + HEADER + local_rows, encoding="utf-8")
 
 
@@ -116,7 +117,7 @@ def test_an_external_url_is_not_checked(tmp_path, capsys):
 
 def test_the_local_file_is_optional(tmp_path, capsys):
     tree(tmp_path, "| When does the gate fire? | [g](../rules/gate.md) |\n")
-    assert not (tmp_path / "docs" / "where-things-live.local.md").exists()
+    assert not (tmp_path / "work" / "where-things-live.md").exists()
     assert run(tmp_path, capsys)[0] == 0
 
 
@@ -125,7 +126,7 @@ def test_the_local_file_is_held_to_the_same_rules(tmp_path, capsys):
          local_rows="| Our wiki | [w](../rules/nope.md) |\n")
     code, out = run(tmp_path, capsys)
     assert code == 1
-    assert out.count("where-things-live.local.md:") == 2
+    assert out.count("work/where-things-live.md:") == 2
 
 
 def test_a_local_row_repeating_a_core_question_is_flagged(tmp_path, capsys):
@@ -150,6 +151,64 @@ def test_a_missing_map_is_a_finding(tmp_path, capsys):
 def test_a_pipe_inside_backticks_does_not_split_the_row(tmp_path, capsys):
     tree(tmp_path, "| What does `a \\| b` mean here? | [g](../rules/gate.md) |\n")
     assert run(tmp_path, capsys) == (0, "")
+
+
+def test_a_topic_with_a_question_mark_is_still_a_topic(tmp_path, capsys):
+    tree(tmp_path, "| Tracker conventions? | [g](../rules/gate.md) |\n")
+    code, out = run(tmp_path, capsys)
+    assert code == 1 and "question" in out
+
+
+def test_a_short_separator_is_still_a_separator(tmp_path, capsys):
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "gate.md").write_text("# Gate\n", encoding="utf-8")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "where-things-live.md").write_text(
+        "| Question | Where |\n|:--|--:|\n| Where is the gate? | [g](../rules/gate.md) |\n",
+        encoding="utf-8")
+    assert run(tmp_path, capsys) == (0, "")
+
+
+def test_links_with_a_title_or_angle_brackets_are_links(tmp_path, capsys):
+    tree(tmp_path, '| Where is the gate? | [g](../rules/gate.md "the gate") |\n'
+                   "| Where else is it? | [g](<../rules/gate.md>) |\n")
+    assert run(tmp_path, capsys) == (0, "")
+
+
+def test_a_title_link_to_a_dead_file_is_still_checked(tmp_path, capsys):
+    tree(tmp_path, '| Where is it? | [g](../rules/gone.md "gone") |\n')
+    code, out = run(tmp_path, capsys)
+    assert code == 1 and "does not exist" in out
+
+
+def test_a_link_leaving_the_repo_is_flagged(tmp_path, capsys):
+    outside = tmp_path.parent / "elsewhere.md"
+    outside.write_text("# x\n", encoding="utf-8")
+    tree(tmp_path, "| Where is the other file? | [x](../../elsewhere.md) |\n")
+    code, out = run(tmp_path, capsys)
+    assert code == 1 and "outside the repository" in out
+
+
+def test_a_wrongly_cased_path_is_flagged(tmp_path, capsys):
+    tree(tmp_path, "| Where is the gate? | [g](../Rules/Gate.md) |\n")
+    code, out = run(tmp_path, capsys)
+    assert code == 1 and "Rules/Gate.md" in out
+
+
+def test_a_percent_encoded_path_is_decoded(tmp_path, capsys):
+    tree(tmp_path, "| Where is the gate? | [g](../rules/gate.md?plain=1) |\n")
+    (tmp_path / "rules" / "a b.md").write_text("# x\n", encoding="utf-8")
+    (tmp_path / "docs" / "where-things-live.md").write_text(
+        "| Question | Where |\n|---|---|\n| Where is a b? | [x](../rules/a%20b.md) |\n",
+        encoding="utf-8")
+    assert run(tmp_path, capsys) == (0, "")
+
+
+def test_a_question_asked_twice_in_one_file_is_flagged(tmp_path, capsys):
+    tree(tmp_path, "| Where is the gate? | [g](../rules/gate.md) |\n"
+                   "| Where is the gate? | [g](../rules/gate.md) |\n")
+    code, out = run(tmp_path, capsys)
+    assert code == 1 and "already asked" in out
 
 
 def test_the_shipped_tree_passes():
