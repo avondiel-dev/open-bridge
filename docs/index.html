@@ -622,7 +622,7 @@ html.dark .path-prompts code{background:var(--code-bg)}
           <span class="arrow">→</span>
         </button>
         <a class="btn btn-secondary" href="#get-started">
-          <span data-lang="en">Try it in 2 minutes</span><span data-lang="de">In 2 Minuten ausprobieren</span>
+          <span data-lang="en">Set up your own</span><span data-lang="de">Eigene Bridge einrichten</span>
         </a>
       </div>
 
@@ -642,8 +642,8 @@ html.dark .path-prompts code{background:var(--code-bg)}
         <div class="code" data-lang="en"><span class="k">&gt; good morning</span>Morning. You're mid-incident on bigcorp: Stripe webhook retries are failing in prod (P1, opened yesterday). Root cause traced to the webhook secret; next step is the retry fix. startupxyz onboarding: email-verification wired, 6 tests green. Board: 2 doing · 1 review · cart-a11y waits on PR #214.</div>
         <div class="code" data-lang="de"><span class="k">&gt; guten morgen</span>Morgen. Auf bigcorp läuft ein P1: Stripe-Webhook-Retries schlagen in prod fehl. Root Cause gestern gefunden (Webhook-Secret); nächster Schritt ist der Retry-Fix. startupxyz-Onboarding: E-Mail-Verifikation steht, 6 Tests grün. Board: 2 doing · 1 review · cart-a11y wartet auf PR #214.</div>
         <p class="hero-term-cap">
-          <span data-lang="en">This is the shipped demo workspace answering. <a href="#get-started">Run it yourself in 2 minutes</a>.</span>
-          <span data-lang="de">Das ist der mitgelieferte Demo-Workspace. <a href="#get-started">Führ ihn in 2 Minuten selbst aus</a>.</span>
+          <span data-lang="en">This is the shipped demo workspace answering. <a href="#get-started">Set up your own with one prompt</a>.</span>
+          <span data-lang="de">Das ist der mitgelieferte Demo-Workspace. <a href="#get-started">Richte deine eigene mit einem Prompt ein</a>.</span>
         </p>
       </div>
 
@@ -1414,54 +1414,22 @@ html.dark .path-prompts code{background:var(--code-bg)}
   </div>
 </section>
 
-<!-- ======================= GET STARTED (Try | Adopt) ======================= -->
+<!-- ======================= GET STARTED (Set up your own | Look first) ======================= -->
 <section id="start" class="steps">
   <span id="get-started" aria-hidden="true"></span>
   <div class="container">
     <div class="sec-head reveal">
       <p class="eyebrow"><span data-lang="en">Get started</span><span data-lang="de">Loslegen</span></p>
-      <h2 class="h1"><span data-lang="en">Try it now, or adopt it properly.</span><span data-lang="de">Jetzt ausprobieren. Oder richtig übernehmen.</span></h2>
+      <h2 class="h1"><span data-lang="en">Set up your own, or look first.</span><span data-lang="de">Richte deine eigene ein. Oder schau erst mal.</span></h2>
     </div>
 
     <div class="path-grid reveal">
-      <!-- Path 1, Try: the shipped demo workspace, nothing to configure -->
+      <!-- Path 1, Set up your own: the agent prompt first, the manual commands below -->
       <div class="card path">
-        <h3 class="h4"><span data-lang="en">Try: 2 minutes, throwaway</span><span data-lang="de">Ausprobieren (2 Minuten, wegwerfbar)</span></h3>
-        <p class="path-note"><span data-lang="en">The shipped demo workspace: two clients, a filled board, two days of log, a P1 mid-flight. Don't push. This clone points at the public repo.</span><span data-lang="de">Der mitgelieferte Demo-Workspace: zwei Kunden, ein gefülltes Board, zwei Tage Log, ein P1 mittendrin. Nicht pushen: Dieser Clone zeigt aufs öffentliche Repo.</span></p>
-        <div class="code" id="try-code"><button class="copy-btn" id="copy-try" type="button">copy</button>git clone https://github.com/bks-lab/open-bridge.git
-cd open-bridge/examples/agency
-claude        <span class="cmt"># or: codex, copilot</span></div>
-        <p class="path-note"><span data-lang="en">Needs an agent CLI on your machine, e.g. <code>npm install -g @anthropic-ai/claude-code</code>.</span><span data-lang="de">Braucht eine Agent-CLI auf deinem Rechner (z. B. <code>npm install -g @anthropic-ai/claude-code</code>).</span></p>
-        <p class="path-prompts"><span data-lang="en">Then ask:</span><span data-lang="de">Dann frag:</span> <code>good morning</code> · <code>where was I on the payment retry?</code> · <code>why is the cart task in review?</code></p>
-        <p class="path-note"><span data-lang="en">Everything it answers is read from plain markdown sitting in that folder. Open <code>work/log.md</code> next to it and watch the trick disappear. That's the product.</span><span data-lang="de">Alles, was es antwortet, liest es aus purem Markdown in diesem Ordner; öffne daneben <code>work/log.md</code> und sieh zu, wie der Trick verschwindet. Genau das ist das Produkt.</span></p>
-      </div>
-
-      <!-- Path 2, Adopt: private origin first -->
-      <div class="card path">
-        <h3 class="h4"><span data-lang="en">Adopt: private origin first</span><span data-lang="de">Übernehmen (erst ein privates Origin)</span></h3>
-        <p class="path-note"><span data-lang="en">This is a public repo, so step 1 gives your data a private home: clone it, then re-home the remotes at once. Your repo becomes <code>origin</code>; BKS open-bridge stays a read-only <code>upstream</code>, so a stray push can't publish your branch.</span><span data-lang="de">Das ist ein öffentliches Repo, darum gibt Schritt 1 deinen Daten ein privates Zuhause: klonen, dann sofort die Remotes umziehen. Dein Repo wird <code>origin</code>; BKS open-bridge bleibt ein read-only <code>upstream</code>, damit ein versehentlicher Push deinen Branch nicht veröffentlichen kann.</span></p>
-        <div class="code" id="start-code"><button class="copy-btn" id="copy-start" type="button">copy</button><span class="cmt"># 1. Clone, then re-home the remotes at once: open-bridge becomes a read-only</span>
-<span class="cmt">#    upstream, your own private repo becomes origin.</span>
-git clone https://github.com/bks-lab/open-bridge.git my-bridge
-cd my-bridge
-git remote rename origin upstream
-gh repo create &lt;you&gt;/my-bridge --private --source=. --remote=origin --push
-
-<span class="cmt"># 2. Let the push guard classify your new origin offline:</span>
-printf 'repo: &lt;you&gt;/my-bridge\nis_public: false\n' &gt; .bridge-origin
-
-<span class="cmt"># 3. Arm the guard and repair the cross-tool discovery symlinks:</span>
-./bin/setup
-
-<span class="cmt"># 4. Onboard in Claude Code (writes to a user/{name} branch on YOUR private origin):</span>
-/bridge-onboard</div>
-        <p class="path-note"><span data-lang="en"><code>/bridge-onboard</code> then sets everything up and arms the <code>pre-push</code> guard before your <code>user/{name}</code> branch exists. On native Windows, run <code>bin/setup.ps1</code> instead of <code>./bin/setup</code>.</span><span data-lang="de"><code>/bridge-onboard</code> richtet dann alles ein und schaltet den <code>pre-push</code>-Guard scharf, bevor dein <code>user/{name}</code>-Branch existiert. Unter nativem Windows <code>bin/setup.ps1</code> statt <code>./bin/setup</code> ausführen.</span></p>
-        <p class="path-note"><span data-lang="en"><b>The "Use this template" button works too</b>, and the copy is private from the first second. But GitHub gives that copy a fresh history, so your <i>first</i> CORE update needs <code>git merge --allow-unrelated-histories upstream/main</code> once; every merge after that is ordinary.</span><span data-lang="de"><b>Der Knopf „Use this template" geht auch</b>, privat ab der ersten Sekunde. GitHub gibt dieser Kopie aber eine frische History, deshalb braucht dein <i>erstes</i> CORE-Update einmalig <code>git merge --allow-unrelated-histories upstream/main</code>; jeder weitere Merge ist gewöhnlich.</span></p>
-
+        <h3 class="h4"><span data-lang="en">Set up your own: hand it to your agent</span><span data-lang="de">Eigene einrichten: gib es deinem Agenten</span></h3>
         <!-- Agent-setup prompt: the native install path for people who already run an agent.
              One .code block per language (the page shows only the active data-lang variant),
              each with its own copy button so "copy" always grabs the visible prompt. -->
-        <p class="eyebrow"><span data-lang="en">Or hand it to your agent</span><span data-lang="de">Oder gib es deinem Agenten</span></p>
         <p class="path-note"><span data-lang="en">One prompt: it plans, builds your private copy, verifies the guard, and onboards you.</span><span data-lang="de">Ein Prompt. Er plant, baut deine private Kopie, verifiziert den Guard und onboardet dich.</span></p>
         <div class="code" data-lang="en" id="agent-prompt-en"><button class="copy-btn" id="copy-agent-en" type="button">copy</button>Set up BKS open-bridge for me: https://github.com/bks-lab/open-bridge
 It is a plain-text git repo (markdown + YAML) that an AI coding
@@ -1558,6 +1526,37 @@ Dann, in dieser Reihenfolge:
 Harte Regeln: niemals irgendetwas nach bks-lab/open-bridge pushen; mein
 user/*-Branch geht nur auf mein privates origin; niemals ein Secret in eine Datei
 schreiben; vor allen destruktiven Aktionen nachfragen.</div>
+        <p class="eyebrow"><span data-lang="en">Or by hand</span><span data-lang="de">Oder von Hand</span></p>
+        <p class="path-note"><span data-lang="en">This is a public repo, so step 1 gives your data a private home: clone it, then re-home the remotes at once. Your repo becomes <code>origin</code>; BKS open-bridge stays a read-only <code>upstream</code>, so a stray push can't publish your branch.</span><span data-lang="de">Das ist ein öffentliches Repo, darum gibt Schritt 1 deinen Daten ein privates Zuhause: klonen, dann sofort die Remotes umziehen. Dein Repo wird <code>origin</code>; BKS open-bridge bleibt ein read-only <code>upstream</code>, damit ein versehentlicher Push deinen Branch nicht veröffentlichen kann.</span></p>
+        <div class="code" id="start-code"><button class="copy-btn" id="copy-start" type="button">copy</button><span class="cmt"># 1. Clone, then re-home the remotes at once: open-bridge becomes a read-only</span>
+<span class="cmt">#    upstream, your own private repo becomes origin.</span>
+git clone https://github.com/bks-lab/open-bridge.git my-bridge
+cd my-bridge
+git remote rename origin upstream
+gh repo create &lt;you&gt;/my-bridge --private --source=. --remote=origin --push
+
+<span class="cmt"># 2. Let the push guard classify your new origin offline:</span>
+printf 'repo: &lt;you&gt;/my-bridge\nis_public: false\n' &gt; .bridge-origin
+
+<span class="cmt"># 3. Arm the guard and repair the cross-tool discovery symlinks:</span>
+./bin/setup
+
+<span class="cmt"># 4. Onboard in Claude Code (writes to a user/{name} branch on YOUR private origin):</span>
+/bridge-onboard</div>
+        <p class="path-note"><span data-lang="en"><code>/bridge-onboard</code> then sets everything up and arms the <code>pre-push</code> guard before your <code>user/{name}</code> branch exists. On native Windows, run <code>bin/setup.ps1</code> instead of <code>./bin/setup</code>.</span><span data-lang="de"><code>/bridge-onboard</code> richtet dann alles ein und schaltet den <code>pre-push</code>-Guard scharf, bevor dein <code>user/{name}</code>-Branch existiert. Unter nativem Windows <code>bin/setup.ps1</code> statt <code>./bin/setup</code> ausführen.</span></p>
+        <p class="path-note"><span data-lang="en"><b>The "Use this template" button works too</b>, and the copy is private from the first second. But GitHub gives that copy a fresh history, so your <i>first</i> CORE update needs <code>git merge --allow-unrelated-histories upstream/main</code> once; every merge after that is ordinary.</span><span data-lang="de"><b>Der Knopf „Use this template" geht auch</b>, privat ab der ersten Sekunde. GitHub gibt dieser Kopie aber eine frische History, deshalb braucht dein <i>erstes</i> CORE-Update einmalig <code>git merge --allow-unrelated-histories upstream/main</code>; jeder weitere Merge ist gewöhnlich.</span></p>
+      </div>
+
+      <!-- Path 2, Look first: the shipped demo workspace, nothing to configure -->
+      <div class="card path">
+        <h3 class="h4"><span data-lang="en">Look first: the demo, 2 minutes, throwaway</span><span data-lang="de">Erst anschauen: die Demo (2 Minuten, wegwerfbar)</span></h3>
+        <p class="path-note"><span data-lang="en">The shipped demo workspace: two clients, a filled board, two days of log, a P1 mid-flight. Don't push. This clone points at the public repo.</span><span data-lang="de">Der mitgelieferte Demo-Workspace: zwei Kunden, ein gefülltes Board, zwei Tage Log, ein P1 mittendrin. Nicht pushen: Dieser Clone zeigt aufs öffentliche Repo.</span></p>
+        <div class="code" id="try-code"><button class="copy-btn" id="copy-try" type="button">copy</button>git clone https://github.com/bks-lab/open-bridge.git
+cd open-bridge/examples/agency
+claude        <span class="cmt"># or: codex, copilot</span></div>
+        <p class="path-note"><span data-lang="en">Needs an agent CLI on your machine, e.g. <code>npm install -g @anthropic-ai/claude-code</code>.</span><span data-lang="de">Braucht eine Agent-CLI auf deinem Rechner (z. B. <code>npm install -g @anthropic-ai/claude-code</code>).</span></p>
+        <p class="path-prompts"><span data-lang="en">Then ask:</span><span data-lang="de">Dann frag:</span> <code>good morning</code> · <code>where was I on the payment retry?</code> · <code>why is the cart task in review?</code></p>
+        <p class="path-note"><span data-lang="en">Everything it answers is read from plain markdown sitting in that folder. Open <code>work/log.md</code> next to it and watch the trick disappear. That's the product.</span><span data-lang="de">Alles, was es antwortet, liest es aus purem Markdown in diesem Ordner; öffne daneben <code>work/log.md</code> und sieh zu, wie der Trick verschwindet. Genau das ist das Produkt.</span></p>
       </div>
     </div>
 
