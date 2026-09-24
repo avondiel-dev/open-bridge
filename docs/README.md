@@ -1,54 +1,91 @@
 ---
-summary: "Curated entry-points into the open-bridge documentation."
+summary: "The capability index of BKS open-bridge: every doc and site page, listed once, grouped by who is reading."
 type: readme
-last_updated: 2026-07-18
+last_updated: 2026-09-24
 ---
 
-# Docs — What's important?
+# BKS open-bridge documentation
 
-Curated entry-points. For the full inventory, scan the directory.
+Every page under `docs/` is listed here exactly once, grouped by where you
+are: your first day, coming back with a question, or operating and
+maintaining the project. The HTML pages are also published at
+<https://bks-lab.github.io/open-bridge/>. The operating manual for the agent
+itself is [`AGENTS.md`](../AGENTS.md); what is built, what is a bet and what
+comes next is in [`ROADMAP.md`](../ROADMAP.md).
 
-This file was previously named `docs/_MOC.md` — per AGENTS.md
-"Documentation Navigation" we now use `README.md` (industry standard)
-instead of a bespoke `_MOC.md` / `index.md` convention.
+## First day
 
-## Architecture & onboarding
+Start here if you have just cloned the repo or are deciding whether to.
 
-- The onboarding wizard lives in the `bridge-onboard` skill (`skills/bridge-onboard/`) — trigger via `/bridge-onboard`.
-- [`feature-tour.md`](feature-tour.md) — per-cluster-wrapper "create your first X" guide (post-onboarding).
-- [`where-things-live.md`](where-things-live.md): a question in your own words on the left, the file that answers it on the right. Start here when you have a question and no idea where its answer lives.
-- [`structure.md`](structure.md) — Cluster-wrapper layout in prose form (Default-to-Folder).
-- [`repo-layout.md`](repo-layout.md) — Visualisations. The primary C-prime view is generated on demand; brain-metaphor variants v1–v4 are alternatives.
-- [`extension-model.md`](extension-model.md) — how CORE extends, how USER customises.
+- [`index.html`](index.html): the landing page. What a Bridge is, in one scroll.
+- [`demo.html`](demo.html): four session flows (briefing, session start, an operator incident, onboarding) replayed as they run.
+- [`use-cases.html`](use-cases.html): concrete jobs, each a problem you will recognise and what the Bridge does about it.
+- [`concepts.html`](concepts.html): every concept in plain language, in depth.
+- [`explore.html`](explore.html): an interactive map of the concepts and of which files ship as CORE and which are yours.
+- Onboarding itself is the `bridge-onboard` skill (`skills/bridge-onboard/`): run `/bridge-onboard`.
+- [`feature-tour.md`](feature-tour.md): after onboarding, "create your first X" for each of the 19 config families.
+- [`commands.md`](commands.md): every CORE slash command and the skill behind it.
+- [`install.md`](install.md): setting up your own private instance, by prompt or by hand, and what each step is for.
+
+## Returning user
+
+You have an instance and a question. **Start with
+[`where-things-live.md`](where-things-live.md)**: a question in your own words
+on the left, the file that answers it on the right.
+
+**Layout and data**
+
+- [`structure.md`](structure.md): the cluster-wrapper layout in prose (Default-to-Folder) and the routing map.
 - [`data-model.md`](data-model.md): the data model on one page: islands, object types, stores, references, and what a session reads when.
-- [`object-store.md`](object-store.md): ADR for storage outside git. Which content belongs in an object store rather than a repository, how an entry points at it by reference, how access is granted per instance, and what happens when a store cannot be reached.
-- [`multi-instance.md`](multi-instance.md) — running multiple Bridge instances.
-- [`org-overlays.md`](org-overlays.md) — the downstream inverse of `/promote`: how a Bridge subscribes to an org's `scope:org` content and materializes it as copies (git-excluded by default, opt-in tracked).
-- [`workspaces.md`](workspaces.md) — binding config overlays + member repos into a named workspace (shared cross-tool identity + repo-local materialization).
-- [`workspace-acceptance-test.md`](workspace-acceptance-test.md) — standalone, zero-prior-context acceptance-test playbook for the workspace feature.
-- [`capability-registry.md`](capability-registry.md) — machine-global registry (`~/.bridge-capabilities/`) that lets a Bridge instance declare a shared capability (a transcription worker, a backup pipeline) exists and how to reach it, opt-in, without weakening data isolation.
-- [`knowledge-repo-pattern.md`](knowledge-repo-pattern.md) — pairing a Bridge instance with an optional knowledge/documentation repo.
-- [`skill-distribution-architecture.md`](skill-distribution-architecture.md) — ADR: where skills live across the tier model (framework repo vs org overlay marketplace).
-- [`install.md`](install.md): setting up a private Bridge, by prompt or by hand, and what the first session does.
+- [`work-system.md`](work-system.md): Task Management: log, board and task lifecycle (KIND folder versus `status:` field). The operational rules are in [`AGENTS.md` § Task Management](../AGENTS.md).
+- [`memory.md`](memory.md): file-based memory: one fact per file, `MEMORY.md` as a lean index, how every harness reads it.
+- [`context-index.md`](context-index.md): how a session reads a large registry as a table of contents and fetches one entry on demand.
+
+**Identity, recipients and accounts**
+
+- [`personas.md`](personas.md): identities you hold (tax data, signatures, filing paths).
+- [`mandants.md`](mandants.md): recipient groups for outbound messages.
+- [`calendar.md`](calendar.md): scheduled outbound actions with recipients.
+- [`cloud-accounts.md`](cloud-accounts.md): cloud-account inventory; read it before any cloud operation.
+- [`secrets.md`](secrets.md): reference URIs instead of values, which store a new secret belongs in, and the `secrets` skill that resolves them.
+
+**Machines, runs and transports**
+
+- [`remotes.md`](remotes.md): your machine fleet: SSH, wake, services.
+- [`channels.md`](channels.md): outbound transports (mail, chat, bots, digests).
+- [`workloads.md`](workloads.md): one declared run on one machine, in one file; [`workloads.html`](workloads.html) is the illustrated version.
+- [`transcription-worker.md`](transcription-worker.md): the contract between `/debrief` and a transcription pipeline, plus the manual path. Reference implementation: `skills/meeting-transcription/`.
+- [`doc-system.md`](doc-system.md): document intake and filing (scan, name, tag, file, audit).
+- [`object-store.md`](object-store.md): decision record for content that must not live in a repository, and how an entry points at it with `object://`.
+
+**Several instances, organisations and workspaces**
+
+- [`multi-instance.md`](multi-instance.md): running several Bridges to keep organisations' data apart.
+- [`org-overlays.md`](org-overlays.md): subscribing to an organisation's shared config and materialising it as copies (the downstream inverse of `/bridge-promote`).
 - [`updating.md`](updating.md): pulling CORE and overlay updates, by hand or unattended, and how a CORE fix flows back.
-- [`secrets.md`](secrets.md): reference URIs instead of values, where a new secret belongs, and what the secrets skill does.
+- [`workspaces.md`](workspaces.md): binding config overlays and member repos into a named workspace; [`workspaces.html`](workspaces.html) is the illustrated version.
+- [`capability-registry.md`](capability-registry.md): a machine-global registry through which one instance declares a shared capability (a transcription worker, a backup pipeline) without weakening data isolation.
+- [`knowledge-repo-pattern.md`](knowledge-repo-pattern.md): pairing an instance with an optional knowledge or documentation repo.
 
-## Subsystems
+**Agents facing outward**
 
-- [`bridge-deck.md`](bridge-deck.md) — pixel-art visualizer (coming soon).
-- [`channels.md`](channels.md), [`remotes.md`](remotes.md) — outbound transports + machine fleet.
-- [`calendar.md`](calendar.md), [`mandants.md`](mandants.md) — scheduled outbound + recipient groups.
-- [`personas.md`](personas.md) — user identities (tax data, signatures, paths).
-- [`representative-agent.md`](representative-agent.md) — Bridge-Agents: persistent, addressable A2A endpoints that front a persona to the outside world (engine: `agents/_runtime/`, instances: `agents/<name>/`).
-- [`doc-system.md`](doc-system.md) — document intake & filing (scan, name, tag, file, audit).
-- [`transcription-worker.md`](transcription-worker.md) — bring-your-own transcription worker: the `/debrief` ↔ pipeline contract + the no-worker manual path. Reference implementation: `skills/meeting-transcription/`.
-- [`cloud-accounts.md`](cloud-accounts.md) — cloud-account inventory convention (read the inventory file before any cloud op).
-- [`memory.md`](memory.md) — file-based memory model (one fact per file, MEMORY.md as a lean index).
-- [`work-system.md`](work-system.md) — Task Management concept: log/board/tasks lifecycle (KIND folder vs `status:` field).
-- Task Management (log/board/tasks lifecycle) — [`AGENTS.md` § Task Management](../AGENTS.md) (operational source of truth).
-- [`okf-export.md`](okf-export.md) — exports the knowledge surfaces (`work/`, `docs/`, `rules/`, `examples/`) as a static Open Knowledge Format bundle for external tooling.
+- [`representative-agent.md`](representative-agent.md): Bridge-Agents, persistent A2A endpoints that front a persona to the outside world; [`agents.html`](agents.html) is the illustrated version.
 
-## Operations
+**Skills, tools and companions**
 
-- Promoting CORE changes from user branch — [`rules/operations.md`](../rules/operations.md) (path allowlist/routing) + [`rules/promote-safety.md`](../rules/promote-safety.md) (content scan).
-- [`releasing.md`](releasing.md) — how automatic releases work (a conventional-commit PR title → tag + GitHub release; browsable on the [changelog page](https://bks-lab.github.io/open-bridge/changelog.html)).
+- [`tool-mapping.md`](tool-mapping.md): how this repo's tool names map onto Codex, Copilot, Gemini CLI and Cursor.
+- [`skill-learnings.md`](skill-learnings.md): where a lesson about one skill lands, inside that skill.
+- [`okf-export.md`](okf-export.md): exporting the knowledge surfaces as an Open Knowledge Format bundle for external tooling.
+- [`bridge-deck.md`](bridge-deck.md): Bridge Deck, an optional pixel-art visualizer that is not public yet.
+- [`changelog.html`](changelog.html): every release, pulled from GitHub Releases.
+
+## Operators and maintainers
+
+You change CORE, run the upstream flow, or maintain the project.
+
+- [`extension-model.md`](extension-model.md): how CORE extends and USER customises, with the schemas.
+- [`skill-distribution-architecture.md`](skill-distribution-architecture.md): decision record for where skills live across the tier model.
+- [`repo-layout.md`](repo-layout.md): repo-layout visualisations (the primary view is generated on demand).
+- [`releasing.md`](releasing.md): how releases work: a conventional-commit PR title becomes a tag and a GitHub release.
+- [`workspace-acceptance-test.md`](workspace-acceptance-test.md): a zero-prior-context acceptance-test playbook for the workspace feature.
+- Promoting CORE changes from a user branch: [`rules/operations.md`](../rules/operations.md) (path allowlist and routing) and [`rules/promote-safety.md`](../rules/promote-safety.md) (content scan).
