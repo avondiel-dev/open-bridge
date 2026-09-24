@@ -1,0 +1,56 @@
+# Example: the always-on home server
+# A small fanless box in the hallway cupboard. It runs the chat bot, the
+# daily health digest, the weekly Fabrikam health report and the nightly
+# backups. Reached over the tailnet from anywhere, over the LAN at home.
+
+name: homebox
+scope: user
+type: linux
+os: "Debian 13"
+model: "Example mini PC, 4 cores, 16 GB, 2 TB SSD plus 4 TB USB disk"
+
+ssh:
+  user: sam
+  host: homebox.tailnet.example
+  port: 22
+
+network:
+  hostname: homebox
+  tailscale_ip: 100.64.0.20
+  lan_ip: 192.168.1.20
+
+capabilities:
+  - ssh
+  - docker
+  - git
+  - services
+
+services:
+  - slug: chat-bot
+    label: chat-bot.service
+    type: systemd
+    check: "systemctl --user is-active chat-bot"
+    log: "/home/sam/logs/chat-bot.log"
+
+  - slug: health-digest
+    label: health-digest.timer
+    type: scheduled
+    schedule: "30 6 * * *"
+    check: "systemctl --user is-active health-digest.timer"
+    log: "/home/sam/logs/health-digest.log"
+
+  - slug: fabrikam-weekly-report
+    label: fabrikam-weekly-report.timer
+    type: scheduled
+    schedule: "0 7 * * 1"
+    check: "systemctl --user is-active fabrikam-weekly-report.timer"
+    log: "/home/sam/logs/fabrikam-weekly-report.log"
+
+  - slug: backup-nightly
+    label: backup-nightly.timer
+    type: scheduled
+    schedule: "0 2 * * *"
+    check: "systemctl --user is-active backup-nightly.timer"
+    log: "/home/sam/logs/backup.log"
+
+status: online

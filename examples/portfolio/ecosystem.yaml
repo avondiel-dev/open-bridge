@@ -1,0 +1,56 @@
+# Example: portfolio operator: three hats, few repos, one home server
+# The consultancy hat owns a board and the managed-service repos; the freelance
+# hat works in the client's own repo; the private hat has no code at all and
+# still carries tasks (tax, vehicle, utility), which is the point of it.
+org: northwind-advisory
+local_root: ~/Developer
+
+work_system:
+  enabled: true
+  path: work/
+
+projects:
+  northwind:
+    display_name: "Northwind Advisory (partner hat)"
+    type: customer
+    issue_repo: northwind-advisory/fabrikam-ops
+    repos:
+      fabrikam-sync:
+        github: northwind-advisory/fabrikam-sync
+        description: "Nightly order sync between the shop and the warehouse system (managed service)"
+        type: function-app
+        language: python
+      fabrikam-ops:
+        github: northwind-advisory/fabrikam-ops
+        description: "Runbooks, incident issues and the weekly health report for Fabrikam"
+        type: docs
+        language: markdown
+    infra:
+      github_project: { org: northwind-advisory, number: 3 }
+
+  contoso:
+    display_name: "Contoso Logistics (freelance hat)"
+    type: customer
+    repos:
+      route-planner:
+        github: contoso-logistics/route-planner
+        description: "Delivery route planner; Sam contributes the export feature"
+        type: web
+        language: typescript
+
+  homelab:
+    display_name: "Home server (private hat)"
+    repos:
+      homebox-config:
+        github: sam-rivera/homebox-config
+        description: "Compose files and scripts for the always-on home server"
+        type: infra
+        language: shell
+
+github_projects:
+  - { number: 3, name: "Fabrikam Managed Service", org: northwind-advisory, issue_repo: northwind-advisory/fabrikam-ops }
+
+workspaces:
+  fabrikam-stack:
+    description: "Everything the Fabrikam managed service touches"
+    repos: [fabrikam-sync, fabrikam-ops]

@@ -1,0 +1,45 @@
+# Example: email, drafts only
+# Every hat sends mail, and every mail leaves as a DRAFT in the right
+# mailbox. The standing order protocols/standing-orders/user/outbound-draft-only.md
+# is the rule; this file declares the transport it applies to.
+
+schema_version: 1
+scope: user              # local transport config
+name: email
+display_name: "Email (drafts in three mailboxes)"
+description: "Creates drafts in the mailbox of the hat the task belongs to. Never sends; Sam presses send."
+type: api
+
+implementation:
+  skill: null            # open-bridge core ships no mail skill; bring your own that can only draft
+
+runtime:
+  remote: sam-laptop
+  mode: on-demand
+
+access:
+  policy: allowlist
+  self:
+    - "sam@northwind-advisory.example"
+    - "hello@samrivera.example"
+    - "sam.rivera@mail.example"
+  contacts:
+    - name: "Fabrikam service owner"
+      handle: "dana.okafor@fabrikam.example"
+    - name: "Fabrikam warehouse IT"
+      handle: "max.lindqvist@fabrikam.example"
+    - name: "Contoso product owner"
+      handle: "lena.fischer@contoso-logistics.example"
+    - name: "Tax advisor"
+      handle: "office@ledger-lamp.example"
+
+checkin:
+  enabled: false
+
+behavior:
+  auto_response: false
+  signature: true
+  business_hours_only: false
+  draft_only: true       # the transport creates drafts; sending is a human click
+
+status: active

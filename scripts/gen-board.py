@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate work/board.md from the filesystem — the board is a VIEW, never hand-curated.
+"""Generate work/board.md from the filesystem: the board is a VIEW, never hand-curated.
 
 The board is derived from the task directories so its counts cannot drift from
 reality (the wildwuchs failure mode it replaces). Run it after any status change
@@ -95,9 +95,9 @@ def parse_status(md: Path) -> dict:
     return {
         "slug": md.parent.name,
         "desc": desc,
-        "type": fm.get("type", "—"),
-        "context": fm.get("context", "—"),
-        "since": fm.get("created", fm.get("last_updated", "—")),
+        "type": fm.get("type", "-"),
+        "context": fm.get("context", "-"),
+        "since": fm.get("created", fm.get("last_updated", "-")),
         "status": fm.get("status", "?"),
         "blocked_by": fm.get("blocked_by", "").strip(),
     }
@@ -141,7 +141,7 @@ def row(t: dict) -> str:
 
 
 def section(title: str, rows: list[dict]) -> str:
-    head = f"## {title} ({len(rows)})\n\n| Ticket | Beschreibung | Typ | Context | Seit | Status |\n|---|---|---|---|---|---|\n"
+    head = f"## {title} ({len(rows)})\n\n| Ticket | Description | Type | Context | Since | Status |\n|---|---|---|---|---|---|\n"
     return head + ("\n".join(row(t) for t in rows) if rows else "_(leer)_") + "\n"
 
 
@@ -171,15 +171,15 @@ def main(argv: list[str] | None = None) -> int:
     nostatus = task_nostatus + [f"{n} (stream)" for n in stream_nostatus]
     out = []
     out.append("# Board\n")
-    out.append(f"> Stand: {today.strftime('%d.%m.%Y')} · **generiert** via `scripts/gen-board.py` aus "
-               "`work/tasks/` + `work/streams/` + `work/done/` — nicht von Hand pflegen "
-               "(Counts leiten sich aus dem Filesystem ab, können nicht driften).\n")
+    out.append(f"> As of {today.isoformat()} · **generated** by `scripts/gen-board.py` from "
+               "`work/tasks/` + `work/streams/` + `work/done/`. Do not edit by hand: "
+               "the counts derive from the filesystem, so they cannot drift.\n")
     out.append("| Bucket | Count |\n|---|---|\n"
                f"| Doing (tasks) | {len(doing)} |\n"
                f"| Review (tasks) | {len(review)} |\n"
                f"| Backlog (tasks) | {len(backlog)} |\n"
                f"| Streams | {len(streams)} |\n"
-               f"| Done — {month} | {len(done_dirs)} |\n"
+               f"| Done {month} | {len(done_dirs)} |\n"
                f"| WIP (doing+review) | {wip} / {WIP_WARN}{warn} |\n"
                + (f"| No-STATUS dirs | {len(nostatus)} ({', '.join(nostatus)}) |\n" if nostatus else ""))
     out.append("")
@@ -187,7 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     out.append(section("Review", review))
     out.append(section("Backlog", backlog))
     out.append(section("Streams", streams))
-    out.append(f"## Done — {month} ({len(done_dirs)})\n\n" + (", ".join(f"`{d}`" for d in done_dirs) if done_dirs else "_(leer)_") + "\n")
+    out.append(f"## Done {month} ({len(done_dirs)})\n\n" + (", ".join(f"`{d}`" for d in done_dirs) if done_dirs else "_(none)_") + "\n")
     (ROOT / "work" / "board.md").write_text("\n".join(out), encoding="utf-8")
     print(f"board.md regenerated: Doing {len(doing)} · Review {len(review)} · Backlog {len(backlog)} · "
           f"Streams {len(streams)} · Done-{month} {len(done_dirs)} · WIP {wip}/{WIP_WARN}")

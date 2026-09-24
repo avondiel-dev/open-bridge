@@ -312,6 +312,7 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     "scripts/tests/test_skill_learnings.py",
     "scripts/tests/test_where_things_live.py",
     "scripts/tests/test_commands_doc.py",
+    "scripts/tests/test_examples_schema.py",   # validate.yml runs it against examples/*
     "scripts/tests/test_memory_location.py",
     "scripts/tests/test_okf_export.py",
     "scripts/tracker-sync.py",

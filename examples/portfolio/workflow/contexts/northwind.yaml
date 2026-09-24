@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=../../../../workflow/contexts/_schema.yaml
+# Example: the partner hat
+# Consultancy work, dominated by the Fabrikam managed service. Tasks here
+# sync to the consultancy's board; outbound goes to the partners or to
+# Fabrikam, as a draft signed with the company signature.
+
+schema_version: 1
+scope: user                 # customer context in a personal instance
+id: northwind
+description: "Northwind Advisory: the Fabrikam managed service and partner business"
+
+repos:
+  - name: fabrikam-sync
+    path: "${projects_root}/fabrikam-sync"
+    github: northwind-advisory/fabrikam-sync
+  - name: fabrikam-ops
+    path: "${projects_root}/fabrikam-ops"
+    github: northwind-advisory/fabrikam-ops
+
+sync:
+  defaults:
+    github:
+      repo: northwind-advisory/fabrikam-ops
+      project:
+        ref: workflow/projects/fabrikam-managed-service.yaml
+  event_type_map:
+    incident: { label: incident }
+
+default_mandant: fabrikam
+persona_ref: sam-partner
+
+infra:
+  github_project:
+    org: northwind-advisory
+    number: 3

@@ -1,0 +1,76 @@
+# Example: bridge-config.yaml for a portfolio operator
+# One person, three hats (consultancy partner, freelancer, private household)
+# and one always-on home server. Condensed to the blocks this example
+# actually uses; the full annotated reference with every block and default
+# lives in the repo root: ../../bridge-config.yaml.template
+
+# ─── Identity ─────────────────────────────────────────────────────────
+identity:
+  name: "sam"                  # used for the user/sam branch name
+  org: "northwind-advisory"    # GitHub organization of the consultancy hat
+  projects_root: ~/Developer
+  onedrive_root: ~/Documents/Archive   # document root; personas file under it
+  home: ~
+
+# ─── Purpose (north-star: ORDERS the catalog/suggestions, never gates) ───
+# Several hats carry real weight here, so the purpose names all three.
+purpose:
+  statement: "One operator, three hats: consultancy partner, freelancer and private household, plus a home server that watches all of it"
+  focus: [identity, communication, infrastructure, productivity]
+
+user_profile: both             # work AND private: the private hat is not decoration
+
+# ─── Theme + Language ─────────────────────────────────────────────────
+theme: professional
+language:
+  conversation: en
+  artifacts: en
+
+# ─── Task Management ──────────────────────────────────────────────────
+work:
+  enabled: true
+  logging_level: hybrid
+  max_active: 6            # WIP WARN threshold (doing+review in work/tasks/); warn-only, never blocks. Streams excluded.
+  max_daily_goals: 3
+  activity_types:
+    - { symbol: "💻", name: "Development" }
+    - { symbol: "🔬", name: "Analysis" }
+    - { symbol: "📋", name: "Planning" }
+    - { symbol: "📝", name: "Documentation" }
+    - { symbol: "🔧", name: "DevOps" }
+    - { symbol: "📅", name: "Meeting" }
+    - { symbol: "📧", name: "Communication" }
+    - { symbol: "🧪", name: "Testing" }
+    - { symbol: "📁", name: "Documents" }
+    - { symbol: "🐛", name: "Bug / Incident" }
+
+# ─── Integrations ─────────────────────────────────────────────────────
+# Only the consultancy hat has a shared board. The freelance client keeps
+# its own tracker, and private tasks never leave this repo (bridge_only).
+integrations:
+  github:
+    enabled: true
+    projects: ecosystem      # read boards from ecosystem.yaml.github_projects
+    assignee_me: "sam-rivera"
+
+# ─── Channels / Calendar / Mandants ───────────────────────────────────
+# Backed by the instance files in this example:
+#   infra/channels/email.yaml + chat-bot.yaml
+#   workflow/calendars/entries.yaml
+#   identity/mandants/northwind-team.yaml + fabrikam.yaml + rivera-family.yaml
+channels:
+  enabled: true
+calendar:
+  enabled: true
+mandants:
+  enabled: true
+
+# ─── Upstreams (multi-upstream) ───────────────────────────────────────────
+upstreams:
+  - name: open-bridge
+    repo: bks-lab/open-bridge     # shared OSS upstream, same for all users
+    branch: main
+    role: oss-core
+    contribute: true
+    pull_interval_days: 7
+    primary: true

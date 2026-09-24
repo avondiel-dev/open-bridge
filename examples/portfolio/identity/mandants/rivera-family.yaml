@@ -1,0 +1,43 @@
+# Example: the household
+# The private hat has recipients too: the partner who co-signs the tax
+# return and shares the car, and a teenager who gets the house reminders.
+
+schema_version: 1
+scope: user
+id: rivera-family
+type: household
+display_name: "Rivera household"
+
+context_ref: household
+
+default_channel: chat-bot
+
+persons:
+  - id: alex_rivera
+    display_name: "Alex Rivera"
+    role: "Partner (joint tax return, shares the car)"
+    channels:
+      email: "alex.rivera@mail.example"
+      chat: "@alex"
+    defaults:
+      language: en
+      timezone: Europe/Berlin
+      detail_level: summary
+      preferred_time_of_day: evening
+      quiet_hours: [22, 7]
+
+  - id: robin_rivera
+    display_name: "Robin Rivera"
+    role: "Teenager (house reminders only)"
+    channels:
+      chat: "@robin"
+    defaults:
+      language: en
+      timezone: Europe/Berlin
+      detail_level: minimal
+      preferred_time_of_day: evening
+      quiet_hours: [21, 7]
+
+notes: |
+  Family messages go through the chat bot, never email. Nothing about the
+  consultancy or the freelance clients is ever sent to this mandant.

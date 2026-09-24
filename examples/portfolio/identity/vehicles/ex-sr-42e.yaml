@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=../../../../identity/vehicles/_schema.yaml
+# Example: the household car
+# Fictional plate and VIN. Mixed use: freelance trips to Contoso are
+# business, everything else is private. The logbook decides the split, and
+# it is behind (work/tasks/vehicle-logbook-q3/).
+
+schema_version: 1
+scope: user                          # plate, VIN and tax data are PII
+id: ex-sr-42e
+
+plate: "EX-SR 42E"
+plate_variants: ["EXSR42E", "EX SR 42E", "EX-SR42E"]
+
+vin: "EXA0000000SR00042"
+make_model: "Example Motors Ion 3"
+drivetrain: bev
+
+persona: sam-private                 # registered privately
+classification: mixed
+
+first_registration: 2024-03-15
+acquired: 2024-03-15
+
+supplier_customer_no: "EXM-000-0042"
+
+tax:
+  vehicle_tax: "exempt until 2030 (statutory EV exemption), no recurring receipt expected"
+  logbook_required: true
+  private_share_method: logbook
+
+refs:
+  logbook: work/tasks/vehicle-logbook-q3/
+  receipts: work/tasks/tax-return-2025/
+  energy: identity/contracts/example-power-electricity.yaml
+  persona_business_use: identity/personas/sam-freelance.yaml
+
+archive:
+  vehicle: "Private/Vehicle/"
+  registration: "Private/Vehicle/Registration/"
+  insurance: "Private/Vehicle/Insurance/"
+
+notes: |
+  Charged at home on the household contract, so charging cost is in the
+  electricity bill and not on a separate receipt. Business trips are the
+  Contoso on-site days; they come from the calendar, not from memory.

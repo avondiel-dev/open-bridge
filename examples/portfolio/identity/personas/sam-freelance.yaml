@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=../../../../identity/personas/_schema.yaml
+# Example persona: Sam as an independent freelancer.
+# Fictional data. A separate tax entity from the consultancy: its own tax
+# number, its own invoice series, its own signature. Mixing the two is the
+# classic portfolio mistake this file exists to prevent.
+
+schema_version: 1
+scope: user
+id: sam-freelance
+type: individual
+role: self
+display_name: "Sam Rivera (freelance developer)"
+status: active
+
+persons:
+  - id: primary
+    display_name: "Sam Rivera"
+    channels:
+      email: "hello@samrivera.example"
+      phone: "+00 000 0000200"
+    address:
+      street: "12 Orchard Road"
+      zip: "00200"
+      city: "Example City"
+      country: "Example Country"
+
+tax:
+  applies_to: [income_tax, vat]
+  tax_id: "00/000/20002"
+  tax_office: "Example City South"
+  vat_id: "EX200000002"
+  fiscal_status: "regular VAT, quarterly returns"
+  tax_advisor:
+    name: "Ledger & Lamp Tax Advisors"
+    email: "office@ledger-lamp.example"
+
+# pending → submitted: receipts wait until the quarterly handover to the advisor.
+destinations:
+  freelance_pending: "${onedrive_root}/Freelance/Tax/pending"
+  freelance_submitted: "${onedrive_root}/Freelance/Tax/submitted"
+  freelance_invoices_out: "${onedrive_root}/Freelance/Invoices"
+  applications: "${onedrive_root}/Freelance/Applications"
+
+signature: |
+  Sam Rivera
+  Freelance Developer
+  12 Orchard Road, 00200 Example City
+  hello@samrivera.example
+  VAT ID EX200000002
+
+notes: |
+  The freelance hat: Contoso Logistics today, the application pipeline for
+  what comes next (work/streams/freelance-pipeline/). Never sign freelance
+  mail with the Northwind signature, and never file a Contoso invoice under
+  the company paths.

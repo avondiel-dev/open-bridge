@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../../../../workflow/workloads/_schema.yaml
+# Example: the weekly health report of the Fabrikam managed service
+# Monday morning: sync success rate, failed orders, open incidents, next
+# planned change. The run writes the report as an email DRAFT in the
+# Northwind mailbox, addressed to Fabrikam's service owner. Sam reads it,
+# adjusts, and sends it (standing order outbound-draft-only).
+
+schema_version: 1
+scope: user
+
+id: fabrikam-weekly-report
+title: Fabrikam weekly health report
+purpose: "Weekly service report for Fabrikam, prepared as a draft for Sam to review and send"
+persona_ref: sam-partner
+system: fabrikam-managed-service
+
+placement:
+  host: homebox
+  kind: recurring
+  runtime: systemd
+  owner: bridge
+  provisioned_at: null
+
+schedule:
+  rrule: "FREQ=WEEKLY;BYDAY=MO"
+  delivery_at: "07:30"
+  duration_estimate_min: 20
+  timezone: Europe/Berlin
+
+execution:
+  command: ["/home/sam/homebox-config/bin/fabrikam-weekly-report", "--draft-only"]
+  working_dir: /home/sam/homebox-config
+  timeout_sec: 900
+  isolation: process-group
+  single_flight: true
+  on_timeout: report
+
+response:
+  evidence: delivery-receipt
+  recipients:
+    - mandant: fabrikam
+      person: dana_okafor
+  notify_on: [failure, timeout, missing]
+  notify_via: email
+
+reconcile:
+  probe: "systemctl --user show fabrikam-weekly-report.timer --property=ActiveState"
+  expect: "ActiveState=active"
+  hint: "re-enable the timer; the draft of a missed Monday can be built by hand with the same command"

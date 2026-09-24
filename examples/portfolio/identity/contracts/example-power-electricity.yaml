@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=../../../../identity/contracts/_schema.yaml
+# Example: the household electricity contract
+# Fictional supplier and numbers. The deadline below is what the morning
+# briefing surfaces: the notice window closes before the price guarantee
+# ends, and a missed window renews the contract at the new rate.
+
+schema_version: 1
+scope: user                                   # contract data is PII, never promoted
+id: example-power-electricity
+
+provider: example-power
+provider_legal_name: "Example Municipal Power Ltd."
+product: electricity
+tariff: "CityGreen 24"
+
+status: active
+
+contract_start: 2024-11-01
+min_term_end: 2026-10-31
+notice_period_days: 30
+notice_period_text: "1 month before end of term"
+next_action_deadline: 2026-10-01              # min_term_end minus notice period
+
+auto_renewal:
+  enabled: true
+  renewal_term_text: "12 months at a time, at the then current list price"
+
+customer_no: "EP-0000-4711"
+meter_no: "1EXA0000123456"                    # full number; see infra/utilities/home-electricity.yaml
+
+delivery_address_ref: "identity/personas/sam-private.yaml#address"
+
+pricing:
+  currency: EUR
+  base_per_year:
+    gross: 142.80
+    net: 120.00
+  energy_ct_per_kwh:
+    ht: { gross: 31.90, net: 26.81 }
+    nt: { gross: 31.90, net: 26.81 }          # single rate
+  options:
+    - green-certificate
+
+payment:
+  method: sepa-direct-debit
+  iban_used: "EX00 0000 0000 0000 0000 00"
+  billing_cycle: monthly
+
+# The home office and the home server run on this contract, so the
+# freelance hat carries a share. The basis is written down because the tax
+# advisor asks for it every year.
+cost_allocation:
+  - persona: sam-private
+    share_default: 0.85
+    basis: "Household consumption"
+  - persona: sam-freelance
+    share_default: 0.15
+    basis: "Home office (1 of 6 rooms) plus the home server's measured draw, about 35 W"
+    notes: "Re-check after the annual statement in November"
+
+sources:
+  - path: "${onedrive_root}/Private/Household/Electricity/contract-2024.pdf"
+    kind: contract
+    date: 2024-10-12
+    description: "Signed contract, 24-month price guarantee"
+  - path: "${onedrive_root}/Private/Household/Electricity/price-letter-2026-09.pdf"
+    kind: price-letter
+    date: 2026-09-15
+    description: "New list price from 2026-11-01: 36.40 ct/kWh gross"
+
+notes: |
+  The price letter of 2026-09-15 announces 36.40 ct/kWh from November, a
+  14 percent rise. Compare tariffs and decide before 2026-10-01, otherwise
+  the contract renews at that rate for 12 months.

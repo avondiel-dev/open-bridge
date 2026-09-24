@@ -1,0 +1,58 @@
+# Example: scheduled entries for the portfolio operator
+# Two private reminders that point back at the files they come from. The
+# Fabrikam report and the health digest are workloads (workflow/workloads/),
+# not calendar entries: they run on the home server on a fixed rhythm.
+
+schema_version: 1
+
+entries:
+  # ── Electricity contract: notice window ────────────────────────────
+  # One-shot, three days before identity/contracts/example-power-electricity.yaml
+  # next_action_deadline (2026-10-01). Goes to Sam and Alex in the family chat.
+  - id: power-contract-notice-reminder
+    title: "Electricity: compare tariffs, notice window closes 01.10."
+    owner: sam_rivera
+    recipients:
+      - mandant: rivera-family
+        person: alex_rivera
+        channel: chat-bot
+        address: "@alex"
+    action:
+      type: claude-prompt
+      command: "Read identity/contracts/example-power-electricity.yaml. Write two sentences: the new price from November, the notice deadline, and that a decision is needed this week."
+    delivery_at: "2026-09-28T19:00:00+02:00"
+    duration_estimate_min: 2
+    origin:
+      source: manual
+      snippet: "Remind us about the power contract before the notice window closes"
+      parsed_at: "2026-09-16T20:10:00+02:00"
+    status: queued
+    created_at: "2026-09-16T20:10:00+02:00"
+    updated_at: "2026-09-16T20:10:00+02:00"
+
+  # ── Quarterly meter reading ─────────────────────────────────────────
+  # Points at infra/utilities/home-electricity.yaml for the meter number and
+  # the reading portal. Robin reads the meter; Sam submits.
+  - id: meter-reading-quarterly
+    title: "Read the electricity meter and submit it"
+    owner: sam_rivera
+    recipients:
+      - mandant: rivera-family
+        person: robin_rivera
+        channel: chat-bot
+        address: "@robin"
+    action:
+      type: claude-prompt
+      command: "Remind Robin to photograph the basement electricity meter (see infra/utilities/home-electricity.yaml, location_hint) and send the photo to the family chat."
+    delivery_at: "2026-12-12T18:00:00+01:00"
+    duration_estimate_min: 2
+    repeat:
+      spec: "quarterly, 12th, 18:00"
+      rrule: "FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=12;BYHOUR=18;BYMINUTE=0"
+    origin:
+      source: manual
+      snippet: "Quarterly meter reading, Robin photographs, I submit"
+      parsed_at: "2026-09-12T19:40:00+02:00"
+    status: queued
+    created_at: "2026-09-12T19:40:00+02:00"
+    updated_at: "2026-09-12T19:40:00+02:00"

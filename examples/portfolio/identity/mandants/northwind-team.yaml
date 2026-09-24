@@ -1,0 +1,56 @@
+# Example: the partners of Northwind Advisory
+# Sam is one of three partners; there is no staff to delegate to. This
+# mandant exists so a partner update goes to the right two people, in the
+# form each one reads.
+
+schema_version: 1
+scope: user                 # recipient data stays local
+id: northwind-team
+type: company
+display_name: "Northwind Advisory partners"
+
+context_ref: northwind
+
+default_channel: email
+
+persons:
+  - id: jordan_lee
+    display_name: "Jordan Lee"
+    role: "Partner, sales and contracts"
+    channels:
+      email: "jordan@northwind-advisory.example"
+    defaults:
+      language: en
+      timezone: Europe/Berlin
+      detail_level: summary
+      preferred_time_of_day: morning
+      quiet_hours: [21, 7]
+
+  - id: priya_nair
+    display_name: "Priya Nair"
+    role: "Partner, delivery"
+    channels:
+      email: "priya@northwind-advisory.example"
+    defaults:
+      language: en
+      timezone: Europe/Berlin
+      detail_level: full
+      preferred_time_of_day: morning
+      quiet_hours: [22, 7]
+
+  - id: sam_rivera
+    display_name: "Sam Rivera"
+    role: "Partner, managed services (this Bridge's operator)"
+    channels:
+      email: "sam@northwind-advisory.example"
+    defaults:
+      language: en
+      timezone: Europe/Berlin
+      detail_level: minimal
+      preferred_time_of_day: morning
+      quiet_hours: [22, 7]
+
+notes: |
+  Three partners, no employees. Jordan wants the short version and the
+  money; Priya wants the technical detail. Sam is listed so the weekly
+  health report can copy the operator without a second mandant.
