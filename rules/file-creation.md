@@ -82,6 +82,7 @@ Run this every time, in order:
 | `work/tasks/<slug>/STATUS.md` | `work/templates/STATUS.md` | `work/templates/_schema.status.yaml` | any current finite task |
 | `protocols/standing-orders/<name>.md` | `protocols/standing-orders/_template.md` | — | `protocols/standing-orders/task-sync.md` |
 | `skills/<name>/SKILL.md` | — | — | any existing skill, e.g. `skills/mandants/SKILL.md`; then § Writing skill steps below |
+| `skills/<name>/LEARNINGS.md` + its routing block | `docs/skill-learnings.md` § Templates | `scripts/check-skill-learnings.py` | the template itself |
 | Doc with frontmatter (`docs/*.md`, `<folder>/README.md`) | — | — | shape in CLAUDE.md § Documentation Navigation |
 
 ## Common gotchas (real history)
@@ -125,8 +126,9 @@ Two kinds of step read alike and age differently:
   fallback for one model's parsing quirk. It helps the model it was written for
   and can hold a stronger one back from doing the step properly.
 
-**Mark every workaround** on the line above it, naming the tier it addresses
-and the failure it prevents:
+**Mark every workaround** directly above the line it guards, naming who it is
+for (a model tier such as `small models`, or a harness name) and the failure it
+prevents:
 
 ```markdown
 <!-- workaround(small models): they split this pipeline across calls and lose
@@ -152,14 +154,14 @@ Rewritten, the intent leads and the workaround is labelled:
 3. Count the rows in `r.json` and state the number with its source.
    <!-- workaround(small models): they estimate counts from a truncated read;
         the one-liner forces a real count -->
-   If unsure how, run `python3 -c "import json;print(len(json.load(open('r.json'))['rows']))"`.
+   On a small-tier executor, run `python3 -c "import json;print(len(json.load(open('r.json'))['rows']))"`.
 ```
 
 This is a **hypothesis carried over from benchmark runs, not a measured
 open-bridge result.** WikiSkill (Tang et al., arXiv:2608.27454v1, section 4.2.2,
 page 9, Table 2 on page 10) reports a skill written by a small model dropping a
-stronger model's score from 50.5% to 18.1% on one benchmark, traced to exactly
-such low-level workarounds. Nothing in this repo has measured the effect yet.
+stronger model's score from 50.5% to 18.1% on one benchmark, traced to such
+low-level workarounds. Nothing in this repo has measured the effect yet.
 
 ## When you legitimately don't have a template
 

@@ -1,7 +1,7 @@
 ---
 name: bridge-curator
 description: >-
-  Periodic background consolidation pass over the Bridge itself. Three phases:
+  Periodic background consolidation pass over the Bridge itself. Three default phases:
   (1) Library pass — scans skills/, protocols/, rules/, docs/ for drift
   (sleeping skills 30d+, overlapping triggers, description-budget busters,
   duplicates, umbrella candidates); (2) Queue pass — scans work/_learning/proposals/
@@ -10,8 +10,8 @@ description: >-
   about user preferences from postmortems + audit-trail + trigger-corrections
   of the last 30 days, writes append-only to
   work/_learning/user-patterns.md; (4) Learnings pass, per skill on request,
-  promotes matured LEARNINGS.md entries into references/ and moves skill traps
-  out of global memory. All findings land as proposals
+  proposes promoting matured LEARNINGS.md entries into references/ and moving
+  skill traps out of global memory. All findings land as proposals
   (source.type=curator-suggestion) in work/_learning/proposals/ — **never
   direct edits to Bridge files**. Trigger: "/bridge-curator", "bridge curator",
   "curator", "curation", "weekly review", "library consolidation",
@@ -38,7 +38,7 @@ questions:
 2. **Is the proposal queue still actionable?** (Queue pass)
 3. **What has the system observed about how this user works lately?** (User-pattern pass)
 
-The output of all three phases is **always proposals** — markdown files
+The output of every pass, including the on-request Learnings pass, is **always proposals** — markdown files
 under `work/_learning/proposals/` with `source.type: curator-suggestion`.
 The curator never edits Bridge files directly. All accepts happen via
 `/bridge-learn`.
@@ -62,7 +62,7 @@ the full design rationale.
 
 | Argument | Effect | Default |
 |---|---|---|
-| `(none)` | Run all three passes sequentially | — |
+| `(none)` | Run the three default passes sequentially (not Learnings) | — |
 | `--pass library` | Only library consolidation | all |
 | `--pass queue` | Only proposal-queue consolidation | all |
 | `--pass user-patterns` | Only user-pattern synthesis | all |
@@ -70,7 +70,7 @@ the full design rationale.
 | `--dry-run` | Surface findings, do NOT write proposals or user-patterns | false |
 | `--since <date>` | Scan window starts at this date (default: last curator run) | last run |
 
-## Three passes
+## Passes (three by default, a fourth on request)
 
 ### Pass 1 — Library
 
@@ -216,7 +216,7 @@ which files / scans led to the finding. No invented proposals.
 ## Edge cases
 
 - **Empty Bridge** (new install, no postmortems, no audit-history yet) →
-  all three passes return "insufficient signal — run more sessions then
+  every pass returns "insufficient signal — run more sessions then
   re-curate". Friendly message, no error.
 - **Conflicting consolidation suggestions** (library pass says merge A+B
   into C, queue pass says A is stale) → emit both as separate proposals

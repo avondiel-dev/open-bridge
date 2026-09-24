@@ -126,6 +126,15 @@ does not accept or reject anything on its own (`rules/learning-autonomy.md`).
 
 ### Action: accept
 
+0. **Curator learnings proposals** (`source.type: curator-suggestion` whose
+   evidence cites `skills/<name>/LEARNINGS.md#…`, from
+   `/bridge-curator --pass learnings`): accept writes the target AND, in the
+   same commit, deletes each cited journal entry from `LEARNINGS.md`. That
+   trim is part of the accept, not optional. A proposal that creates a
+   journal (`target.path: …/LEARNINGS.md`, `action: create`) also appends
+   the routing block to that skill's `SKILL.md` in the same commit, from
+   `docs/skill-learnings.md` § Templates; `check-skill-learnings.py` fails on
+   half a pair.
 1. If `diff_preview` is set AND is a literal diff/patch:
    - Resolve `target.path` against repo root
    - For `action: create`: write file from diff body

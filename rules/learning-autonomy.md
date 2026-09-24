@@ -29,7 +29,8 @@ Layer D — Model weights     LoRA adapters, fine-tunes (consumed, not trained)
 
 **Every persistent change to a Bridge file goes through a human-readable
 proposal in `work/_learning/proposals/` and an explicit accept in
-`/bridge-learn`.** No skill writes directly to another skill. No automated
+`/bridge-learn`** (one exception, the skill journal: § The skill journal is not
+Layer B). No skill writes directly to another skill. No automated
 process writes directly to MEMORY.md. Trends and observations *propose*,
 they do not *apply*.
 

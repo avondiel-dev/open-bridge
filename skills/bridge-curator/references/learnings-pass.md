@@ -57,9 +57,10 @@ diff_preview: |
   <the text as it should read in the reference file>
 ```
 
-The body quotes the journal entry and ends with: **"On accept, delete this
-entry from `skills/<skill>/LEARNINGS.md` in the same commit."** That is the
-trim step; the journal only keeps what has not moved.
+The body quotes the journal entry. The `source.evidence` pointer to the
+journal entry is what `/bridge-learn` keys its trim on: accept deletes the
+cited entry in the same commit (`skills/bridge-learn/SKILL.md`, accept step 0).
+The journal only keeps what has not moved.
 
 Entries that have not matured are left alone. Entries that turned out wrong
 get one `target.action: edit` proposal against `LEARNINGS.md` that removes
@@ -75,9 +76,10 @@ next run of the skill (and any sub-agent running it) never reads it.
    skill (`<skill>`, `skills/<skill>/`, or its slash command) and the lesson is
    about using the skill, not about the world in general.
 3. For each, write one proposal: `target.path: skills/<skill>/LEARNINGS.md`,
-   `target.action: edit` (or `create` if the journal does not exist yet, then
-   also the routing block, see `docs/skill-learnings.md` § Templates), with the
-   entry text in `diff_preview` and the memory file in `source.evidence`.
+   `target.action: edit` (or `create` if the journal does not exist yet; accept
+   then also appends the routing block to `SKILL.md`, bridge-learn accept step
+   0), with the entry text in `diff_preview` and the memory file in
+   `source.evidence`.
 4. **The memory fact is not touched.** It stays until the proposal is accepted;
    removing it afterwards is the user's call, stated in the proposal body.
 
@@ -97,7 +99,8 @@ With `--dry-run`, report "would write" and touch nothing.
 ## Does not
 
 - Edit `LEARNINGS.md`, `references/` or memory directly.
-- Run over every skill by default. The pass is per skill; a sweep over all
-  skills with a journal is `--pass learnings --all`, still one proposal per
-  target file.
+- Run over every skill by default. The pass is per skill. `--pass learnings
+  --all` runs source 1 for every skill that has a journal and source 2 for
+  every skill, journal or not, since a trap in memory is most likely about a
+  skill that has none yet. Still one proposal per target file.
 - Load `LEARNINGS.md` into anything that runs on every skill invocation.

@@ -18,6 +18,13 @@ read it, and a sub-agent running the skill never sees it. A `/bridge-learn`
 proposal is right for a reviewed change to the skill's specification, and too
 heavy for "note this before it is forgotten".
 
+**Tier: the journal is USER, always.** It holds this instance's lessons, even
+inside a `scope: core` skill folder, so it never promotes or syncs upstream
+(`scripts/categorize-commits.py` and the pre-push guard both treat
+`skills/*/LEARNINGS.md` and `skills/*/references/provenance.md` as USER). A
+lesson reaches other instances only by maturing into `references/`, which
+ships with the skill's tier.
+
 The convention is **opt-in per skill.** A skill without a journal is not in
 violation. A convention that sits empty in a hundred places is worse than none.
 

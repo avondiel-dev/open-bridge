@@ -108,3 +108,51 @@ def test_reserved_underscore_directories_are_skipped(tmp_path):
 
 def test_the_shipped_tree_passes():
     assert csl.main(["--root", str(REPO_ROOT)]) == 0
+
+
+def test_a_heading_inside_a_journal_code_fence_is_not_an_entry(tmp_path):
+    skill(tmp_path, "fenced", block=True, journal=GOOD_JOURNAL
+          + "```markdown\n## not an entry, just an example\n```\n")
+    assert csl.main(["--root", str(tmp_path)]) == 0
+
+
+def test_a_marker_inside_a_skill_md_code_fence_is_not_a_block(tmp_path, capsys):
+    directory = skill(tmp_path, "fenced-marker", journal=GOOD_JOURNAL)
+    (directory / "SKILL.md").write_text(
+        "---\nname: x\n---\n```markdown\n<!-- lessons-routing -->\n```\n", encoding="utf-8")
+    capsys.readouterr()
+    assert csl.main(["--root", str(tmp_path)]) == 1
+    assert "routing block" in capsys.readouterr().out
+
+
+def test_an_impossible_date_is_flagged(tmp_path, capsys):
+    skill(tmp_path, "baddate", block=True, journal="# L\n\n## 2026-99-99: lesson\n")
+    capsys.readouterr()
+    assert csl.main(["--root", str(tmp_path)]) == 1
+    assert "LEARNINGS.md:3" in capsys.readouterr().out
+
+
+def test_crlf_journals_are_read_like_lf(tmp_path):
+    skill(tmp_path, "crlf", block=True, journal=GOOD_JOURNAL.replace("\n", "\r\n"))
+    assert csl.main(["--root", str(tmp_path)]) == 0
+
+
+def test_a_journal_in_a_folder_without_skill_md_says_so(tmp_path, capsys):
+    directory = tmp_path / "skills" / "no-skill-md"
+    directory.mkdir(parents=True)
+    (directory / "LEARNINGS.md").write_text(GOOD_JOURNAL, encoding="utf-8")
+    capsys.readouterr()
+    assert csl.main(["--root", str(tmp_path)]) == 1
+    assert "no SKILL.md" in capsys.readouterr().out
+
+
+def test_a_symlinked_skill_folder_is_checked_like_a_real_one(tmp_path, capsys):
+    real = tmp_path / "elsewhere" / "linked"
+    real.mkdir(parents=True)
+    (real / "SKILL.md").write_text("---\nname: linked\n---\n", encoding="utf-8")
+    (real / "LEARNINGS.md").write_text(GOOD_JOURNAL, encoding="utf-8")
+    (tmp_path / "skills").mkdir()
+    (tmp_path / "skills" / "linked").symlink_to(real)
+    capsys.readouterr()
+    assert csl.main(["--root", str(tmp_path)]) == 1
+    assert "skills/linked" in capsys.readouterr().out

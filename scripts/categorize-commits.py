@@ -82,6 +82,12 @@ USER_PATTERNS = [
     # This is the FALLBACK for undeclared branding; a theme that declares
     # `meta.scope:` re-tiers itself (and its logo) earlier — see _declared_branding_scope.
     r"^skills/bridge-greeting/assets/logos/(?!bridge\.txt$)",
+    # A skill's lesson journal and provenance record hold THIS instance's
+    # lessons, proposal ids and reasons, even inside a scope:core skill folder
+    # (docs/skill-learnings.md). A lesson that matured is promoted into
+    # references/, which ships; the journal and the record never do.
+    r"^skills/[^/]+/LEARNINGS\.md$",
+    r"^skills/[^/]+/references/provenance\.md$",
     # themes/ is whole-folder CORE, so an instance theme is a structural exception.
     r"^themes/(?!_)(?!professional(?:-de)?\.yaml$)[^/]+\.yaml$",
     # workflow/checks/ — the whole surface is instance-local (decision 2026-08-01).

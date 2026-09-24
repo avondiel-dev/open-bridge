@@ -723,3 +723,21 @@ def test_per_instance_declaration_files_are_user():
 def test_the_core_budget_itself_stays_core():
     """The counterpart. `context-budget.yaml` is the shipped policy."""
     assert tier("context-budget.yaml") == "core"
+
+
+# ---------------------------------------------------------------------------
+# Instance lessons inside a skill folder. A scope:core skill's folder is core
+# by frontmatter, but its lesson journal and its provenance record hold THIS
+# instance's lessons, proposal ids and reasons. They stay local; a lesson that
+# matured is promoted into references/, which does ship.
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("path", [
+    "skills/bridge-learn/LEARNINGS.md",
+    "skills/bridge-audit/references/provenance.md",
+])
+def test_skill_lessons_and_provenance_are_user(path: str):
+    assert tier(path) == "user", f"{path} classifies {tier(path)!r}, expected user"
+
+
+def test_a_skills_other_references_still_ship():
+    assert tier("skills/bridge-learn/references/review-workflow.md") == "core"
