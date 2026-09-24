@@ -29,26 +29,13 @@ That is the shipped demo workspace answering. The clip below is its `/briefing` 
 - **Not for** a single-repo project: the coordination layer is overhead you will not use.
 - **Not for** people who want a hosted app. There is nothing to host; the value is files your agent reads.
 
-## Try it in 2 minutes
-
-The repo ships a runnable demo ([`examples/agency/`](examples/agency/)): a fictional two-client agency with a filled board, two days of logged work, and a P1 incident in flight. You need an agent CLI, for example `npm install -g @anthropic-ai/claude-code`.
-
-```bash
-git clone https://github.com/bks-lab/open-bridge.git
-cd open-bridge/examples/agency && claude    # or: codex, copilot
-```
-
-Ask `good morning`, then `where was I on the payment retry?` and `why is the cart task in review?`. Everything it answers is read from plain markdown in that folder: open `work/log.md` next to it and the trick disappears. Do not `git push` from this clone; it points at the public repo.
-
-One person wearing several hats (a consultancy partner who is also a freelancer, with a household and a home server)? [`examples/portfolio/`](examples/portfolio/) is that shape: three personas, a managed client service, life admin, and digests that stay silent until something is red.
-
 <a id="get-started"></a>
 
 ## Set it up
 
 Your data needs a private home before you write any of it: your own private repo becomes `origin`, BKS open-bridge stays a read-only `upstream`. The easiest way is to let your agent do it.
 
-<details>
+<details open>
 <summary><b>Paste this into Claude Code, Codex or Copilot CLI</b></summary>
 
 ```text
@@ -75,6 +62,19 @@ The longer prompt, with the reasoning behind each step, is in [docs/install.md](
 </details>
 
 By hand, in three lines: clone and re-home the remotes (`git remote rename origin upstream`, then create your private `origin`); run `./bin/setup` to arm the push guard; start a **new** agent session inside the folder and run `/bridge-onboard`. Setup always ends with that restart, because a session only loads the skills of the folder it started in. Commands, the template-button caveat and which tools are tested: [docs/install.md](docs/install.md).
+
+## Or look first: the demo workspace
+
+Want to see it run before you set anything up? The repo ships a runnable demo ([`examples/agency/`](examples/agency/)): a fictional two-client agency with a filled board, two days of logged work, and a P1 incident in flight. You need an agent CLI, for example `npm install -g @anthropic-ai/claude-code`.
+
+```bash
+git clone https://github.com/bks-lab/open-bridge.git
+cd open-bridge/examples/agency && claude    # or: codex, copilot
+```
+
+Ask `good morning`, then `where was I on the payment retry?` and `why is the cart task in review?`. Everything it answers is read from plain markdown in that folder: open `work/log.md` next to it and the trick disappears. Do not `git push` from this clone; it points at the public repo.
+
+One person wearing several hats (a consultancy partner who is also a freelancer, with a household and a home server)? [`examples/portfolio/`](examples/portfolio/) is that shape: three personas, a managed client service, life admin, and digests that stay silent until something is red.
 
 ## What you get
 
