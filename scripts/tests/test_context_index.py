@@ -1019,12 +1019,12 @@ def test_the_header_survives_on_a_real_registry_shape():
         "# scope: personal — NEVER promoted to public\n"
         "\n"
         "freelance:\n"
-        "  praxis:\n"
+        "  example-client:\n"
         "    description: a customer\n"
     )
     card = ci.render_card(body, {"kind": "index", "sections": ["freelance"]}, "e.yaml")
     assert "NEVER promoted to public" in card
-    assert "**praxis**" in card
+    assert "**example-client**" in card
 
 
 def test_the_header_does_not_confuse_the_declaration_check():
@@ -1080,7 +1080,7 @@ def test_a_sequence_in_keep_is_not_a_finding():
 # as `(no label)` and the CLI exits 0. Reproduced: 3 154 B of card became
 # 1 885 B, 24 entries all unlabelled, stderr empty.
 #
-# The label IS the routing signal. `- **ryze** — (no label)` tells a session a
+# The label IS the routing signal. `- **example-client** — (no label)` tells a session a
 # name exists and nothing about whether it is the one it wants, which is the
 # failure this module's own docstring names twelve lines above the guard:
 # "the thing does not look missing, it looks like it was never there".
@@ -1103,7 +1103,7 @@ def _run_without_yaml(tmp_path, *args):
 
 def test_the_cli_refuses_without_pyyaml_instead_of_degrading(tmp_path):
     (tmp_path / "ecosystem.yaml").write_text(
-        "org: acme\ncustomers:\n  ryze:\n    description: a real label\n", encoding="utf-8"
+        "org: acme\ncustomers:\n  example-client:\n    description: a real label\n", encoding="utf-8"
     )
     result = _run_without_yaml(tmp_path, "ecosystem.yaml")
     assert result.returncode != 0
@@ -1121,7 +1121,7 @@ def test_the_check_also_refuses_without_pyyaml(tmp_path):
 
 def test_the_cli_works_normally_with_pyyaml(tmp_path):
     (tmp_path / "ecosystem.yaml").write_text(
-        "org: acme\ncustomers:\n  ryze:\n    description: a real label\n", encoding="utf-8"
+        "org: acme\ncustomers:\n  example-client:\n    description: a real label\n", encoding="utf-8"
     )
     result = subprocess.run(
         [sys.executable, str(CLI), "--repo-root", str(tmp_path), "ecosystem.yaml"],

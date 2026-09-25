@@ -126,7 +126,7 @@ def synth_repo(tmp_path, monkeypatch):
     # top-level key (no `---` fence, matching how these files are actually
     # written).
     write("infra/remotes/managed-cluster.yaml", "name: managed-cluster\nscope: org\n")
-    for name in ("homeserver", "workstation", "fritzbox", "tesla-wallconnector", "ds"):
+    for name in ("homeserver", "workstation", "home-router", "ev-charger", "ds"):
         write(f"infra/remotes/{name}.yaml", f"name: {name}\nscope: user\n")
 
     cc._LOGO_BY_THEME_CACHE = None
@@ -321,7 +321,7 @@ def test_org_theme_is_not_core(synth_repo):
 
 
 # ---------------------------------------------------------------------------
-# Org branding is SHARED, not local. Michael's call (2026-08-01): an org theme
+# Org branding is SHARED, not local. the maintainer's call (2026-08-01): an org theme
 # and logo belong in the org overlay, so every teammate's Bridge greets in that
 # org's colours instead of each person re-authoring them. `user` would have kept
 # them out of public — correct on the leak axis, wrong on the distribution axis.
@@ -339,7 +339,7 @@ def test_org_branding_routes_to_the_org_overlay(path: str, synth_repo):
 
 
 # ---------------------------------------------------------------------------
-# workflow/checks/ — Michael's call (2026-08-01): not CORE at all.
+# workflow/checks/ — the maintainer's call (2026-08-01): not CORE at all.
 # AGENTS.md ships the data model, not the executor; here even the data model is
 # instance-shaped (a `checkup` skill that is itself `user` is the only reader).
 # It never reached open-bridge/main, so this pins a boundary rather than
@@ -425,8 +425,8 @@ def test_org_owned_remote_routes_by_its_declaration(synth_repo):
 @pytest.mark.parametrize("path", [
     "infra/remotes/homeserver.yaml",
     "infra/remotes/workstation.yaml",
-    "infra/remotes/fritzbox.yaml",
-    "infra/remotes/tesla-wallconnector.yaml",
+    "infra/remotes/home-router.yaml",
+    "infra/remotes/ev-charger.yaml",
     "infra/remotes/ds.yaml",
 ])
 def test_personal_machines_stay_local(path: str, synth_repo):

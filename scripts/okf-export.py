@@ -291,8 +291,8 @@ def _closes_quoted_scalar(rest: str) -> bool:
     comment. Anything else means the quote was a character inside the value
     and the real closing quote is elsewhere (or nowhere).
 
-    Taking the first quote whatever follows it is how `'Michael's bridge'`
-    resolved to `Michael`: the apostrophe looked like the closing quote, and
+    Taking the first quote whatever follows it is how `'Alex's bridge'`
+    resolved to `Alex`: the apostrophe looked like the closing quote, and
     the rest of the value was then discarded as the comment position. No
     whitespace is required in front of the `#`, because the value has already
     ended at the quote and there is nothing left for the hash to be part of
@@ -345,7 +345,7 @@ def _resolve_scalar(raw: str) -> tuple[str, bool]:
 
     A quote counts as closing only where ``_closes_quoted_scalar`` says one
     may (nothing but a comment behind it). Where it does not, the scan is
-    abandoned and the value takes the plain path: `'Michael's bridge'` and
+    abandoned and the value takes the plain path: `'Alex's bridge'` and
     `"He said "stop" once"` keep every character between their outer quotes,
     and only that outer pair (the delimiters the line was trying to use) is
     stripped. PyYAML rejects both lines outright, so there is no

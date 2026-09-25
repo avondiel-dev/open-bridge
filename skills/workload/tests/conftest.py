@@ -118,35 +118,32 @@ def mod(name: str) -> _LazyModule:
 # ---------------------------------------------------------------------------
 
 def forbidden_literals() -> tuple[str, ...]:
-    """Instance names that may never appear in a core skill.
+    """Stand-ins for instance names, which may never appear in a core skill.
 
-    Assembled from fragments on purpose, and the split is load bearing TWICE.
+    FICTIONAL on purpose. This list ships in a public repository, so it cannot
+    carry a real instance's names, not even split into fragments: a split name
+    is still the name to anyone who reads the file. The real names are the
+    instance's own business, and the check against them is
+    `test_no_core_file_of_this_skill_trips_the_promote_blocklist`, which reads
+    them from the instance's `bridge-config.yaml` at test time.
 
-    1. This file is itself scanned by the case that uses this list, and a
-       scanner that trips over its own denylist proves nothing.
-    2. The promote gate of the instance around it scans the same file with a
-       DIFFERENT matcher: case-insensitive, word-level, and holding regular
-       expressions as well as plain strings. Two fragments here carried the
-       three letter organisation token whole -- `<token>.` and `<token>-` --
-       and to that matcher both are the word. The file was refused on every
-       promote attempt: not a leak, a blocking false alarm that came back each
-       time and that splitting a name once does not avoid.
+    What this list is for: poison. The cases that use it plant these literals
+    in declarations and templates and assert that rendered units, stamps and
+    reports never carry them, i.e. that the engine hardcodes nothing it was
+    handed. Each shape an instance name takes is represented once: a host, a
+    user, a client project, a person, a reverse-DNS label, a home path.
 
-    So a fragment may not be a token EITHER matcher recognises, which is why the
-    organisation token is split a second time. The rule is checked rather than
-    trusted: `test_no_core_file_of_this_skill_trips_the_promote_blocklist`
-    reads the instance's own lists and runs them over every core file of the
-    skill, this one included.
+    Still assembled from fragments, because this file is itself scanned by the
+    case that uses the list, and a scanner that trips over its own list proves
+    nothing.
     """
     return (
-        "macmini" + "m4",
-        "mboi" + "man",
-        "zahn" + "chat",
-        "step" + "stone",
-        "com." + "b" + "ks.",
-        "Mich" + "ael",
+        "instancehost" + "x9",
+        "instanceuser" + "x9",
+        "instanceclient" + "x9",
+        "Instance" + "person",
+        "com." + "instanceorg" + "x9.",
         "/Us" + "ers/",
-        "b" + "ks-" + "lab",
     )
 
 
