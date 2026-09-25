@@ -114,8 +114,12 @@ convention below is what those verbs follow.
 ## Hard rules
 
 - Raw secret values never appear in any repo file, commit, log, or artifact.
-- The account YAML is `scope: user`/`org` and often gitignored; even so, it holds
-  **only** the URI, never the value — so a leak of the file leaks a pointer, not a
-  credential.
+- The account YAML is `scope: user`/`org`; the shipped `.gitignore` ignores it by default, and
+  a private origin re-allows it (`scripts/user-data.py arm`) and tracks it with the rest of
+  your commits. Either way it holds **only** the URI, never the value, so a leak of the file
+  leaks a pointer, not a credential.
+- A staged credential in an account YAML (or any instance file) is refused at commit time
+  regardless of scope: `scripts/hooks/pre-commit` runs `scripts/user-data.py scan-staged`
+  against the index, so the backup a private instance now commits can never become the leak.
 - Rotation updates the vault; the URI (and thus the account file) usually stays
   unchanged. If the entry is renamed/moved, update the URI in the same change.

@@ -1,7 +1,7 @@
 ---
 summary: "File-based memory model — one fact per file, MEMORY.md as a lean index"
 type: guide
-last_updated: 2026-09-23
+last_updated: 2026-09-25
 related:
   - ../rules/knowledge-growth.md
   - ../rules/operations.md
@@ -164,19 +164,23 @@ https://code.claude.com/docs/en/memory):
 - **Sub-agents do not load** the main session's auto memory, in either
   location.
 
-**Privacy:** `work/memory/` is tracked **only on a private instance**. The
-public `.gitignore` ignores `/work/memory/` by default, and the pre-push
-content net (`scripts/hooks/pre-push`) blocks `work/memory/` from reaching a
-public or unknown remote, the same protection every other personal-data
-family under `work/` already gets. Confirm both are in place before relying
-on them (`git check-ignore work/memory/`; the `memory/` alternation in
-`scripts/hooks/pre-push`'s `USER_PATHS`).
+**Privacy:** `work/memory/` is tracked **only on a private instance**. The shipped root
+`.gitignore` ignores it for every clone, before anything has run in it. On a private origin,
+`scripts/user-data.py arm` (run by `bin/setup` at every session start) writes `work/.gitignore`
+with a negation (`!/memory/`), which re-allows it and tracks it with the rest of your commits;
+a public or unknown origin gets no negation file, so it stays ignored. The pre-push content net
+(`scripts/hooks/pre-push`) is the second guard regardless of tracking state: it blocks
+`work/memory/` (and `work/.gitignore` itself) from reaching a public or unknown remote, the
+same protection every other personal-data family under `work/` already gets. Confirm both are
+in place before relying on them (`python3 scripts/user-data.py check`; the `memory/`
+alternation in `scripts/hooks/pre-push`'s `USER_PATHS`).
 
-**Trap:** because `work/memory/` is *gitignored*, `git clean -x` (or `-fdx`)
-deletes it like any other ignored directory, with no separate warning that
-you are about to delete your memory base rather than build artifacts. Run
-`git clean -n` first, or exclude it explicitly (`git clean -fdx -e
-work/memory`).
+**Trap:** on a clone whose origin is not private, `work/memory/` stays ignored by the shipped
+`.gitignore`, and `git clean -x` (or `-fdx`) deletes it like any other ignored directory, with
+no separate warning that you are about to delete your memory base rather than build artifacts.
+Run `git clean -n` first, or exclude it explicitly (`git clean -fdx -e work/memory`). On a
+private instance `work/memory/` is a tracked directory, so `git clean` never touches it
+regardless.
 
 ## Index-line contract (load-bearing)
 

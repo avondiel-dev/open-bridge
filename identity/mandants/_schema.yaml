@@ -182,6 +182,6 @@ properties:
               description: "[start_hour, end_hour] in 24h format — no messages in this window"
 
 # Notes (advisory):
-# - Mandant files are typically gitignored on user/{name} branches (PII).
+# - Mandant files are PII: tracked on a private origin, excluded on any other (scripts/user-data.py).
 # - The `_template.yaml` lives in CORE; real mandants are USER.
 # - persons[].id should be stable — calendar entries reference it.

@@ -66,6 +66,8 @@ git config "url.${PUBLIC_BARE}.pushInsteadOf" "$PUBLIC_URL"
 # 4) arm the guard exactly as bin/setup would
 git config core.hooksPath scripts/hooks
 [ -f scripts/hooks/pre-push ] && chmod +x scripts/hooks/pre-push
+# the instance-data step of bin/setup: on this public origin it must write nothing
+[ -f scripts/user-data.py ] && python3 scripts/user-data.py arm >/dev/null 2>&1 || true
 
 # 5) belt-and-suspenders: the guard must recognize the target as public whether git
 #    hands the hook the spoof URL or the rewritten bare path

@@ -17,8 +17,8 @@ stores:
     short: "your user branch"
     what: "Tracked on the instance's own user/* branch, which only ever goes to a private origin (rules/push-guard.md)."
   pii:
-    short: "ignored, opt-in"
-    what: "Ignored by the shipped .gitignore, because it carries personal data. A PRIVATE instance may opt in and track it as a backup; a public fork never does."
+    short: "instance data"
+    what: "Personal or instance-specific data. Ignored by the shipped .gitignore for every clone; a private origin re-allows it by writing negation files (scripts/user-data.py arm), then commits it with the rest of your work."
   overlay:
     short: "org overlay"
     what: "Materialized from an organisation's overlay repository and recorded in overlays.lock.yaml (docs/org-overlays.md)."

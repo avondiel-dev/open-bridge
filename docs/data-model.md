@@ -1,7 +1,7 @@
 ---
 summary: "The data model of a Bridge on one page: which data is core, per organisation and per user, which objects live in each island, how they reference each other, where each one is stored, and what a session reads when."
 type: reference
-last_updated: 2026-09-19
+last_updated: 2026-09-25
 related:
   - docs/data-model.yaml
   - docs/structure.md
@@ -115,23 +115,23 @@ draws exactly this, from the same file as the tables below:
 
 | Family | One entry is | Island | Lives in | References | Written by | Read |
 |---|---|---|---|---|---|---|
-| `identity/accounts/` | a cloud tenant, subscription or secret-store reference | core: template, schema; user: entries | open-bridge (CORE)<br>ignored, opt-in | `persona_ref` → identity/personas/<br>`*_ref` → a secret store, by URI | a person; onboarding may suggest the first | when named |
+| `identity/accounts/` | a cloud tenant, subscription or secret-store reference | core: template, schema; user: entries | open-bridge (CORE)<br>instance data | `persona_ref` → identity/personas/<br>`*_ref` → a secret store, by URI | a person; onboarding may suggest the first | when named |
 | `identity/agent/` | this orchestrator's own name, role and voice | core: templates, soul deck; user: SOUL.md, IDENTITY.md | open-bridge (CORE)<br>your user branch | none | onboarding seeds it; accepted /bridge-learn lessons fold into SOUL.md | at session start |
 | `identity/contracts/` | a recurring obligation the user holds: utility, telco, insurance, subscription | core: template, schema; user: entries | open-bridge (CORE)<br>your user branch | `delivery_address_ref` → identity/personas/ | a person | when named |
-| `identity/mandants/` | a group that receives outgoing messages | core: template, schema; user: entries; org: a shared group via scope | open-bridge (CORE)<br>ignored, opt-in | `context_ref` → workflow/contexts/ | /mandants | when named |
-| `identity/personas/` | an identity the user holds: signature, tax data, filing paths | core: template, schema; user: entries | open-bridge (CORE)<br>ignored, opt-in | `mandant_refs` → identity/mandants/ | a person; onboarding may seed the first | when named |
+| `identity/mandants/` | a group that receives outgoing messages | core: template, schema; user: entries; org: a shared group via scope | open-bridge (CORE)<br>instance data | `context_ref` → workflow/contexts/ | /mandants | when named |
+| `identity/personas/` | an identity the user holds: signature, tax data, filing paths | core: template, schema; user: entries | open-bridge (CORE)<br>instance data | `mandant_refs` → identity/mandants/ | a person; onboarding may seed the first | when named |
 | `identity/vehicles/` | a vehicle the user owns or leases, and the persona that bears it | core: template, schema; user: entries | open-bridge (CORE)<br>your user branch | `persona` → identity/personas/<br>`refs` → identity/contracts/ | a person | when named |
 | `infra/backups/` | what is backed up where, and whether it is fresh | core: template, schema; user: topology.yaml, _state.yaml | open-bridge (CORE)<br>your user branch | `remote_ref` → infra/remotes/ | topology by a person; _state.yaml only by the backup executor an instance brings | when named |
 | `infra/channels/` | an outbound transport: mail, chat, bot, digest | core: template, schema; user: entries | open-bridge (CORE)<br>your user branch | `runtime.remote` → infra/remotes/ | /channel | when named |
 | `infra/instances/` | another Bridge this one should know about | core: template, schema; user: entries | open-bridge (CORE)<br>your user branch | `location.host` → infra/remotes/<br>`promote_config_ref` → bridge-config.yaml upstreams | a person; the overlay engine keeps subscribes_overlays current | when named |
-| `infra/remotes/` | a machine: ssh, wake, services | core: template, schema; user: entries | open-bridge (CORE)<br>ignored, opt-in | `layout_ref` → infra/backups/ | /remote | when named |
+| `infra/remotes/` | a machine: ssh, wake, services | core: template, schema; user: entries | open-bridge (CORE)<br>instance data | `layout_ref` → infra/backups/ | /remote | when named |
 | `infra/secret-stores/` | where a secret lives, who reaches it, which kind belongs in it | core: template, schema; user: entries | open-bridge (CORE)<br>your user branch | `unlock.password_ref` → another store, by URI<br>`remote_ref` → infra/remotes/<br>`account_ref` → identity/accounts/ | /secrets | when named |
 | `infra/object-stores/` | where content that is not configuration lives, who reaches it, which class belongs in it | core: template, schema; user: entries | open-bridge (CORE)<br>your user branch | `credentials.*_ref` → a secret store, by URI<br>`reachable_from.machines` → infra/remotes/ | a person; /object-store reads it | when named |
 | `infra/transcriptions/` | where recordings become transcripts, and where those land | core: template, schema; user: topology.yaml | open-bridge (CORE)<br>your user branch | `worker host` → infra/remotes/ | the meeting-transcription skill | when named |
 | `infra/utilities/` | a supply connection at a location: power, gas, water, heat | core: template; user: entries | open-bridge (CORE)<br>your user branch | `portal_password_ref` → a secret store, by URI | a person | when named |
-| `workflow/calendars/` | a scheduled outbound action: what, to whom, when | core: template, schema; user: entries.yaml | open-bridge (CORE)<br>ignored, opt-in | `recipients` → identity/mandants/ | /calendar | when named |
-| `workflow/contexts/` | where a piece of work gets documented | core: template, schema; user: entries; org: shared contexts via scope | open-bridge (CORE)<br>ignored, opt-in<br>org overlay | `persona_ref` → identity/personas/ | a person, or an org overlay | when named |
-| `workflow/projects/` | a board's field values and state map, read before any tracker call | core: template, schema; user or org: entries | open-bridge (CORE)<br>ignored, opt-in<br>org overlay | `context_ref` → workflow/contexts/<br>`mandant_ref` → identity/mandants/ | a person, or an org overlay; board items only through github-projects-manager | when named |
+| `workflow/calendars/` | a scheduled outbound action: what, to whom, when | core: template, schema; user: entries.yaml | open-bridge (CORE)<br>instance data | `recipients` → identity/mandants/ | /calendar | when named |
+| `workflow/contexts/` | where a piece of work gets documented | core: template, schema; user: entries; org: shared contexts via scope | open-bridge (CORE)<br>instance data<br>org overlay | `persona_ref` → identity/personas/ | a person, or an org overlay | when named |
+| `workflow/projects/` | a board's field values and state map, read before any tracker call | core: template, schema; user or org: entries | open-bridge (CORE)<br>instance data<br>org overlay | `context_ref` → workflow/contexts/<br>`mandant_ref` → identity/mandants/ | a person, or an org overlay; board items only through github-projects-manager | when named |
 | `workflow/workloads/` | one declared run on one machine | core: template, schema, contract tests; user: entries | open-bridge (CORE)<br>your user branch | `placement.host` → infra/remotes/<br>`persona_ref` → identity/personas/<br>`response.recipients` → identity/mandants/<br>`response.notify_via` → infra/channels/ | /workload | when named |
 | `workflow/workspaces/` | a named binding of code repos and config overlays | core: template, schema; user: entries | open-bridge (CORE)<br>your user branch<br>outside git | `overlays` → overlays.lock.yaml<br>`repos` → a code repository, cloned under .bridge/ | /workspace (scripts/workspace.py) | when named |
 | `rules/` | a guardrail, tiered by folder | core: rules/*.md; org: rules/org/; user: rules/user/ | open-bridge (CORE)<br>org overlay<br>your user branch | none | a person; scripts/validate-bridge.py holds each rule's scope to its folder | at session start |
@@ -146,12 +146,12 @@ draws exactly this, from the same file as the tables below:
 
 | File | What it is | Island | Lives in |
 |---|---|---|---|
-| `bridge-config.yaml` | the instance's settings; a session reads six of its blocks | user | ignored, opt-in |
-| `ecosystem.yaml` | the repo registry, read as a card with one entry on demand | user | ignored, opt-in |
-| `ecosystem.<name>.yaml` | a registry fragment, for example an organisation's | org or user | ignored, opt-in<br>org overlay |
-| `overlays.lock.yaml` | which overlay files were materialized, at which revision | user | ignored, opt-in |
+| `bridge-config.yaml` | the instance's settings; a session reads six of its blocks | user | instance data |
+| `ecosystem.yaml` | the repo registry, read as a card with one entry on demand | user | instance data |
+| `ecosystem.<name>.yaml` | a registry fragment, for example an organisation's | org or user | instance data<br>org overlay |
+| `overlays.lock.yaml` | which overlay files were materialized, at which revision | user | instance data |
 | `context-budget.yaml` | the declared ceiling for what every session reads | core | open-bridge (CORE) |
-| `context-budget.user.yaml` | an instance's own caps for its own always-on files | user | ignored, opt-in |
+| `context-budget.user.yaml` | an instance's own caps for its own always-on files | user | instance data |
 | `DESIGN.md` | the design tokens every generated visual reads | core | open-bridge (CORE) |
 | `.bridge/` | the overlay cache, the workspace clones and the object read cache | user | outside git |
 | `imports/` | incoming files before they are filed | user | outside git |
@@ -163,7 +163,7 @@ draws exactly this, from the same file as the tables below:
 |---|---|
 | open-bridge (CORE) | Tracked in open-bridge and shipped to every instance on the next merge. |
 | your user branch | Tracked on the instance's own user/* branch, which only ever goes to a private origin (rules/push-guard.md). |
-| ignored, opt-in | Ignored by the shipped .gitignore, because it carries personal data. A PRIVATE instance may opt in and track it as a backup; a public fork never does. |
+| instance data | Personal or instance-specific data. Ignored by the shipped .gitignore for every clone; a private origin re-allows it by writing negation files (scripts/user-data.py arm), then commits it with the rest of your work. |
 | org overlay | Materialized from an organisation's overlay repository and recorded in overlays.lock.yaml (docs/org-overlays.md). |
 | outside git | Never in a repository: a secret store reached by URI (rules/secret-placement.md), or a local cache or clone under .bridge/. |
 | an object store | Never in a repository: bytes an entry reaches by an object:// reference, through a declaration in infra/object-stores/ (docs/object-store.md). A local directory can be one. |
