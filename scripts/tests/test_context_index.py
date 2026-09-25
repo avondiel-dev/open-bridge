@@ -1019,12 +1019,12 @@ def test_the_header_survives_on_a_real_registry_shape():
         "# scope: personal — NEVER promoted to public\n"
         "\n"
         "freelance:\n"
-        "  praxis:\n"
+        "  example-client:\n"
         "    description: a customer\n"
     )
     card = ci.render_card(body, {"kind": "index", "sections": ["freelance"]}, "e.yaml")
     assert "NEVER promoted to public" in card
-    assert "**praxis**" in card
+    assert "**example-client**" in card
 
 
 def test_the_header_does_not_confuse_the_declaration_check():

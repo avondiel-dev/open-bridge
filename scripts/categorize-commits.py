@@ -463,7 +463,7 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
 # shipped together with its family, so it is identical from its first commit.
 # This is NOT a README shape rule — it is a literal list that happens to contain
 # five READMEs, each individually checked. identity/voiceprints/README.md and
-# infra/channels/bots/igor-zahnarzt/README.md are absent BY CONSTRUCTION.
+# infra/channels/bots/<client>/README.md are absent BY CONSTRUCTION.
 # Position (after PERSONAL/USER/ORG) means a careless addition here degrades to
 # a no-op instead of overriding a denylist.
 VERIFIED_CORE = frozenset({

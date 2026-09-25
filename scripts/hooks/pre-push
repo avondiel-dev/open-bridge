@@ -79,7 +79,7 @@ USER_PATHS='^(work/(log\.md|board\.md|tasks/|streams/|done/|archive/|memory/|\.g
 #
 # It replaces a blanket `grep -v '/README.md$'`, which exempted EVERY README at
 # any depth. That was a leak: it stripped
-# infra/channels/bots/igor-zahnarzt/README.md (a freelance client) and
+# infra/channels/bots/<client>/README.md (a client project) and
 # identity/voiceprints/README.md (biometric, GDPR Art. 9) before the regex ever
 # saw them, while the sibling .yaml in the same directory was correctly blocked.
 # Only a cluster-wrapper's own TYPE-level README is a core companion; anything
