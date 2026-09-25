@@ -417,18 +417,18 @@ html.dark .code{background:var(--code-bg)}
           <span data-lang="en">shell: the workspace engine</span>
           <span data-lang="de">Shell: die Workspace-Engine</span>
         </div>
-        <pre class="code"><span class="cmt"># 1 · create the definition (writes workflow/workspaces/client-peppol.yaml)</span>
-<span class="k">$</span> python3 scripts/workspace.py create client-peppol \
-      --title "Client Peppol rollout"
+        <pre class="code"><span class="cmt"># 1 · create the definition (writes workflow/workspaces/client-invoicing.yaml)</span>
+<span class="k">$</span> python3 scripts/workspace.py create client-invoicing \
+      --title "Client invoicing rollout"
 
 <span class="cmt"># 2 · subscribe members: code repos, plus one config overlay</span>
-<span class="k">$</span> python3 scripts/workspace.py subscribe client-peppol \
+<span class="k">$</span> python3 scripts/workspace.py subscribe client-invoicing \
       https://example.org/outbound-service.git --role code
-<span class="k">$</span> python3 scripts/workspace.py subscribe client-peppol \
+<span class="k">$</span> python3 scripts/workspace.py subscribe client-invoicing \
       https://example.org/org-config.git --role config
 
 <span class="cmt"># 3 · per-clone drift against the pinned commit</span>
-<span class="k">$</span> python3 scripts/workspace.py status client-peppol</pre>
+<span class="k">$</span> python3 scripts/workspace.py status client-invoicing</pre>
         <p class="after" data-lang="en">The <code>--role config</code> line delegates to the shared overlay engine: overlay state stays instance-wide, never per-workspace (<a href="#limits">see Limits</a>).</p>
         <p class="after" data-lang="de">Die <code>--role config</code>-Zeile delegiert an die geteilte Overlay-Engine: Der Overlay-Zustand bleibt instanzweit, nie pro Workspace (<a href="#limits">siehe Grenzen</a>).</p>
       </div>

@@ -46,7 +46,7 @@ UNSET = object()
 
 #: The reference most cases read. Two segments, which is all this scheme takes:
 #: the vault and the secret. There is no group and no field.
-TOKEN_REF = "azure-keyvault://bridge-kv/storecove-api-token"
+TOKEN_REF = "azure-keyvault://bridge-kv/vendor-api-token"
 
 #: A subscription as `az` wants it: the id, not the display name. Lower case and
 #: synthetic, and it appears in an argv on purpose, which is safe because a
@@ -58,7 +58,7 @@ class AzureCase(MachineGuard):
     """A backend wired to a fake process, never to a tenant."""
 
     VAULT = "bridge-kv"
-    SECRET = "storecove-api-token"
+    SECRET = "vendor-api-token"
 
     class RunnerThatReadsTheFileTheValueTravelsIn(FakeRunner):
         """Looks at the temporary file WHILE the call is in flight.
@@ -92,7 +92,7 @@ class AzureCase(MachineGuard):
 
     def setUp(self):
         super().setUp()
-        self.value = synthetic_token("storecove")  # pragma: allowlist secret
+        self.value = synthetic_token("vendor")  # pragma: allowlist secret
 
     # -- builders -----------------------------------------------------------
 
@@ -337,7 +337,7 @@ class StderrDecidesWhetherAFailedReadIsAMissOrAFault(AzureCase):
 
     def test_a_missing_secret_comes_back_as_a_reading_rather_than_an_error(self):
         reading = self.read_failing(
-            "ERROR: (SecretNotFound) A secret with (name/id) storecove-api-token "
+            "ERROR: (SecretNotFound) A secret with (name/id) vendor-api-token "
             "was not found in this key vault.\n")
         self.assertFalse(reading.present)
 

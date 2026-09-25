@@ -44,7 +44,7 @@ properties:
       Device profile. Common values:
         macos, linux, windows         — general-purpose computers
         embedded                       — IoT / single-board
-        network-device, router         — switches, APs, FritzBox-style
+        network-device, router         — switches, APs, home routers
         saas                           — managed cloud service (no SSH)
         usb-toolkit                    — portable hardware (Flipper Zero, Yubikey-cli, etc.)
       Free-form to allow new device profiles without schema change.

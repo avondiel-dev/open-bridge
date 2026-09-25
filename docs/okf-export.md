@@ -164,13 +164,13 @@ wrong, and each one cost real content before it was fixed:
 - **A quote closes a quoted scalar only where a quote may close one**: with
   nothing behind it, or an inline comment. Anything else means that quote was
   a character inside the value, and the value then falls back to the plain
-  path rather than being cut at it. `title: 'Michael's bridge'` yields
-  `Michael's bridge`, and `title: "He said "stop" once"` yields
+  path rather than being cut at it. `title: 'Alex's bridge'` yields
+  `Alex's bridge`, and `title: "He said "stop" once"` yields
   `He said "stop" once`: every character between the outer quotes survives,
   and only that orphaned outer pair is dropped. PyYAML rejects both of those
   lines outright, so there is no conformant reading to defer to; keeping a
   malformed value whole is the lesser failure. Doubling the inner apostrophe
-  (`'Michael''s bridge'`) or switching quote style still makes the line legal
+  (`'Alex''s bridge'`) or switching quote style still makes the line legal
   YAML, which is worth doing for any consumer that is not this exporter.
 - **An unquoted value keeps its last character, whatever it is.** The
   orphaned-pair strip above applies only to a value that *opens* with a quote,

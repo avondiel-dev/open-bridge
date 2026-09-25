@@ -57,7 +57,7 @@ proposal_type: structured                # structured | needs-triage
 diff_preview: |
   +# Skill: voice-mode-llm-switch
   +
-  +Detects when the local Twilio-15s-voice loop is active and ensures
+  +Detects when the local voice-call loop is active and ensures
   +the LLM endpoint is qwen3:1.7b. Switches back to qwen3:32b on
   +session-end.
 
