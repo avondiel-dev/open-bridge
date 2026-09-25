@@ -1,10 +1,10 @@
 schema_version: 2
 description: "Curated region descriptions for repo-layout brain visualizations. C-prime layout (cluster-wrappers + default-to-folder rule)."
-last_updated: 2026-07-18
+last_updated: 2026-09-25
 notes:
   - "Schema v2 (C-prime): cluster-wrappers identity/, infra/, workflow/ + default-to-folder rule."
   - "Primary view: docs/repo-layout/c-prime.html (editorial cluster/top-level map). Brain-metaphor variants v1-v4 show the same C-prime data and carry a banner at the top pointing to c-prime.html as the primary view."
-  - "owner: core (CORE templates/schemas, shared) | user (instance data, gitignored when PII)"
+  - "owner: core (CORE templates/schemas, shared) | user (instance data, ignored by the shipped .gitignore, re-allowed on a private origin per scripts/user-data.py)"
 regions:
 
   # =========================================================================
@@ -22,8 +22,9 @@ regions:
       language, and dependencies. Alongside workspaces, GitHub Projects numbers,
       Azure infrastructure per customer, and the skill catalogs.
       Read at session start via `scripts/context-index.py ecosystem.yaml`.
-      Created at onboarding from the discovery scan; user-specific and
-      gitignored — not shipped on a fresh clone.
+      Created at onboarding from the discovery scan; user-specific and not
+      shipped on a fresh clone. Ignored by the shipped .gitignore; a private
+      origin re-allows it and stages it once (scripts/user-data.py arm).
     examples:
       - "base.open-bridge — hub repo itself"
       - "customers.<name>.repos — code repos per customer"
@@ -473,8 +474,9 @@ regions:
       Self-identities the user holds (private individual, freelancer,
       managing director of a GmbH, etc.). Contain tax IDs, VAT IDs,
       tax advisor refs, vehicle classification, signature blocks, and
-      destination paths for document filing. **Gitignored** except for template
-      and schema.
+      destination paths for document filing. Ignored by the shipped .gitignore; a private
+      origin re-allows it (scripts/user-data.py arm) and backs it up with your commits.
+      Template and schema are always tracked.
     examples:
       - "user-personal.yaml"
       - "user-freelancer.yaml"
@@ -514,7 +516,9 @@ regions:
       company, household, family, friends, colleagues, individual.
       Today **flat** — `identity/mandants/<id>.yaml`. Promote to folder
       `identity/mandants/` as soon as ≥5 instances or a schema anchor emerges.
-      **Gitignored** because of contact PII; template is tracked.
+      Ignored by the shipped .gitignore because of contact PII; a private origin
+      re-allows it (scripts/user-data.py arm) and backs it up with your commits.
+      Template is always tracked.
     examples:
       - "mandants/<personal>.yaml"
     related:
@@ -603,11 +607,13 @@ regions:
     path: "workflow/contexts/<id>.yaml"
     owner: user
     display_name: "Context Bundles"
-    oneliner: "Routing rules + persona refs (flat, gitignored)"
+    oneliner: "Routing rules + persona refs (flat, ignored by default)"
     what: |
       One YAML per context domain with routing rules, persona refs, scan paths,
       anti-patterns. Used today by `doc-system` for document filing.
-      **Gitignored** because routing rules contain persona refs and specific paths.
+      Ignored by the shipped .gitignore because routing rules contain persona refs
+      and specific paths; a private origin re-allows it (scripts/user-data.py arm)
+      and backs it up with your commits.
     examples:
       - "context.doc-system.yaml"
     related:

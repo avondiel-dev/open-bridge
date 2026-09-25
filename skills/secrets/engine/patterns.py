@@ -86,7 +86,11 @@ CREDENTIALS: tuple = (
     Pattern("slack-token", "xox", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b"),
             "credential", "org-credential", aliases=("xox[bp]-", "xox[baprs]-")),
     Pattern("openai-style-key", "sk-", re.compile(r"\bsk-[-A-Za-z0-9_]{20,}\b"),
-            "credential", "personal-token"),
+            "credential", "personal-token",
+            "a real key is random and carries digits; a hyphenated id such as "
+            "`sk-task-close-postmortem` has none, and measured on 2026-09-25 those "
+            "ids were every hit in one instance's config",
+            confirm=lambda match: any(ch.isdigit() for ch in match.group(0)[3:])),
     Pattern("google-api-key", "AIza", re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"),
             "credential", "org-credential",
             "known to the instance rule and to neither of the two CORE scans"),

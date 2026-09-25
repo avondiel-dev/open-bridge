@@ -113,6 +113,9 @@ USER_PATTERNS = [
     # public — promoting ours would disarm the guard downstream.
     r"^\.gitignore$",
     r"^\.bridge-origin$",
+    # The negation files a PRIVATE origin writes (scripts/user-data.py arm).
+    # Promoted, one would re-allow instance data in every public clone.
+    r"^(identity|infra|workflow|work)/\.gitignore$",
     r"^imports/(?!\.gitkeep$)",                       # AGENTS.md § Scope: whole folder = USER
 ]
 
@@ -126,7 +129,7 @@ ORG_PATTERNS = [
     # of the family — `example` is the CORE template that must keep shipping, and
     # `personal`/`local` are matched earlier by PERSONAL_PATTERNS anyway (named
     # here as a backstop, in case that list is ever reordered).
-    r"^ecosystem\.(?!example\.|personal\.|local\.)[a-z0-9][a-z0-9-]*\.yaml$",
+    r"^ecosystem\.(?!example\.yaml$|personal\.yaml$|local\.yaml$)[^/]+\.yaml$",
     r"^rules/org/",                                   # org-tier rules (wiki-navigation, wiki-principles) — folder = tier
     # NOTE: skills are NOT path-matched here — they route by `metadata.scope`
     # read from SKILL.md below. A hardcoded skill path would SHADOW the
@@ -425,6 +428,13 @@ SCRIPTS_CORE_ALLOWLIST = frozenset({
     # classification would have upstream CI call a file that never shipped.
     "scripts/tests/test-push-guard-commit-set.sh",
     "scripts/tests/test_edges.py",
+    # Registered 2026-09-25 with the per-clone instance-data decision: the
+    # classifier the push guard now sources, the script bin/setup and the
+    # pre-commit hook call, and the two contracts validate.yml runs.
+    "scripts/lib/remote-class.sh",
+    "scripts/user-data.py",
+    "scripts/tests/test_user_data.py",
+    "scripts/tests/test_push_guard_paths.py",
     # Registered with the guarded auto-merge (upstream-autoupdate.sh + its
     # installer). Same reason as scripts/upstream-monitor.sh above, which is
     # the reporting half of the same pair: the allowlist is deliberate, so a
