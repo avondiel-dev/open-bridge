@@ -1,7 +1,7 @@
 ---
 summary: "Org overlays — the downstream inverse of /promote: how a consumer Bridge subscribes to an org's scope:org content and materializes it as git-excluded copies (opt-in tracked), with a manifest, a lockfile, and per-file conflict + leak gates."
 type: guide
-last_updated: 2026-06-27
+last_updated: 2026-09-25
 related:
   - rules/org-overlays.md
   - docs/extension-model.md
@@ -174,9 +174,10 @@ That single comparison lets a re-sync distinguish "upstream changed" from "the
 user edited locally" from "we injected a prompt value here" — without ever
 storing the value. `prompted_fields` holds the JSONPath **paths** that were
 prompted, **never** the supplied values (a value may be PII). The lock is
-`scope: user`: gitignored in a public fork, tracked only in a private instance
-(same policy as `ecosystem.local.yaml`). The sparse cache under `.bridge/` is
-always gitignored.
+`scope: user`: the shipped root `.gitignore` ignores it for every clone, and a private origin
+re-allows it (`scripts/user-data.py arm`, same policy as `ecosystem.<name>.yaml`), staging it
+once with `git add -f` since a root file cannot be re-allowed by a deeper `.gitignore`.
+The sparse cache under `.bridge/` is always gitignored, regardless of origin.
 
 ## Git tracking of managed dests
 

@@ -61,6 +61,37 @@ notify_on_change() {  # $1 = message; sent only when it differs from the last on
 }
 report() { mkdir -p work; { echo "# Overlay Auto-Sync, $(date '+%F %T')"; echo; printf '%s\n' "$@"; } > "$REPORT"; }
 
+# PY — an interpreter that can actually RUN the engine, not merely the first
+# `python3` on PATH. A scheduled run gets the service manager's minimal PATH
+# (launchd: /usr/bin:/bin:/usr/sbin:/sbin), where /usr/bin/python3 exists and
+# has no PyYAML. The engine then prints "ERROR: PyYAML not installed" on stderr
+# and NOTHING on stdout, so a caller reading stdout concludes there is nothing
+# to do. Measured on macOS on 2026-09-24: the job had reported
+# "no overlays subscribed" every night since it was provisioned, with a tick,
+# while 272 files sat subscribed and current.
+# The test is `import yaml`, never the path or the version: the only thing that
+# matters is whether that interpreter can load the engine's one dependency.
+# BRIDGE_PYTHON may arrive as a plain path OR as a file:// locator, because a
+# workload declaration's `execution.env` accepts locators only — a bare path is
+# refused by that schema, so the one legal way to hand this in from a scheduled
+# run is `file:///path/to/python3`.
+_bp="${BRIDGE_PYTHON:-}"; _bp="${_bp#file://}"
+PY=""
+for _c in "$_bp" python3 "$HOME/.pyenv/shims/python3" /opt/homebrew/bin/python3 \
+          /usr/local/bin/python3 /usr/bin/python3; do
+  [ -n "$_c" ] || continue
+  command -v "$_c" >/dev/null 2>&1 || continue
+  "$_c" -c 'import yaml' >/dev/null 2>&1 || continue
+  PY="$_c"; break
+done
+if [ -z "$PY" ]; then
+  report "- 🔴 no python3 with PyYAML found; the overlay engine cannot run" \
+         "- tried: \`\$BRIDGE_PYTHON\`, \`python3\`, /opt/homebrew, /usr/local, /usr/bin" \
+         "- a scheduled run gets a minimal PATH; set \`BRIDGE_PYTHON\` or install PyYAML for the interpreter it finds"
+  notify_on_change "🔴 overlay auto-sync cannot run: no python3 with PyYAML"
+  echo "overlay-autosync: no usable python3"; exit 1
+fi
+
 branch=$(git branch --show-current 2>/dev/null || echo "")
 case "$branch" in
   user/*) ;;
@@ -70,14 +101,29 @@ case "$branch" in
 esac
 
 # Nothing subscribed → say so once and stay quiet. Not an error.
-if ! python3 scripts/overlay.py list 2>/dev/null | grep -q .; then
+#
+# A FAILED list and an EMPTY list are different answers and must never print the
+# same. The first version discarded stderr and tested stdout for content, so any
+# error at all — a missing dependency, an unreadable lockfile, a syntax error —
+# rendered as "✓ no overlays subscribed": a green tick on a question nobody could
+# answer. That is the fail-OPEN shape this repo already learned once, in the
+# merge-tree guard that grepped localized prose.
+subs=$(LC_ALL=C "$PY" scripts/overlay.py list 2>"$LOG.list") ; list_rc=$?
+if [ "$list_rc" -ne 0 ]; then
+  report "- 🔴 cannot read the overlay subscriptions (exit $list_rc)" \
+         "- this is NOT the same as having none; nothing was synced" \
+         "" '```' "$(tail -5 "$LOG.list" 2>/dev/null)" '```'
+  notify_on_change "🔴 overlay auto-sync: cannot read subscriptions (exit $list_rc). Nothing synced."
+  echo "overlay-autosync: list failed (exit $list_rc)"; exit 1
+fi
+if [ -z "$subs" ]; then
   report "- ✓ no overlays subscribed"; echo "overlay-autosync: no overlays"; exit 0
 fi
 
 # LC_ALL=C: the output is parsed, and a localized git underneath would move the
 # strings. Same lesson as the merge-tree guard in upstream-autoupdate.sh, where
 # grepping localized prose failed OPEN.
-LC_ALL=C python3 scripts/overlay.py sync --unattended </dev/null >"$LOG" 2>&1
+LC_ALL=C "$PY" scripts/overlay.py sync --unattended </dev/null >"$LOG" 2>&1
 rc=$?
 lines=$(grep -E '^unattended [^ ]+: ' "$LOG" 2>/dev/null)
 held=$(printf '%s\n' "$lines" | grep -c ': held' ) || held=0
@@ -91,7 +137,7 @@ if [ -z "$lines" ]; then
 fi
 
 bullets=$(printf '%s\n' "$lines" | sed 's/^unattended /- /')
-status=$(LC_ALL=C python3 scripts/overlay.py status 2>/dev/null)
+status=$(LC_ALL=C "$PY" scripts/overlay.py status 2>/dev/null)
 next=""
 [ "$held" -gt 0 ] && next="- held: review with \`/overlay diff\`, then run \`/overlay sync\` interactively"
 [ "$pending" -gt 0 ] && next="${next:+$next

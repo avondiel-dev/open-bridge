@@ -749,7 +749,7 @@ echo
 echo "── 19. canonical subscribe/unsubscribe (add-repo/remove-repo aliases) ─"
 # subscribe/unsubscribe are the CANONICAL verb names; add-repo/remove-repo are
 # retained aliases. Both must dispatch to the same handlers — incl. the branch
-# gate and config delegation — so Axel's command vocabulary works unchanged.
+# gate and config delegation — so a teammate's existing command vocabulary works unchanged.
 CONS="$(mkcon)"
 DEFS="$CONS/workflow/workspaces/demo-workspace.yaml"
 LOCKS="$CONS/workspaces.lock.yaml"

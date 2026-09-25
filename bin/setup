@@ -70,6 +70,18 @@ else
     echo "WARN scripts/hooks/ missing — git hooks not armed"
 fi
 
+# Instance data follows the origin (scripts/user-data.py). The shipped .gitignore
+# keeps it out of every clone; a PRIVATE origin gets identity/ infra/ workflow/
+# work/.gitignore negations (committed with the instance) and its root files
+# staged once, so everything is backed up. Re-run on every session start, so
+# re-homing origin to a private repo takes effect without anyone editing a list.
+if [ -f "scripts/user-data.py" ] && command -v python3 >/dev/null 2>&1; then
+    python3 scripts/user-data.py arm || { echo "WARN user-data arm failed, instance data may be not backed up"; rc=1; }
+else
+    echo "WARN python3 missing, instance data is not backed up (scripts/user-data.py)"
+    rc=1
+fi
+
 # Optional: the tool-agnostic gh wrapper (scripts/bin/gh) reminds you to log remote
 # issue/PR/board ops. Not auto-written into your shell profile — opt in by adding it
 # to PATH yourself:

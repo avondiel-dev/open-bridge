@@ -9,7 +9,7 @@ above via `@AGENTS.md`, so the full manual — session-start gate, rules, task m
 standing orders, commands — is already in your context. This file only adds the
 Claude-Code-specific bits.
 
-The project registry (`ecosystem.yaml`, created at onboarding, gitignored) is no longer
+The project registry (`ecosystem.yaml`, created at onboarding, per instance) is no longer
 `@`-imported. It is **indexed**: Phase 1 runs
 `python3 scripts/context-index.py ecosystem.yaml`, which emits the settings verbatim and one
 line per repo, customer and workspace; the entry itself arrives with `--get <name>` when

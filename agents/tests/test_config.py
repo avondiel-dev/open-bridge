@@ -26,12 +26,12 @@ BASE = "PERSONA PROMPT.\n"
 
 
 def test_no_patterns_returns_prompt_unchanged(tmp_path):
-    (tmp_path / "cv.toml").write_text("name = 'Michael'", "utf-8")
+    (tmp_path / "cv.toml").write_text("name = 'Alex'", "utf-8")
     assert compose_inline_grounding(BASE, str(tmp_path), []) == BASE
 
 
 def test_no_match_returns_prompt_unchanged(tmp_path):
-    (tmp_path / "cv.toml").write_text("name = 'Michael'", "utf-8")
+    (tmp_path / "cv.toml").write_text("name = 'Alex'", "utf-8")
     assert compose_inline_grounding(BASE, str(tmp_path), ["does-not-exist.toml"]) == BASE
 
 

@@ -17,7 +17,7 @@ one decision that matters before anything else (where your private data will
 live), two equivalent ways to get there, and what happens in the first session.
 
 Just want to see it run? The demo workspace needs no setup at all: see the
-README's *Try it in 2 minutes*.
+README's *Or look first: the demo workspace*.
 
 ## Give your data a private home first
 

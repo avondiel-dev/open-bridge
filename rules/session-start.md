@@ -48,14 +48,22 @@ never let them block or delay the first response.
    `bin\setup.ps1` (Windows), which also repairs the skills-discovery symlinks
    and `chmod +x`es the hooks; a non-zero exit there is survivable too.
 
-2. **Classify the origin** (the onboarding protection lane reuses this). Decide
-   whether this clone can safely receive private data:
-   - `.bridge-origin` says `is_public: false` with a slug matching
-     `git remote get-url origin` → **private** (safe home).
-   - `origin` is a known public upstream (e.g. `bks-lab/open-bridge`) **or**
-     `gh repo view --json visibility` reports PUBLIC → **public** (private data
-     must NOT land here).
-   - no `origin`, or `gh` offline/absent → **unknown / local-only**.
+2. **Classify the origin** (the onboarding protection lane reuses this, and it is the same
+   question `scripts/user-data.py` asks to decide whether instance data is tracked at all,
+   see [`docs/structure.md`](../docs/structure.md#gitignore-policy)). Run the one classifier
+   both callers share, rather than reconstructing the logic by hand:
+
+   ```bash
+   sh scripts/lib/remote-class.sh   # prints private | public | unknown, for origin
+   ```
+
+   It answers from the first source that matches, in this order:
+   - `bridge-config.yaml` `push_guard.private_remotes` lists this origin → **private**.
+   - `bks-lab/open-bridge`, or a `push_guard.public_upstreams` entry, matches → **public**.
+   - `.bridge-origin` names a `repo:` matching this origin, with `is_public: false`/`true` →
+     **private**/**public**.
+   - `gh repo view --json visibility` (best effort, only when still unresolved) → PRIVATE/PUBLIC.
+   - Anything else → **unknown / local-only**, treated like public everywhere it matters.
 
    Keep the result. The greeting and onboarding consume it and **must never
    claim "your own private repo" unless the origin is confirmed private.**
@@ -94,8 +102,13 @@ Run all four checks in parallel:
 3. **user branches** — `git branch --list 'user/*'`
 4. **config file** — `ls bridge-config.yaml 2>&1`
 
-Note: `bridge-config.yaml` is gitignored, so it persists across branch
-switches. Its presence does NOT depend on the current branch.
+Note: on an origin that is not confirmed private, `bridge-config.yaml` is ignored by the
+shipped root `.gitignore`, so it persists across branch switches and a deleted `user/*` branch
+leaves it behind untouched (the ORPHAN STATE case below). On a private origin `scripts/user-data.py
+arm` has staged it, so it is tracked on the `user/*` branch like the rest of your instance data,
+and a plain checkout to the core branch removes it the normal way a tracked file does; seeing
+ORPHAN STATE there means something else kept a copy around (an uncommitted edit, a manual
+backup), not the ordinary case.
 
 ## Decision matrix
 
@@ -103,7 +116,7 @@ switches. Its presence does NOT depend on the current branch.
 |---|---|---|---|---|
 | **core** | none | missing | **NEW USER** | **Reflect what Step 0 found, then open the four-lane front door** (see § NEW USER front door below): intro/demo · describe-purpose · protection · workspace, under a free-text invite. Route into the `/bridge-onboard` skill once the user picks a lane — or, on a tool without slash-commands, read `skills/bridge-onboard/SKILL.md` → `references/workflow.md` and run the phases inline. Do not answer the user's original question until the door is offered and a lane (or `[n]`) is chosen. |
 | **core** | exists | present | **WRONG BRANCH** | Suggest `git checkout user/{name}` (switching from the core branch). Do not load `work/` from the core branch — those files belong to the user branch. |
-| **core** | none | present | **ORPHAN STATE** | User branch was deleted but local config remains (gitignored, persisted). Offer: (a) create a fresh `user/{name}` branch from current state, (b) remove `bridge-config.yaml` and run onboarding fresh, (c) stay on the core branch for CORE-only work. |
+| **core** | none | present | **ORPHAN STATE** | User branch was deleted but local config remains (kept out of git and untouched by branch changes on a non-private origin; on a private origin it means a copy survived some other way, see the Note above). Offer: (a) create a fresh `user/{name}` branch from current state, (b) remove `bridge-config.yaml` and run onboarding fresh, (c) stay on the core branch for CORE-only work. |
 | **core** | exists | missing | **BROKEN CONFIG** | Rare. The user branch likely has the config. Suggest `git checkout user/{name}` to restore state. |
 | `user/*` | (self) | present | **NORMAL** | Proceed to Phase 1 — see `rules/operations.md` § Session Start. |
 | `user/*` | (self) | missing | **BROKEN USER BRANCH** | Config missing on the user branch. Offer `/bridge-onboard` to re-create or inspect `git status` for accidentally deleted files. |

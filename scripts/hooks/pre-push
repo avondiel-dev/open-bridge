@@ -34,81 +34,27 @@ REMOTE_URL="${2:-}"
 
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || ROOT=$(pwd)
 
-# normalize any git remote URL to a lowercase owner/repo slug
-slug_of() {
-  printf '%s' "$1" \
-    | sed -E 's#^git@[^:]+:##; s#^ssh://git@[^/]+/##; s#^https?://[^/]+/##; s#/$##; s#\.git$##' \
-    | tr '[:upper:]' '[:lower:]'
-}
-
-# read a space-separated list under push_guard.<key> from a YAML file
-# (supports inline `key: [a, b]` and block `- a` forms; best-effort, optional)
-yaml_list() {
-  _file="$1"; _key="$2"
-  [ -f "$_file" ] || return 0
-  awk -v key="$_key" '
-    /^push_guard:/ { inpg=1; next }
-    inpg && /^[^[:space:]#]/ { inpg=0 }
-    inpg && $0 ~ "^[[:space:]]+" key ":" {
-      l=$0; sub(/^[[:space:]]*[^:]+:[[:space:]]*/, "", l)
-      if (l ~ /^\[/) { gsub(/[][,]/, " ", l); print l; ink=0; next }
-      ink=1; next
-    }
-    ink && /^[[:space:]]*-[[:space:]]*/ { v=$0; sub(/^[[:space:]]*-[[:space:]]*/, "", v); printf "%s ", v; next }
-    ink && /^[[:space:]]*[^[:space:]-]/ { ink=0 }
-  ' "$_file" | tr -d "\"'" | tr '[:upper:]' '[:lower:]'
-}
-
-TARGET=$(slug_of "$REMOTE_URL")
-CFG="$ROOT/bridge-config.yaml"
-
-# ── Classify the push TARGET → private | public | unknown ───────────────────
-# This drives how a SENSITIVE payload (user/* destination, or pushed commits that
-# carry USER instance content) is handled in the ref loop below:
-#   private  → ALLOW   (your own origin; deterministic & offline)
-#   public   → BLOCK   (the 2026-06-24 user/* leak class)
-#   unknown  → BLOCK   (fail-CLOSED: a re-homed / unverifiable remote can't be
-#                       proven private, so sensitive data must not flow to it)
-# A CORE-clean push is allowed to ALL THREE — see the [ -z "$blocked" ] gate below.
-target_state=unknown
-
-# 1) your own private remotes (config) — deterministic, offline → private
-for p in $(yaml_list "$CFG" private_remotes); do
-  [ "$TARGET" = "$p" ] && { target_state=private; break; }
-done
-
-# 2) built-in + config public upstreams → public
-if [ "$target_state" = unknown ]; then
-  for u in bks-lab/open-bridge $(yaml_list "$CFG" public_upstreams); do
-    [ "$TARGET" = "$u" ] && { target_state=public; break; }
-  done
-fi
-
-# 3) .bridge-origin marker — applied ONLY when its repo: slug matches THIS target,
-#    so a stale marker from a previous origin can't vouch for a re-homed remote.
-#    is_public:true => public; is_public:false => the deterministic, offline
-#    "this is my private origin → allow" signal (previously a no-op).
-if [ "$target_state" = unknown ] && [ -f "$ROOT/.bridge-origin" ]; then
-  ob_repo=$(sed -n 's/^repo:[[:space:]]*//p' "$ROOT/.bridge-origin" | head -1 | tr -d "\"' " | tr '[:upper:]' '[:lower:]')
-  ob_pub=$(sed -n 's/^is_public:[[:space:]]*//p' "$ROOT/.bridge-origin" | head -1 | tr -d " ")
-  if [ -n "$ob_repo" ] && [ "$ob_repo" = "$TARGET" ]; then
-    case "$ob_pub" in
-      true)  target_state=public ;;
-      false) target_state=private ;;
-    esac
-  fi
-fi
-
-# 4) still unknown → escalate to gh (best-effort). Offline / unknown repo / gh
-#    absent ⇒ target_state stays `unknown` ⇒ sensitive payloads fail CLOSED.
-#    Only an EXPLICIT PUBLIC/PRIVATE answer moves it off unknown (INTERNAL and any
-#    other value stay unknown → blocked-for-sensitive, escapable via private_remotes).
-if [ "$target_state" = unknown ] && command -v gh >/dev/null 2>&1; then
-  vis=$(gh repo view "$TARGET" --json visibility -q .visibility 2>/dev/null)
-  case "$vis" in
-    PUBLIC)  target_state=public ;;
-    PRIVATE) target_state=private ;;
-  esac
+# The classifier lives in ONE place, because scripts/user-data.py asks the same
+# question (may USER data live in this clone's git?) and the two answers must
+# never differ: scripts/lib/remote-class.sh. Found relative to THIS hook, not to
+# the repo being pushed, so a fixture repo is classified by the real logic.
+# Missing (a fork that took the hook without the lib) → unknown → fail CLOSED.
+_hookdir=$(cd "$(dirname "$0")" 2>/dev/null && pwd)
+if [ -f "$_hookdir/../lib/remote-class.sh" ]; then
+  REMOTE_CLASS_LIB=1 . "$_hookdir/../lib/remote-class.sh"
+  TARGET=$(slug_of "$REMOTE_URL")
+  # ── Classify the push TARGET → private | public | unknown ─────────────────
+  # This drives how a SENSITIVE payload (user/* destination, or pushed commits
+  # that carry USER instance content) is handled in the ref loop below:
+  #   private  → ALLOW   (your own origin; deterministic & offline)
+  #   public   → BLOCK   (the 2026-06-24 user/* leak class)
+  #   unknown  → BLOCK   (fail-CLOSED: a re-homed / unverifiable remote can't be
+  #                       proven private, so sensitive data must not flow to it)
+  # A CORE-clean push is allowed to ALL THREE — see the [ -z "$blocked" ] gate below.
+  target_state=$(classify_remote "$TARGET" "$ROOT")
+else
+  echo "pre-push: scripts/lib/remote-class.sh missing, treating $REMOTE_URL as unknown" >&2
+  target_state=unknown
 fi
 
 # A confirmed-private target is your own repo — nothing to guard, allow everything.
@@ -116,11 +62,16 @@ fi
 
 ZERO="0000000000000000000000000000000000000000"
 # USER *instance* paths only — never CORE templates (_template/_schema, examples/,
-# any _-prefixed basename, or a directory's own README.md). The destination-branch
+# any _-prefixed basename, or a directory's own README.md). Every cluster-wrapper
+# family is matched GENERICALLY, (identity|infra|workflow)/<any>/: a list of
+# family names fell behind the tree by four (vehicles, secret-stores,
+# object-stores, and root ecosystem.yaml + context-budget.user.yaml), unnoticed
+# while the shipped .gitignore kept those files out of every commit.
+# scripts/tests/test_push_guard_paths.py holds both regexes to the tree. The destination-branch
 # rule below is the primary guard; this content net is the backstop that catches
 # USER instance files smuggled onto ANY other branch name (main, feature/*, a
 # renamed user branch, …) — names are not trusted, content is.
-USER_PATHS='^(work/(log\.md|board\.md|tasks/|streams/|done/|archive/|memory/)|identity/agent/[^_]|identity/(personas|mandants|accounts|contracts)/[^_]|identity/voiceprints/|infra/(remotes|channels|backups|instances|utilities|transcriptions)/[^_]|workflow/(calendars|contexts|projects|checks|workspaces|workloads)/[^_]|agents/[^_]|skills/[^/]+/(LEARNINGS\.md|references/provenance\.md)$|ecosystem\.[a-z0-9-]+\.yaml$|(overlays|workspaces)\.lock\.yaml$|bridge-config\.yaml$)'
+USER_PATHS='^(work/(log\.md|board\.md|tasks/|streams/|done/|archive/|memory/|\.gitignore$)|(identity|infra|workflow)/([^/]+/[^_]|\.gitignore$)|agents/[^_]|skills/[^/]+/(LEARNINGS\.md|references/provenance\.md)$|ecosystem(\.[^/]+)?\.yaml$|(overlays|workspaces)\.lock\.yaml$|(bridge-config|bridge-deck\.config|edges|reachability-scenarios|context-budget\.user)\.yaml$)'
 
 # CORE companions that live INSIDE the USER_PATHS prefixes and must keep flowing
 # upstream. Stripped before the match, so this list is the only thing standing
@@ -128,12 +79,12 @@ USER_PATHS='^(work/(log\.md|board\.md|tasks/|streams/|done/|archive/|memory/)|id
 #
 # It replaces a blanket `grep -v '/README.md$'`, which exempted EVERY README at
 # any depth. That was a leak: it stripped
-# infra/channels/bots/igor-zahnarzt/README.md (a freelance client) and
+# infra/channels/bots/<client>/README.md (a client project) and
 # identity/voiceprints/README.md (biometric, GDPR Art. 9) before the regex ever
 # saw them, while the sibling .yaml in the same directory was correctly blocked.
 # Only a cluster-wrapper's own TYPE-level README is a core companion; anything
 # nested below it is instance content.
-CORE_EXEMPT='^((agents|identity/(personas|mandants|accounts|contracts|agent)|infra/(remotes|channels|backups|instances|utilities|transcriptions)|workflow/(calendars|contexts|projects|checks|workspaces))/README\.md$|agents/(tests/|pyproject\.toml$|__init__\.py$|\.gitignore$)|ecosystem\.example\.yaml$)'
+CORE_EXEMPT='^((agents|identity/(personas|mandants|accounts|contracts|vehicles|agent)|infra/(remotes|channels|backups|instances|utilities|transcriptions|secret-stores|object-stores)|workflow/(calendars|contexts|projects|checks|workspaces|workloads))/README\.md$|agents/(tests/|pyproject\.toml$|__init__\.py$|\.gitignore$)|ecosystem\.example\.yaml$)'
 
 blocked=""
 while read -r local_ref local_sha remote_ref remote_sha; do

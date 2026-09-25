@@ -53,7 +53,7 @@ repo already uses). scripts/okf-export.py implements this exact surface:
         (`"a"# tight` resolves to `a`, since the value has already ended at
         the quote). Anything else means that quote was a character inside the
         value, and the scalar then degrades to the plain path rather than
-        being cut there: `'Michael's bridge'` and `"He said "stop" once"` keep
+        being cut there: `'Alex's bridge'` and `"He said "stop" once"` keep
         every character between their outer quotes, and only that outer pair
         goes. PyYAML rejects both of those lines outright, so there is no
         conformant answer to defer to; the choice is between keeping a
@@ -739,7 +739,7 @@ def test_comment_only_value_resolves_to_empty(okf_export):
 # --------------------------------------------------------------------------
 
 def test_apostrophe_inside_a_single_quoted_value_keeps_the_whole_value(okf_export):
-    """REGRESSION: `title: 'Michael's bridge'` must not truncate to `Michael`.
+    """REGRESSION: `title: 'Alex's bridge'` must not truncate to `Alex`.
 
     A scanner that accepts the first quote it meets, whatever follows it,
     reads the apostrophe as the closing quote and discards the rest as the
@@ -749,8 +749,8 @@ def test_apostrophe_inside_a_single_quoted_value_keeps_the_whole_value(okf_expor
     exact failure class this parser exists to avoid. An apostrophe inside a
     single-quoted value is an everyday shape.
     """
-    fm, _ = okf_export.parse_frontmatter("---\ntitle: 'Michael's bridge'\n---\n\nBody.\n")
-    assert fm["title"] == "Michael's bridge"
+    fm, _ = okf_export.parse_frontmatter("---\ntitle: 'Alex's bridge'\n---\n\nBody.\n")
+    assert fm["title"] == "Alex's bridge"
 
 
 def test_unescaped_inner_double_quote_keeps_the_whole_value(okf_export):
@@ -782,7 +782,7 @@ def test_unescaped_inner_double_quote_keeps_the_whole_value(okf_export):
         # Anything else after the quote means it did not close the scalar, so
         # the value degrades to the historic plain strip and stays whole.
         ('"He said "stop" once"', 'He said "stop" once'),
-        ("'Michael's bridge'", "Michael's bridge"),
+        ("'Alex's bridge'", "Alex's bridge"),
         ('"value" trailing junk', 'value" trailing junk'),
         # A quote that is never closed: unchanged, the historic plain strip.
         ('"unterminated', "unterminated"),
@@ -811,12 +811,12 @@ def test_a_fallen_through_quote_does_not_disturb_the_following_keys(okf_export):
     """The degrade is confined to its own line: the block still parses."""
     text = (
         "---\n"
-        "title: 'Michael's bridge'\n"
+        "title: 'Alex's bridge'\n"
         "status: doing\n"
         "---\n\nBody.\n"
     )
     fm, body = okf_export.parse_frontmatter(text)
-    assert fm == {"title": "Michael's bridge", "status": "doing"}
+    assert fm == {"title": "Alex's bridge", "status": "doing"}
     assert body.strip() == "Body."
 
 

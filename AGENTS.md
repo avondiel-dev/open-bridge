@@ -33,14 +33,15 @@ points at the `rules/` and `docs/` files that carry the mechanics.
    theme, language, work). The other fifteen blocks belong to the skill that owns
    them; read a block with `--keys <block>` when that skill runs.
 3. **Index `ecosystem.yaml` if present** — the project registry (repos, packages,
-   infrastructure, workspaces). Created during onboarding, user-specific and gitignored
-   (like `bridge-config.yaml`), so absent on a fresh clone. It is **not** an `@`-import:
+   infrastructure, workspaces). Created during onboarding, user-specific
+   (ignored unless the origin is private, docs/structure.md), so absent on a fresh clone.
+   It is **not** an `@`-import:
    Phase 1 runs `python3 scripts/context-index.py ecosystem.yaml` for the settings plus
    one line per entry, and `--get <name>` fetches an entry when the work names one — the
    split skills have always had, applied to a declared map
    ([`docs/context-index.md`](docs/context-index.md)). `ecosystem.example.yaml` **is**
    present on a fresh clone as the registry template — onboarding uses it as the starting
-   point (copy + auto-populate → the gitignored `ecosystem.yaml`); do not hand-copy it.
+   point (copy + auto-populate → `ecosystem.yaml`); do not hand-copy it.
 
 **A question and no idea which file answers it?** Look it up in
 [`docs/where-things-live.md`](docs/where-things-live.md) first; not there,

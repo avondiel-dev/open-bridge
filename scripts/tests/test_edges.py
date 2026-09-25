@@ -163,11 +163,11 @@ def test_a_task_that_moved_to_done_is_moved_not_dead(tmp_path):
 
 
 def test_a_task_that_became_a_stream_is_moved(tmp_path):
-    _tree(tmp_path, {"work/streams/praxis/STATUS.md": "x\n"})
-    state, target = edges.classify(tmp_path, "work/tasks/praxis/STATUS.md")
+    _tree(tmp_path, {"work/streams/example-stream/STATUS.md": "x\n"})
+    state, target = edges.classify(tmp_path, "work/tasks/example-stream/STATUS.md")
 
     assert state == "moved"
-    assert target == "work/streams/praxis/STATUS.md"
+    assert target == "work/streams/example-stream/STATUS.md"
 
 
 def test_a_deep_file_inside_a_moved_task_is_found(tmp_path):

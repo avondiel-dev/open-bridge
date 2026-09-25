@@ -30,9 +30,12 @@ is a deterministic check at the push boundary.
 ## The invariant
 
 > A `user/*` branch — or any USER *instance* content (`work/`,
-> `identity/agent/{IDENTITY,SOUL}.md`, `identity/personas|mandants|accounts/<id>`,
-> `infra/remotes|channels|backups/<id>`, `workflow/calendars/`,
-> `bridge-config.yaml`) — must **never** be pushed to a **public** upstream.
+> `identity/agent/{IDENTITY,SOUL}.md`, every non-`_` file directly under an
+> `identity/<family>/`, `infra/<family>/` or `workflow/<family>/` folder, the four
+> `identity|infra|workflow|work/.gitignore` negation files, `bridge-config.yaml`,
+> `bridge-deck.config.yaml`, `ecosystem*.yaml`, `overlays.lock.yaml`, `workspaces.lock.yaml`,
+> `context-budget.user.yaml`, `edges.yaml`, `reachability-scenarios.yaml`) must **never** be
+> pushed to a **public** upstream.
 
 Your private data lives on a **private `origin`**. CORE improvements reach a
 public upstream **only** through `/promote` — a content-scanned, fork-based PR —
@@ -63,6 +66,30 @@ the list — while `.bridge-origin` still said `is_public:false` and `gh` was of
 let a `user/*` push leak. Now an unverifiable target withholds USER data and tells
 you exactly how to mark it private. A **CORE-clean** push is unaffected — it flows
 to all three states.
+
+## One classifier, two callers
+
+The logic above lives in exactly one place, [`scripts/lib/remote-class.sh`](../scripts/lib/remote-class.sh):
+`scripts/hooks/pre-push` sources it, and `scripts/user-data.py` (the tool that decides whether
+your instance data is tracked at all, see [`docs/structure.md`](../docs/structure.md#gitignore-policy))
+asks it the same question, so the two can never disagree about the same origin. Before this
+file existed the logic lived inline in `pre-push`, and a second copy would have been the drift
+that decides whether a persona file gets backed up or published.
+
+The content net (`USER_PATHS` in `scripts/hooks/pre-push`) matches every cluster-wrapper
+family **generically** (`(identity|infra|workflow)/([^/]+/[^_]|\.gitignore$)`), rather than
+naming each folder. A hand-kept list of family names fell behind the tree by four:
+`identity/vehicles/`, `infra/secret-stores/`, `infra/object-stores/`, and the root
+`ecosystem.yaml` + `context-budget.user.yaml` were all missing from it, unnoticed while the
+shipped `.gitignore` kept those files out of every commit anyway. Now that a private instance
+tracks its own data by default, this net is the only thing standing between that data and a
+public remote, so it has to know every family the tree has, including the next one. The net
+also matches `identity/.gitignore`, `infra/.gitignore`, `workflow/.gitignore` and
+`work/.gitignore` themselves: those four files carry the negation that makes a private origin's
+instance data trackable, so promoting one to a public remote would re-allow instance data in
+every clone that later merges it.
+[`scripts/tests/test_push_guard_paths.py`](../scripts/tests/test_push_guard_paths.py) holds it
+to the tree.
 
 ## Enforcement (defense in depth)
 

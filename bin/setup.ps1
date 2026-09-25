@@ -112,6 +112,23 @@ if (Test-Path "scripts\hooks") {
     $ok = $false
 }
 
+# Instance data follows the origin (scripts/user-data.py). The shipped .gitignore
+# keeps it out of every clone; a PRIVATE origin gets identity/ infra/ workflow/
+# work/.gitignore negations and its root files staged once, so everything is
+# backed up. It finds the sh Git for Windows bundles on its own.
+$py = Get-Command python3 -ErrorAction SilentlyContinue
+if (-not $py) { $py = Get-Command python -ErrorAction SilentlyContinue }
+if ((Test-Path "scripts\user-data.py") -and $py) {
+    & $py.Source scripts/user-data.py arm
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "WARN user-data arm failed, instance data may be not backed up"
+        $ok = $false
+    }
+} else {
+    Write-Host "WARN python missing, instance data is not backed up (scripts/user-data.py)"
+    $ok = $false
+}
+
 # Honest, specific summary — never a blanket "OK" that could hide an unarmed guard.
 Write-Host ""
 if ($linked.Count -gt 0) {

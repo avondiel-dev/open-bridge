@@ -307,6 +307,13 @@ jobs:
       - name: Run scope-router regression suite
         run: python3 -m pytest scripts/tests/test_scope_router.py -q
 
+      # The archive plan. /archive used to take "the oldest bucket with content"
+      # and then reset the WHOLE log, so a log holding twelve periods archived one
+      # and lost eleven. These pin that one run names every closed period, that the
+      # open one stays, and that the year comes from the rows rather than from today.
+      - name: Run archive-plan contract
+        run: python3 -m pytest scripts/tests/test_archive_buckets.py -q
+
   # The workload skill carries three suites of its own, and each answers a
   # different question. The skill writes unit files onto machines: a contract it
   # can break unnoticed is the one contract that ends up on a service manager.
@@ -638,6 +645,12 @@ jobs:
 
       - name: Push-guard commit-set contract (private-remote-already-has-it net)
         run: sh scripts/tests/test-push-guard-commit-set.sh
+
+      - name: Push-guard content net covers every family in the tree
+        run: python3 -m pip install pytest && python3 -m pytest scripts/tests/test_push_guard_paths.py -q
+
+      - name: Instance data follows the origin, and carries no credential
+        run: python3 -m pytest scripts/tests/test_user_data.py -q
 
       - name: System-discovery scope-consent backstop
         run: bash scripts/tests/test-system-discovery.sh

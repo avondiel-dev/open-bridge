@@ -174,7 +174,7 @@ mkdir -p "$H/transcribe-inbox/$CTX"
 mkdir -p "$H/Transcripts/$CTX"
 printf '# transcript\nnaked transcript body\n' > "$H/Transcripts/$CTX/meeting-notes.md"
 mkdir -p "$H/transcribe-pipeline/speaker-library/$CTX"
-printf 'NPYDATA' > "$H/transcribe-pipeline/speaker-library/$CTX/axel.npy"
+printf 'NPYDATA' > "$H/transcribe-pipeline/speaker-library/$CTX/speaker-a.npy"
 printf 'fake-audio-bytes' > "$r/sample.mp3"
 
 # push <audio> <ctx>
@@ -205,7 +205,7 @@ run env HOME="$H" TRANSCRIBE_MODE=local TRANSCRIBE_CONTEXTS="$CTX" \
     BRIDGE_IMPORTS="$IMPORTS" BRIDGE_VOICEPRINTS="$VP" \
     bash "$(D_SYNC "$r")" voiceprints pull
 assert_rc_zero "$RC" "voiceprints pull exits 0 (local)"
-assert_file "$VP/$CTX/axel.npy" "voiceprints pull copies .npy into the bridge voiceprint dir"
+assert_file "$VP/$CTX/speaker-a.npy" "voiceprints pull copies .npy into the bridge voiceprint dir"
 
 # ---------------------------------------------------------------------------
 echo ""

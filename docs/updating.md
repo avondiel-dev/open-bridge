@@ -1,7 +1,7 @@
 ---
 summary: "Keeping a Bridge current: the manual CORE merge, the unattended daily auto-update and its fail-closed guards, org overlay sync, and how a CORE fix you made flows back without leaving a permanent divergence."
 type: guide
-last_updated: 2026-09-24
+last_updated: 2026-09-25
 related:
   - install.md
   - org-overlays.md
@@ -43,6 +43,16 @@ upstream/main` once. Details: [install.md](install.md).
 
 Before a merge, `python3 scripts/bridge-divergence-check.py` lists every CORE
 file you changed locally and flags the ones upstream changed too.
+
+**If your instance is private**, there is nothing to hand-edit after a merge. The shipped
+root `.gitignore` ignores instance data for every clone, and on a private origin
+`scripts/user-data.py arm` (run by `bin/setup`) re-allows your own by writing
+`identity/.gitignore`, `infra/.gitignore`, `workflow/.gitignore` and `work/.gitignore`
+([`docs/structure.md`](structure.md#gitignore-policy)). If your own `.gitignore` had blocks
+commented out from an earlier version of this policy, a merge of an update to this file may
+conflict in that region: resolve it by taking upstream's version, then run `bin/setup` (it
+writes the four negation files) and commit them. `python3 scripts/user-data.py check`
+confirms nothing of yours is still ignored afterward.
 
 ## Unattended, once a day
 

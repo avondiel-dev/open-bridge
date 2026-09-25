@@ -36,8 +36,8 @@ refs = mod("engine.refs")
 values = mod("engine.values")
 
 #: The same item, in the two spellings people have in their files.
-CANONICAL = "1password://Shared/storecove-api/credential"
-CLI_SPELLING = "op://Shared/storecove-api/credential"
+CANONICAL = "1password://Shared/vendor-api/credential"
+CLI_SPELLING = "op://Shared/vendor-api/credential"
 
 #: An account as `op` wants it: the sign-in address of the tenant, not a person.
 ACCOUNT = "bkslab.1password.eu"
@@ -47,7 +47,7 @@ class OnePasswordCase(MachineGuard):
     """A backend wired to a fake process, never to a vault."""
 
     VAULT = "Shared"
-    ITEM = "storecove-api"
+    ITEM = "vendor-api"
     FIELD = "credential"
 
     def setUp(self):
@@ -150,8 +150,8 @@ class TheReadArgvIsTheAddressTheCliItselfUnderstands(OnePasswordCase):
         # `op://vault/item/section/field` is a real address, so the segments
         # between the item and the field are carried rather than collapsed.
         deep = self.backend().op_reference(
-            self.ref("1password://Shared/storecove-api/api/credential"))
-        self.assertEqual(deep, "op://Shared/storecove-api/api/credential")
+            self.ref("1password://Shared/vendor-api/api/credential"))
+        self.assertEqual(deep, "op://Shared/vendor-api/api/credential")
 
     def test_a_reference_with_no_item_is_refused_before_anything_runs(self):
         # The grammar refuses this one first, so it has to be built by hand to
@@ -197,15 +197,15 @@ class TheTwoSpellingsAddressTheSameItem(OnePasswordCase):
         # The default the grammar declares, spelled out here because it decides
         # which field of a login item a bare reference reaches.
         self.assertEqual(
-            self.backend().op_reference(self.ref("1password://Shared/storecove-api")),
-            "op://Shared/storecove-api/password")
+            self.backend().op_reference(self.ref("1password://Shared/vendor-api")),
+            "op://Shared/vendor-api/password")
 
     def test_the_hash_form_names_the_field_and_leaves_the_path_alone(self):
         # The escape hatch for an item that is itself called `password`: with
         # the slash form the last segment is the field, and `#` overrides that.
         address = self.backend().op_reference(
-            self.ref("1password://Shared/storecove-api/password#credential"))
-        self.assertEqual(address, "op://Shared/storecove-api/password/credential")
+            self.ref("1password://Shared/vendor-api/password#credential"))
+        self.assertEqual(address, "op://Shared/vendor-api/password/credential")
 
 
 class TheValueComesBackExactlyAsTheCliPrintedIt(OnePasswordCase):
@@ -286,12 +286,12 @@ class StderrDecidesWhetherAFailedReadIsAMissOrAFault(OnePasswordCase):
 
     def test_a_missing_item_comes_back_as_a_reading_rather_than_an_error(self):
         reading = self.read_failing(
-            '[ERROR] 2026/09/20 09:12:03 "storecove-api" isn\'t an item. '
+            '[ERROR] 2026/09/20 09:12:03 "vendor-api" isn\'t an item. '
             "Specify the item with its UUID, name, or domain.\n")
         self.assertFalse(reading.present)
 
     def test_the_miss_says_there_is_no_such_item_or_field_in_this_vault(self):
-        reading = self.read_failing('[ERROR] "storecove-api" isn\'t an item.\n')
+        reading = self.read_failing('[ERROR] "vendor-api" isn\'t an item.\n')
         self.assertIn("no such item", reading.note)
 
     def test_a_miss_carries_no_secret_at_all(self):
@@ -304,7 +304,7 @@ class StderrDecidesWhetherAFailedReadIsAMissOrAFault(OnePasswordCase):
                          self.VAULT)
 
     def test_every_wording_that_means_the_item_is_not_there(self):
-        for stderr in ('[ERROR] "storecove-api" isn\'t an item.',
+        for stderr in ('[ERROR] "vendor-api" isn\'t an item.',
                        "[ERROR] could not read secret: item not found",
                        "[ERROR] no item matches that query"):
             with self.subTest(stderr=stderr):
@@ -491,7 +491,7 @@ class LocateNamesThePlaceAndNeverTheValue(OnePasswordCase):
 
     def test_a_reference_with_no_field_says_which_one_it_means(self):
         self.assertIn("password",
-                      self.backend().locate(self.ref("1password://Shared/storecove-api")))
+                      self.backend().locate(self.ref("1password://Shared/vendor-api")))
 
     def test_the_value_is_not_in_it(self):
         # `locate` runs nothing, so it cannot have the value. The case is the

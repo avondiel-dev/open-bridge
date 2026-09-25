@@ -880,7 +880,8 @@ exists" pointer, not a second survey.
   branch local-only for data isolation. See `docs/multi-instance.md`.
 - **Reset for fresh onboarding** — `/bridge-onboard --reset` deletes
   `work/onboarding-scan.json` + `work/onboarding-state.yaml` + prompts to
-  delete `bridge-config.yaml` (gitignored). Re-run starts clean.
+  delete `bridge-config.yaml` (ignored by the shipped `.gitignore`; a private origin
+  re-allows and tracks it, `scripts/user-data.py`). Re-run starts clean.
 - **Phase B permission denied for an opt-in source** — record as
   `error: permission_denied`, continue. Phase C skips suggestions that
   depend on the missing source; mentions them in Phase E with the
