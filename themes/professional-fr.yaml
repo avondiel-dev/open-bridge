@@ -1,0 +1,63 @@
+# themes/professional-fr.yaml
+# French locale: professional vocabulary in French.
+# CORE file — lives on the default/core branch.
+#
+# Extends professional.yaml — only overrides vocabulary with
+# French translations. Alerts and phrases inherit from
+# professional unless overridden here.
+
+schema_version: 1
+
+meta:
+  name: professional-fr
+  display_name: "Professionnel (Français)"
+  description: "Vocabulaire professionnel neutre en français"
+  locale: fr
+  author: "open-bridge by BKS-Lab"
+  version: "1.0.0"
+  extends: professional
+
+vocabulary:
+  user: "Responsable"
+  assistant: "Assistant"
+  assistant_name: "Orchestrateur"
+  agents: "Spécialistes"
+  agent_singular: "Spécialiste"
+
+  work_log: "Journal de travail"
+  task: "Tâche"
+  tasks: "Tâches"
+  task_board: "Tableau des tâches"
+  active_tasks: "Tâches actives"
+  queued_tasks: "File d'attente"
+  completed_tasks: "Tâches terminées"
+
+  incident: "Incident"
+  warning: "Avertissement"
+  cross_repo: "Multi-dépôts"
+  daily_check: "Briefing quotidien"
+  week_archive: "Archive hebdomadaire"
+  analysis: "Analyse approfondie"
+  onboarding: "Mise en place"
+
+  repos: "Projets"
+  remote: "Distant"
+  remotes: "Distants"
+  channel: "Canal"
+  channels: "Canaux"
+  schedule: "Tâche planifiée"
+  protocol: "Protocole"
+  protocols: "Protocoles"
+
+  dispatch: "Assigner"
+  spawn: "Démarrer"
+  park: "Mettre en pause"
+  resume: "Reprendre"
+
+phrases:
+  session_greeting: "Bonjour. Voici le briefing."
+  dispatch_confirm: "{agent} a été assigné à {task}."
+  completion_report: "{agent} terminé : {summary}"
+  escalation_notice: "{agent} nécessite votre attention — {reason}"
+  log_prefix: ""
+  status_header: "Tableau de bord"
