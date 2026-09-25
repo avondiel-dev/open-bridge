@@ -646,6 +646,12 @@ jobs:
       - name: Push-guard commit-set contract (private-remote-already-has-it net)
         run: sh scripts/tests/test-push-guard-commit-set.sh
 
+      - name: Push-guard content net covers every family in the tree
+        run: python3 -m pip install pytest && python3 -m pytest scripts/tests/test_push_guard_paths.py -q
+
+      - name: Instance data follows the origin, and carries no credential
+        run: python3 -m pytest scripts/tests/test_user_data.py -q
+
       - name: System-discovery scope-consent backstop
         run: bash scripts/tests/test-system-discovery.sh
 

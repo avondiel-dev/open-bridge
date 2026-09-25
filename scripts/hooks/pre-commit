@@ -74,6 +74,48 @@ if [ -n "$env_blocked" ]; then
   exit 1
 fi
 
+# ─────────────────────────────────────────────────────────────────────────────
+# HARD GATE: a credential in a staged instance file is refused. BLOCKS, on
+# EVERY branch, for the same reason as the .env gate above.
+#
+# A private instance commits its own config (scripts/user-data.py: nothing is
+# ignored on a private origin), so the backup must never become the leak. The
+# scan reads the INDEX, i.e. what this commit will contain, of every instance
+# file and its templates, and reports at most eight characters of a hit.
+# Personal data is not a credential and passes: a persona carries a tax id by
+# design. Found relative to THIS hook, so any repo it is armed in is scanned by
+# the same code.
+# ─────────────────────────────────────────────────────────────────────────────
+_ud="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)/user-data.py"
+# A python that can actually run, probed: python.org on Windows ships no
+# python3.exe, and the Store alias `python3` exits 9009 instead of running.
+_py=""
+for _cand in python3 python "py -3"; do
+  if $_cand -c 'import sys' >/dev/null 2>&1; then _py=$_cand; break; fi
+done
+if [ -f "$_ud" ]; then
+  if [ -z "$_py" ]; then
+    printf '%s\n' "⚠ pre-commit: no python found, staged instance files were NOT scanned for credentials" >&2
+  else
+    _scan=$($_py "$_ud" scan-staged 2>&1)
+    _rc=$?
+    case $_rc in
+      0) : ;;
+      3) printf '%s\n' "⚠ $_scan" >&2 ;;
+      *)
+        # 1 = a credential, 2 = unreadable content, anything else = the scan
+        # itself failed. All of them refuse: a scan that did not finish is not a pass.
+        printf '%s\n' "── bridge pre-commit · BLOCKIERT ──────────────────────────────────" >&2
+        [ -n "$_scan" ] && printf '%s\n' "$_scan" >&2
+        [ "$_rc" -gt 2 ] && printf '%s\n' "  (secret scan failed with exit $_rc)" >&2
+        printf '%s\n' "  Aus dem Index nehmen:  git restore --staged <datei>" >&2
+        printf '%s\n' "───────────────────────────────────────────────────────────────────" >&2
+        exit 1
+        ;;
+    esac
+  fi
+fi
+
 # Instance-only: run on user/* branches with a work/ tree. No-op on CORE
 # branches (main/development) and repos without a work-system.
 BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
@@ -85,6 +127,15 @@ esac
 
 STAGED=$(git diff --cached --name-only 2>/dev/null)
 [ -n "$STAGED" ] || exit 0
+
+# (g) BACKUP gate: instance data this clone ignores although its origin is
+# private. The failure is silent by nature: a file that is ignored is never
+# staged, so no other gate ever sees it. Asked on every instance commit, because
+# the file that matters is the one NOT in it.
+if [ -f "$_ud" ] && [ -n "$_py" ]; then
+  _gap=$($_py "$_ud" check 2>&1) ||
+    { printf '%s\n' "⚠ BACKUP (warn-only):" >&2; printf '%s\n' "$_gap" | sed 's/^/  /' >&2; }
+fi
 
 # Productive change? (else stay silent — routine/Class-C commit)
 echo "$STAGED" | grep -Eq '^(skills|protocols|identity|infra|workflow|rules|docs|scripts)/|^work/(tasks|streams)/|\.(py|js|ts|sh|md|ya?ml)$' || exit 0

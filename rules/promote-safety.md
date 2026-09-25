@@ -137,7 +137,7 @@ Per-repo lists let `/promote` pick the right strictness:
   is still blocked
 
 ```yaml
-# bridge-config.yaml  (USER layer, gitignored — your real values live here)
+# bridge-config.yaml  (USER layer: your real values live here, never shipped by CORE)
 promote:
   content_blocklist:
     open-bridge:                         # destination: bks-lab/open-bridge (public OSS)

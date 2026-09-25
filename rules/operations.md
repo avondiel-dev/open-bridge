@@ -116,25 +116,29 @@ Language is a parallel tier rule: CORE (`scope: core`) is authored in
 English; `org`/`user` tiers may stay in the author's language. See
 [`rules/language-policy.md`](language-policy.md).
 
-### `workflow/contexts/` — special case (per-repo gitignore)
+### `workflow/contexts/`: special case (shipped-ignored, re-allowed per origin)
 
-Routing contexts split by content, not by folder:
+Routing contexts split by content, not by folder. The shipped root `.gitignore` ignores every
+`workflow/contexts/*.yaml` except `_template.yaml`, for every clone, before anything has run
+in it; a private origin re-allows its own by writing `workflow/.gitignore`
+(`scripts/user-data.py arm`, [`docs/structure.md`](../docs/structure.md#gitignore-policy)):
 
-| File | Scope | open-bridge | org overlay | private (this repo) |
+| File | Scope | open-bridge (public origin) | org overlay (private origin) | private (this repo) |
 |---|---|---|---|---|
 | `workflow/contexts/_template.yaml` | core | tracked | tracked | tracked |
-| `workflow/contexts/{customer-a,doc-system}.yaml` | org | gitignored | tracked (org-shared) | tracked |
-| `workflow/contexts/<personal>.yaml` | user | gitignored | gitignored | tracked |
+| `workflow/contexts/{customer-a,doc-system}.yaml` | org | ignored (shipped `.gitignore`) | tracked (org-shared) | tracked |
+| `workflow/contexts/<personal>.yaml` | user | ignored (shipped `.gitignore`) | ignored (shipped `.gitignore`) | tracked |
 
-In **this** instance (private) all contexts are tracked — git serves as
-offsite backup. In **`open-bridge`** (public OSS) only `_template.yaml`
-ships; the rest is `.gitignore`d. In **your org overlay** (org-internal) the
-org-shared contexts (`customer-a`, `doc-system`) are tracked, personal
-ones are not.
+In **this** instance (private origin) all contexts are tracked, since git serves as
+offsite backup. In **`open-bridge`** (public OSS, itself a public origin) only `_template.yaml`
+ships; any instance file that ended up there stays ignored, since no negation file is ever
+written on a public origin. In **your org overlay** (org-internal, itself a private repo) the
+org-shared contexts (`customer-a`, `doc-system`) are tracked, personal ones stay ignored the
+same way.
 
-The same per-repo policy applies to `identity/personas/`,
-`identity/mandants/`, and `workflow/projects/` — see each upstream's
-`.gitignore` for the canonical filter.
+The same per-origin policy applies to `identity/personas/`, `identity/mandants/`, and
+`workflow/projects/`: run `python3 scripts/user-data.py patterns` to see the shipped block
+rather than checking any repo's `.gitignore` by hand.
 
 **Repo-specific blocklist (in addition to path scope):**
 Even path-allowed files run through `rules/promote-safety.md` content scan,

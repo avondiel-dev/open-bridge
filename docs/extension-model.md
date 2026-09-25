@@ -1,7 +1,7 @@
 ---
 summary: "Extension model: how CORE platform and USER extensions relate, plus the canonical Routing Map (where each routing domain lives in C-prime)"
 type: guide
-last_updated: 2026-05-02
+last_updated: 2026-09-25
 related:
   - CLAUDE.md
   - docs/structure.md
@@ -35,9 +35,9 @@ your extension. This is the working model.
 | **Sub-Agents** | `.claude/agents/customer-a-*.md`, `network-reconcile.md` | `scope: org` | CustomerA engagement specialists |
 | **Coordinator Skill** | `skills/customer-a-coordinator/` | `scope: org` | End-to-end orchestrator with references + playbooks + domain knowledge |
 | **Doc System** | `skills/doc-system/` | `scope: core` | Generic document-intake skill — reads `workflow/contexts/doc-system.yaml` (the context file stays `scope: org`) and runs the document-intake flow |
-| **Routing Contexts** | `workflow/contexts/<id>.yaml` | USER (gitignored — PII) | Per-domain routing rules (see [Routing Map](#routing-map) below) |
-| **Personas** | `identity/personas/<id>.yaml` | USER (gitignored — PII) | Self-identities (tax data, signatures, destination paths) |
-| **Mandants** | `identity/mandants/<id>.yaml` | USER (gitignored — PII) | Recipient groups for outbound messages |
+| **Routing Contexts** | `workflow/contexts/<id>.yaml` | USER, PII (tracked on a private origin, excluded otherwise) | Per-domain routing rules (see [Routing Map](#routing-map) below) |
+| **Personas** | `identity/personas/<id>.yaml` | USER, PII (tracked on a private origin, excluded otherwise) | Self-identities (tax data, signatures, destination paths) |
+| **Mandants** | `identity/mandants/<id>.yaml` | USER, PII (tracked on a private origin, excluded otherwise) | Recipient groups for outbound messages |
 | **Calendar** | `workflow/calendars/entries.yaml` | USER | Scheduled outbound actions with recipient refs |
 | **Rules** | `rules/*.md` (core), `rules/org/**` (org), `rules/user/**` (user) | tiered by FOLDER | Operating rules tiered by folder — top-level `rules/*.md` is `scope: core`, `rules/org/**` is `scope: org`, `rules/user/**` is `scope: user` (personal rules, e.g. for a private pipeline) |
 | **Standing Orders** | `protocols/standing-orders/<name>.md` (CORE defaults), `standing-orders/user/<name>.md` (USER) | CORE / USER · cross-cutting | Always-on advisory/blocking rules (NOT routing — see [Routing Map](#routing-map)) |
@@ -45,9 +45,9 @@ your extension. This is the working model.
 | **Channels** | `infra/channels/<name>.yaml` | USER | Outbound transport definitions |
 | **Backups** | `infra/backups/topology.yaml` + `_state.yaml` | USER | Source × Target × Pipeline topology |
 | **Work** | `work/` | USER | Logs, board, active/ongoing/done tasks |
-| **Config** | `bridge-config.yaml` | USER · gitignored | Theme, language, features, identity-block, integrations |
+| **Config** | `bridge-config.yaml` | USER · tracked on a private origin, excluded otherwise | Theme, language, features, identity-block, integrations |
 | **Bridge-Deck Config** | `bridge-deck.config.yaml` | USER | Daemon collector paths for the Pixel-Art Visualizer |
-| **Ecosystem** | `ecosystem.yaml` | **USER** | Repo registry — created at onboarding, gitignored (absent on a fresh clone) |
+| **Ecosystem** | `ecosystem.yaml` | **USER** | Repo registry, created at onboarding, absent on a fresh clone, tracked on a private origin and excluded otherwise (`scripts/user-data.py`) |
 
 ### How it works today
 
@@ -68,7 +68,8 @@ For a colleague to pick up Org extension content:
    - `.claude/agents/customer-a-*.md`, `.claude/agents/network-reconcile.md` (CustomerA sub-agents, `scope: org`)
    - `skills/customer-a-coordinator/` (Org-scoped skill)
    - Cross-cutting standing orders that apply (e.g. `code-standards.md`, `security-baseline.md`, `document-work.md`)
-4. Create their own `bridge-config.yaml` (gitignored) and persona/mandant/context files
+4. Create their own `bridge-config.yaml` (tracked on their own private origin, excluded
+   otherwise) and persona/mandant/context files
 
 Personas, mandants, contexts, calendar entries are **NEVER** shared cross-user (PII-by-construction).
 
@@ -154,8 +155,11 @@ git SHA. By default those copies are excluded from the consumer's own git (see
 [`org-overlays.md`](org-overlays.md) § Git tracking of managed dests for the
 opt-in switch and where the backup actually lives). Subscription state lives
 in two USER-tier root files — a generated `overlays.lock.yaml` (per-file
-source/materialized hashes, the drift detector) and a sparse `.bridge/` cache
-— both gitignored in a public fork. Each
+source/materialized hashes, the drift detector) and a sparse `.bridge/` cache.
+`.bridge/` is always gitignored; `overlays.lock.yaml` is ignored by the shipped root
+`.gitignore` the same as the rest of your instance data, and a private origin re-allows it
+(`scripts/user-data.py arm`, which stages it once with `git add -f` since a root file cannot
+be re-allowed by a deeper `.gitignore`). Each
 subscription is a `role: org-overlay` entry in `bridge-config.yaml.upstreams[]`
 carrying its own `materialize:` block; an instance opts in via
 `infra/instances/<slug>.yaml` `subscribes_overlays:`. The same classifier and
@@ -240,10 +244,12 @@ When ready to extract from USER branch to Plugin:
 
 ### What stays on USER branch (never in plugin)
 
-- `bridge-config.yaml` — personal identity, theme, language (gitignored anyway)
-- `identity/personas/<id>.yaml` — tax data, signatures (gitignored)
-- `identity/mandants/<id>.yaml` — recipient PII (gitignored)
-- `workflow/contexts/<id>.yaml` — concrete routing instances (gitignored — uses real paths)
+- `bridge-config.yaml`: personal identity, theme, language (kept private regardless: tracked
+  only on your own private origin, excluded otherwise)
+- `identity/personas/<id>.yaml`: tax data, signatures (tracked on a private origin, excluded otherwise)
+- `identity/mandants/<id>.yaml`: recipient PII (tracked on a private origin, excluded otherwise)
+- `workflow/contexts/<id>.yaml`: concrete routing instances (tracked on a private origin,
+  excluded otherwise; uses real paths)
 - `workflow/calendars/entries.yaml` — concrete schedule
 - `infra/remotes/<name>.yaml` — personal machine inventory
 - `infra/channels/<name>.yaml` — personal messaging configs

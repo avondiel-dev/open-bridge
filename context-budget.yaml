@@ -91,7 +91,7 @@ items:
     optional: true
     source: phase1
     note: >-
-      Created at onboarding and gitignored, so absent in a fresh clone. It used
+      Created at onboarding, so absent in a fresh clone. It used
       to be an `@`-import read in full, and it is the one always-on file that
       grows with the instance rather than with this repo: one line per repo,
       customer, workspace and board, each with a paragraph nobody needs before
@@ -110,7 +110,7 @@ items:
       # of which `internal` and `partners` were not in ecosystem.example.yaml
       # either, so the card was wrong against this repo's own example. It went
       # unseen because --check skips a card whose target is absent, and
-      # ecosystem.yaml is gitignored, so it is absent in every clone here.
+      # ecosystem.yaml is created at onboarding, so it is absent in every clone here.
       label: [description, display_name, name]
 
   # ---------------------------------------------------------------- listings --

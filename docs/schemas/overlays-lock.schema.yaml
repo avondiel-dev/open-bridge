@@ -3,8 +3,9 @@
 # Validates `overlays.lock.yaml`, a GENERATED root file (scope: user) that
 # records exactly which overlays a consumer has applied, pinned to immutable
 # hashes. It is the audit trail + drift detector for org-overlays: a re-sync
-# diffs the live files against this lock. In a public fork the lock is
-# gitignored (it names local material paths).
+# diffs the live files against this lock. The shipped root .gitignore ignores it
+# (it names local material paths); a private origin re-allows and backs it up
+# (scripts/user-data.py arm).
 #
 # Integrity rule, per file:
 #   materialized_sha256 == source_sha256  ⇒  a clean copy (no prompts injected)
@@ -134,6 +135,7 @@ $defs:
 
 # Notes (advisory):
 # - GENERATED — never hand-edit; the overlay add/sync tooling rewrites it.
-# - scope: user — gitignored in public forks (names local material paths).
+# - scope: user, ignored by the shipped .gitignore, re-allowed by a private origin
+#   (scripts/user-data.py arm; names local material paths).
 # - prompted_fields holds PATHS only; the user's values never land in the lock.
 # - resolved_sha + manifest_sha256 are the immutable pins a re-sync verifies.
