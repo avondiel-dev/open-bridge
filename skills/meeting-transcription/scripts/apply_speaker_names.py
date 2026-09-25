@@ -97,15 +97,25 @@ def main():
                 print(f"  no embedding for {spk} ({name}) — skip", file=sys.stderr)
                 continue
             vec = np.asarray(vec, dtype=float).reshape(1, -1)
-            target = lib / f"{name.lower()}.npy"
-            if target.exists():
+            # The filename IS the display name: speaker_naming.py hands the
+            # library entry's stem straight through to the transcript. So keep
+            # the case the caller gave ("Ada Lovelace", not "ada lovelace"),
+            # because lowercasing here mislabelled every later meeting and
+            # nothing downstream can restore what the case was. Matching an
+            # EXISTING entry stays case-insensitive, so re-enrolling the same
+            # person stacks onto their file instead of forking a second one.
+            target = lib / f"{name}.npy"
+            existing = next((p for p in lib.glob("*.npy")
+                             if p.stem.casefold() == name.casefold()), None)
+            if existing is not None:
+                target = existing
                 ex = np.load(target)
                 if ex.ndim == 1:
                     ex = ex.reshape(1, -1)
                 vec = np.vstack([ex, vec])
             np.save(target, vec)
             saved += 1
-            print(f"  saved {name.lower()}.npy  ({vec.shape[0]} sample(s), dim {vec.shape[1]})",
+            print(f"  saved {target.name}  ({vec.shape[0]} sample(s), dim {vec.shape[1]})",
                   file=sys.stderr)
         print(f"library updated: {saved} speakers", file=sys.stderr)
 
