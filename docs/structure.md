@@ -134,7 +134,7 @@ Every config type lives in **`<wrapper>/<types>/`** — a plural folder with tem
 | `work/` | USER | Tasks + logs: `tasks/` (finite) · `streams/` (long-running) · `done/YYYY-MM/` · `templates/` (CORE seeds) · `_learning/` · `archive/` · `imports/` |
 | `docs/` | CORE | Human-readable documentation, onboarding guides |
 | `rules/` | **Tiered by folder** | Always-on rules. `rules/*.md` = core (ship to all) · `rules/org/**` = org (ship to org overlay) · `rules/user/**` = user (local only). The folder *is* the promote tier. `validate-bridge.py` checks each rule declares a valid `scope:` (presence + allowed value); folder↔scope consistency itself is an advisory `bridge-audit` check, not a hard gate. Each bridge layers its own under `rules/org/`+`rules/user/`. See [`rules/knowledge-growth.md`](../rules/knowledge-growth.md). |
-| `themes/` | CORE | Vocabulary themes (`professional`, `professional-de`) |
+| `themes/` | CORE | Vocabulary themes (`professional`, `professional-de`, `professional-fr`) |
 | `trackers/` | CORE | Tracker-provider playbooks (`github.md`, `ado.md`) |
 | `skills/` | CORE · `metadata.scope: core` (USER skills: `scope: user`; ORG: `scope: org`) | Skills with SKILL.md + references/. **Scope lives under `metadata:` (`metadata.scope`)** — skill-creator's validator only allows standard top-level keys; sub-agents keep top-level `scope:`. Hard-gated by `scripts/validate-skill-scope.py` (CI + pre-commit). It writes the per-instance tier map to `.bridge/skill-scope.md`, never into `AGENTS.md`: a table generated from the local skill tree cannot converge across instances. |
 | `scripts/` | CORE (`scope: user/private` for USER tools) | Validators + build/state tools (`validate-bridge.py`, `validate-skill-scope.py`, `scaffold-user.sh`, …). |

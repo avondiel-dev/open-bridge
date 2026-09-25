@@ -93,7 +93,7 @@ The load-bearing detail for the NEW-USER turn lives in
 ## Theme
 
 Themes control user-facing **vocabulary** only. Never tools, delegation, goals or
-agents. Built-in: `professional` (default, en) and `professional-de`; set via
+agents. Built-in: `professional` (default, en) plus locale variants; set via
 `bridge-config.yaml` `theme:`. Resolution order and custom-theme authoring:
 [`rules/theme.md`](rules/theme.md).
 ---

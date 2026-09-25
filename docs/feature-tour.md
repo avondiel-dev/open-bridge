@@ -419,7 +419,7 @@ Full doc: [`docs/workspaces.md`](workspaces.md).
 - **`protocols/standing-orders/`**: always-on rules (e.g. "auto-log every
   commit"). CORE ships the defaults; your own orders live in
   `protocols/standing-orders/user/`.
-- **`themes/`**: vocabulary themes (`professional`, `professional-de`).
+- **`themes/`**: vocabulary themes (`professional`, `professional-de`, `professional-fr`).
   Set via `bridge-config.yaml` `theme:`. Themes change user-facing wording
   only, never tools, delegation, or protocol logic.
 - **`DESIGN.md`**: design-system manifest (palette, typography, spacing).

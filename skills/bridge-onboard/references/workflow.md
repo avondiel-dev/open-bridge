@@ -476,11 +476,12 @@ Themes change user-facing vocabulary only — never tools or goals.
 ```
   [1] professional      Lead, Specialists, Tasks         (en, default)
   [2] professional-de   Leitung, Spezialisten, Aufgaben  (de)
-  [3] custom            Skip — copy themes/_template.yaml later
+  [3] professional-fr   Responsable, Spécialistes, Tâches (fr)
+  [4] custom            Skip — copy themes/_template.yaml later
 ```
 
 Auto-pick from Phase A language: German → `professional-de`,
-else → `professional`. One-question confirm.
+French → `professional-fr`, else → `professional`. One-question confirm.
 
 ### D3 — Agents (Sub-agents)
 
