@@ -1,10 +1,10 @@
 # BKS open-bridge
 
-**A plain-text git repo your coding agent reads at session start, so it already knows your repos, your clients, and what you shipped yesterday.** Claude Code, Codex or Copilot CLI stops re-asking every morning. It is markdown and YAML in a repo you own: no database, no SaaS, no second app. The BKS-Lab team runs its own work on it every day ([status](#status)).
+**Stop re-explaining your work to your coding agent every morning.**
+
+A git repo of markdown and YAML that Claude Code, Codex or Copilot CLI reads at the start of every session. Your repos, your clients, your open tasks and yesterday's work log are already in context, so the first answer picks up where you stopped. No database, no hosted service: plain files in a private repo you own. The BKS-Lab team runs its own work on it every day ([status](#status)).
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Trademark](https://img.shields.io/badge/trademark-policy-orange.svg)](TRADEMARK.md)
-[![DCO](https://img.shields.io/badge/contributions-DCO-green.svg)](CONTRIBUTING.md#developer-certificate-of-origin-dco)
 [![CI](https://github.com/bks-lab/open-bridge/actions/workflows/validate.yml/badge.svg)](https://github.com/bks-lab/open-bridge/actions/workflows/validate.yml)
 [![Release](https://img.shields.io/github/v/release/bks-lab/open-bridge?include_prereleases&label=release&color=blue)](https://github.com/bks-lab/open-bridge/releases)
 
@@ -21,13 +21,6 @@ cart-a11y waits on PR #214.
 That is the shipped demo workspace answering. The clip below is its `/briefing` dashboard; the [full live session](https://bks-lab.github.io/open-bridge/demo.html) adds the morning session start, an incident taken from log triage to a tested fix, and first-run onboarding.
 
 [![BKS open-bridge: the /briefing dashboard, generated from plain markdown and YAML](docs/demo.gif)](https://bks-lab.github.io/open-bridge/demo.html)
-
-## Who it is for
-
-- **For** people who run several clients, repos or roles with a coding agent, from a solo operator wearing several hats to a small consultancy.
-- **For** anyone tired of re-explaining who they are, which client they are on, and what happened yesterday, every session, in every tool.
-- **Not for** a single-repo project: the coordination layer is overhead you will not use.
-- **Not for** people who want a hosted app. There is nothing to host; the value is files your agent reads.
 
 <a id="get-started"></a>
 
@@ -57,15 +50,13 @@ Never push anything to bks-lab/open-bridge, never write a secret into a file,
 ask me before anything destructive.
 ```
 
-The longer prompt, with the reasoning behind each step, is in [docs/install.md](docs/install.md).
+The longer prompt with the reasoning behind each step, the same steps by hand, and why setup ends with a restart: [docs/install.md](docs/install.md).
 
 </details>
 
-By hand, in three lines: clone and re-home the remotes (`git remote rename origin upstream`, then create your private `origin`); run `./bin/setup` to arm the push guard; start a **new** agent session inside the folder and run `/bridge-onboard`. Setup always ends with that restart, because a session only loads the skills of the folder it started in. Commands, the template-button caveat and which tools are tested: [docs/install.md](docs/install.md).
+## Not ready to set anything up? Look at a running one first
 
-## Or look first: the demo workspace
-
-Want to see it run before you set anything up? The repo ships a runnable demo ([`examples/agency/`](examples/agency/)): a fictional two-client agency with a filled board, two days of logged work, and a P1 incident in flight. You need an agent CLI, for example `npm install -g @anthropic-ai/claude-code`.
+Two commands, nothing to configure. The repo ships a runnable demo ([`examples/agency/`](examples/agency/)): a fictional two-client agency with a filled board, two days of logged work, and a P1 incident in flight. You need an agent CLI, for example `npm install -g @anthropic-ai/claude-code`.
 
 ```bash
 git clone https://github.com/bks-lab/open-bridge.git
@@ -75,6 +66,13 @@ cd open-bridge/examples/agency && claude    # or: codex, copilot
 Ask `good morning`, then `where was I on the payment retry?` and `why is the cart task in review?`. Everything it answers is read from plain markdown in that folder: open `work/log.md` next to it and the trick disappears. Do not `git push` from this clone; it points at the public repo.
 
 One person wearing several hats (a consultancy partner who is also a freelancer, with a household and a home server)? [`examples/portfolio/`](examples/portfolio/) is that shape: three personas, a managed client service, life admin, and digests that stay silent until something is red.
+
+## Who it is for
+
+- **For** people who run several clients, repos or roles with a coding agent, from a solo operator wearing several hats to a small consultancy.
+- **For** anyone tired of re-explaining who they are, which client they are on, and what happened yesterday, every session, in every tool.
+- **If you work in one repo**, a `CLAUDE.md` is probably enough. open-bridge pays off once you juggle several repos, clients or roles.
+- **Not for** people who want a hosted app. There is nothing to host; the value is files your agent reads.
 
 ## What you get
 
@@ -101,6 +99,30 @@ And capabilities you switch on when you need them:
 | [Workspaces](docs/workspaces.md) | bind the repos and config overlays one engagement touches into a named container |
 | [Learning loop](docs/skill-learnings.md) | lessons land in the skill they concern; improvement proposals wait for your review in `/bridge-learn` |
 | [Where things live](docs/where-things-live.md) | a question in your own words on the left, the file that answers it on the right |
+
+## How it compares
+
+A `CLAUDE.md` is one flat instruction sheet. A personal notes vault wired to an agent (the Obsidian-style second brain) remembers well for one person. A Bridge is a structured workspace that keeps a work record across sessions, keeps clients and companies apart in separate instances, and shares one company layer across a team: a new colleague starts with a Bridge that already knows the clients and the routines ([org overlays](docs/org-overlays.md)). Template updates arrive without touching your data.
+
+| | a `CLAUDE.md` | session-history recall | memory-MCP server | Notion/Linear + MCP | notes vault + agent | BKS open-bridge |
+|---|---|---|---|---|---|---|
+| Survives across sessions | partly: static instructions | yes | yes | yes | yes | yes |
+| Plain files you own, diffable, no lock-in | yes | a local index over past sessions | usually a DB or vendor store | no, SaaS | yes | yes |
+| Same context in Claude Code, Codex, Copilot CLI | partly | yes, for the tools it indexes | per-tool wiring | per-tool wiring | depends on the setup | yes: one `skills/` tree |
+| Shipped work structure (board, log, task status) | no | no, it recalls, it does not organise | no | you build it yourself | notes and daily pages | yes |
+| Separate per-client worlds | no | not its purpose | no | manual discipline | one personal vault | yes: one instance per client or company |
+| Shared company layer for a team | no | not its purpose | no | shared workspace, SaaS | no | yes: an org overlay every instance subscribes to |
+| Safety gates written in (propose-confirm, push guard) | no | not its purpose | no | no | no | yes |
+
+Where the others are ahead, honestly: a `CLAUDE.md` is the right answer for one repo and one person, and open-bridge is more files and rules than that case needs. Session-history recall works with no discipline from you, while open-bridge relies on the agent writing log rows and task status, a convention it follows rather than a guarantee. And open-bridge publishes no measured benefit numbers yet.
+
+## Safety
+
+- **Propose, then confirm.** The agent proposes, you decide. Changes to its own configuration go through a human gate.
+- **Outward and destructive actions are gated per action.** Sending a message, merging a PR, deleting, rotating a credential: each needs an explicit yes.
+- **Secrets never live in the repo.** Only reference URIs; the values stay in your vault, and CI checks for committed secrets ([secrets](docs/secrets.md)).
+- **The substrate itself sends nothing.** No telemetry, no analytics, no hosted service. What does leave your machine is what you use or wire up: your model provider sees the session, and an overlay sync, a tracker sync or a Bridge-Agent talks to the endpoints you configure.
+- **It is inspectable.** `cat` exactly what the agent reads; its memory is a git history you own. These are conventions the agent follows, not an OS sandbox: read them in [`AGENTS.md`](AGENTS.md) and adapt them.
 
 ## A day with it
 
@@ -183,28 +205,6 @@ flowchart LR
 **CORE and USER, in five lines.** CORE (skills, rules, scripts, docs, templates) ships on the default branch and updates for everyone. Your data (config, tasks, logs, personas, references to credentials) lives on your own `user/{name}` branch. The two touch disjoint paths, so `git merge upstream/main` does not meet your edits ([updating](docs/updating.md)). Your branch goes only to your private `origin`; a `pre-push` guard ([push-guard](rules/push-guard.md)) blocks it from a public remote. Generic improvements flow back through `/bridge-promote` as fork PRs, routed by each file's `scope:` ([extension model](docs/extension-model.md)).
 
 Sub-agents (Claude Code) take heavy reads out of the main session and return a summary; one reference sub-agent ships in [`.claude/agents/`](.claude/agents/archivist.md). What a session loads before its first answer has a declared budget that CI enforces: [docs/context-index.md](docs/context-index.md).
-
-## Why not just a CLAUDE.md, or a notes vault?
-
-A `CLAUDE.md` is one flat instruction sheet. A personal notes vault wired to an agent (the Obsidian-style second brain) remembers well for one person. A Bridge is a structured workspace that keeps a work record across sessions, keeps clients and companies apart in separate instances, and shares one company layer across a team: a new colleague starts with a Bridge that already knows the clients and the routines ([org overlays](docs/org-overlays.md)). Template updates arrive without touching your data.
-
-| | a `CLAUDE.md` | memory-MCP server | Notion/Linear + MCP | notes vault + agent | BKS open-bridge |
-|---|---|---|---|---|---|
-| Survives across sessions | partly: static instructions | yes | yes | yes | yes |
-| Plain files you own, diffable, no lock-in | yes | usually a DB or vendor store | no, SaaS | yes | yes |
-| Same context in Claude Code, Codex, Copilot CLI | partly | per-tool wiring | per-tool wiring | depends on the setup | yes: one `skills/` tree |
-| Shipped work structure (board, log, task status) | no | no | you build it yourself | notes and daily pages | yes |
-| Separate per-client worlds | no | no | manual discipline | one personal vault | yes: one instance per client or company |
-| Shared company layer for a team | no | no | shared workspace, SaaS | no | yes: an org overlay every instance subscribes to |
-| Safety gates written in (propose-confirm, push guard) | no | no | no | no | yes |
-
-## Safety
-
-- **Propose, then confirm.** The agent proposes, you decide. Changes to its own configuration go through a human gate.
-- **Outward and destructive actions are gated per action.** Sending a message, merging a PR, deleting, rotating a credential: each needs an explicit yes.
-- **Secrets never live in the repo.** Only reference URIs; the values stay in your vault, and CI checks for committed secrets ([secrets](docs/secrets.md)).
-- **The substrate itself sends nothing.** No telemetry, no analytics, no hosted service. What does leave your machine is what you use or wire up: your model provider sees the session, and an overlay sync, a tracker sync or a Bridge-Agent talks to the endpoints you configure.
-- **It is inspectable.** `cat` exactly what the agent reads; its memory is a git history you own. These are conventions the agent follows, not an OS sandbox: read them in [`AGENTS.md`](AGENTS.md) and adapt them.
 
 <a id="status"></a>
 
