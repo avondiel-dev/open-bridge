@@ -110,6 +110,23 @@ def is_instance_path(path: str) -> bool:
     return not (len(parts) == 3 and name == "README.md")
 
 
+def covered(path: str) -> bool:
+    """What the shipped block ignores, and so what only a private origin re-allows.
+
+    `check` asks about these alone. Anything else an instance ignores (a
+    .DS_Store, a cache, a firmware blob) is ignored by a rule of its own, on
+    purpose, and a warning about it on every commit teaches its reader to skip
+    the warning.
+    """
+    parts = path.split("/")
+    if len(parts) == 1 or parts[:2] == ["work", "memory"]:
+        return is_instance_path(path)
+    if parts[:2] == ["identity", "agent"] and len(parts) == 3:
+        return is_instance_path(path) and parts[2].endswith(".md")
+    return (len(parts) == 3 and parts[0] in WRAPPERS and parts[2].endswith(".yaml")
+            and is_instance_path(path))
+
+
 def scanned(path: str) -> bool:
     """What scan-staged reads: instance data plus the templates every clone receives.
 
@@ -289,7 +306,8 @@ def command_check(root: Path) -> int:
         return 0
     tracked = set(_git(root, "ls-files", "-z").stdout.decode("utf-8", "surrogateescape")
                   .split("\0"))
-    hits = [(p, rule) for p, rule in ignored(root, instance_files(root)) if p not in tracked]
+    candidates = [p for p in instance_files(root) if covered(p) and p not in tracked]
+    hits = ignored(root, candidates)
     if not hits:
         return 0
     print("user-data: this repo's origin is private, and these instance files are ignored.")
