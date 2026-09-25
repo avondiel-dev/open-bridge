@@ -23,10 +23,11 @@ Themes live in `themes/*.yaml`.
 |-------|--------|-------------|
 | `professional` | en | Neutral, business-friendly (default) |
 | `professional-de` | de | German translation, extends professional |
+| `professional-fr` | fr | French translation, extends professional |
 
 ```yaml
 # bridge-config.yaml
-theme: professional        # professional | professional-de | {custom}
+theme: professional        # professional | professional-de | professional-fr | {custom}
 ```
 
 Full vocabulary: see `themes/professional.yaml`.

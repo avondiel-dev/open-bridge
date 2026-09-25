@@ -70,6 +70,7 @@ discovery:
 # Themes are YAML files in themes/. Built-in:
 #   professional      — Lead, Specialists, Tasks, Incident Response (default, en)
 #   professional-de   — Leitung, Spezialisten, Aufgaben, Stoerfall (de)
+#   professional-fr     Responsable, Spécialistes, Tâches, Incident (fr)
 # Custom: copy themes/_template.yaml to themes/{name}.yaml, set extends.
 # Themes only change vocabulary — never tools, delegation, or goals.
 theme: professional

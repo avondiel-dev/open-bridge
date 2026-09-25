@@ -102,11 +102,12 @@ regions:
     oneliner: "User-facing wording — same system, different vibe"
     what: |
       YAML themes with vocabulary mapping. `professional` (default, en),
-      `professional-de` (de). Themes control ONLY wording — never tools,
+      `professional-de` (de), `professional-fr` (fr). Themes control ONLY wording — never tools,
       delegation, logic. Schema in `_schema.yaml`.
     examples:
       - "professional.yaml — neutral business"
       - "professional-de.yaml — German translation"
+      - "professional-fr.yaml: French translation"
     related:
       - "rules/theme.md"
       - "bridge-config.yaml.theme"
