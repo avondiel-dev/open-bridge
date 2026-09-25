@@ -483,3 +483,22 @@ def test_scan_refuses_content_it_could_not_read(bridge):
 def test_the_scope_router_never_promotes_instance_data(path):
     router = _load("router_never_promotes", REPO / "scripts" / "categorize-commits.py")
     assert router.classify_file(path) != "core", path
+
+
+def test_check_ignores_what_was_ignored_on_purpose(bridge):
+    """.DS_Store, caches and firmware blobs are ignored by their own rules, not by the
+    instance-data block. Measured on the first private instance after #253: 22 such
+    files, and a warning on every commit teaches its reader to skip it."""
+    repo, env = bridge
+    _set_origin(repo, PRIVATE, env, private_marker=True)
+    _run(repo, "arm", env=env)
+    with open(repo / ".gitignore", "a") as fh:
+        fh.write(".DS_Store\n.pytest_cache/\ninfra/remotes/mac/firmware/\n")
+    (repo / "infra/remotes/.DS_Store").write_bytes(b"\0")
+    (repo / "infra/remotes/mac/.pytest_cache").mkdir()
+    (repo / "infra/remotes/mac/.pytest_cache/README.md").write_text("cache\n")
+    (repo / "infra/remotes/mac/firmware").mkdir()
+    (repo / "infra/remotes/mac/firmware/blob.yaml").write_text("x: 1\n")
+    out = _run(repo, "check", env=env)
+    assert out.returncode == 0, out.stdout
+

@@ -34,7 +34,7 @@ points at the `rules/` and `docs/` files that carry the mechanics.
    them; read a block with `--keys <block>` when that skill runs.
 3. **Index `ecosystem.yaml` if present** — the project registry (repos, packages,
    infrastructure, workspaces). Created during onboarding, user-specific
-   (tracked or excluded per clone, docs/structure.md), so absent on a fresh clone.
+   (ignored unless the origin is private, docs/structure.md), so absent on a fresh clone.
    It is **not** an `@`-import:
    Phase 1 runs `python3 scripts/context-index.py ecosystem.yaml` for the settings plus
    one line per entry, and `--get <name>` fetches an entry when the work names one — the
