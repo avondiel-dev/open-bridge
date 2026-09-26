@@ -3181,6 +3181,26 @@ class TheProgramMayNotBeTheOneThatIsKept(MachineGuard):
         self.assertEqual(found[0].severity, model.Severity.medium)
         self.assertIn("does not reach this run", found[0].detail)
 
+    def test_a_stale_copy_in_a_hidden_folder_is_not_the_twin(self):
+        """2026-09-26: a leftover agent worktree under .claude/worktrees/ held an
+        older copy of the same script. It sorts before infra/, became the twin,
+        and a copy that matched the real source byte for byte was reported as
+        drifted. Hidden folders hold working copies, never the kept original."""
+        import hashlib
+        body = "echo kept\n"
+        root = self.repo([(".claude/worktrees/wf-1/infra/remotes/host-a/scripts/run.sh", "echo stale\n"),
+                          ("infra/remotes/host-a/scripts/run.sh", body)])
+        same = hashlib.sha256(body.encode()).hexdigest()
+        self.assertEqual(
+            self.look(root, ["/bin/bash", "/opt/elsewhere/run.sh"], {"/opt/elsewhere/run.sh": same}),
+            [], "the copy on the machine equals the kept source; nothing drifted")
+
+    def test_a_program_found_only_in_a_hidden_folder_has_no_twin(self):
+        root = self.repo([(".claude/worktrees/wf-1/scripts/only.sh", "echo x\n")])
+        found = self.look(root, ["/bin/bash", "/opt/elsewhere/only.sh"])
+        self.assertEqual([f.state for f in found], [model.WorkloadState.source_drift])
+        self.assertIn("one disk only", found[0].detail)
+
     def test_and_it_decides_nothing_about_which_side_is_right(self):
         root = self.repo([("infra/remotes/host-a/scripts/run.sh", "echo one\n")])
         found = self.look(root, ["/bin/bash", "/opt/elsewhere/run.sh"],
