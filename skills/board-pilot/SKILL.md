@@ -374,8 +374,8 @@ that is the good failure). In order:
 
 1. Add the `board:` + `pipeline:` blocks to the target `workflow/projects/<slug>.yaml`,
    and keep that file's own `fields:` / `state_map:` in step with the options you
-   just created — `github-projects-manager`, `project-advisor` and `tracker-sync`
-   read exactly that block, and it drifts silently.
+   just created — `github-projects-manager` and `tracker-sync` read exactly
+   that block, and it drifts silently.
 2. Schedule one `python3 -m engine.cli --project <yaml> --state-dir <dir> --once`
    per project (launchd `StartInterval` / systemd timer / cron). On macOS, load it
    into the per-user GUI domain so the stage runner can reach the login keychain —
