@@ -1,6 +1,12 @@
 ---
 name: debrief
-description: 'Meeting and transcript processing — classifies meeting type, applies name corrections, extracts insights across 7 categories, generates protocols, proposes tasks with project field mapping. Checkpoint-based workflow. Supports full 8-phase flow (with GitHub reconciliation + distribution email) and quick 5-phase flow; `--all` and `--date YYYY-MM-DD` batch flags absorb the former /process-meeting. Trigger: "/debrief", "/debrief {path}", "/debrief --quick", "/debrief --all", "/debrief --date YYYY-MM-DD", "process meeting", "transcript processing", "create minutes", "process-meeting", "meeting minutes", "process transcript".'
+description: >-
+  Meeting and transcript processing: classifies meeting type, name
+  corrections, extracts insights, generates protocols, proposes tasks.
+  Full 8-phase flow (GitHub reconciliation, distribution email) or quick
+  5-phase.
+  Trigger: "/debrief", "/debrief {path}", "/debrief --quick",
+  "/debrief --all", "/debrief --date YYYY-MM-DD", "meeting minutes".
 metadata:
   scope: core
 ---
