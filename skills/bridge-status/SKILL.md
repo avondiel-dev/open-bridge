@@ -1,14 +1,12 @@
 ---
 name: bridge-status
 description: >-
-  Bridge health dashboard — shows branch, config, theme, ecosystem, agents,
-  standing orders, work system, and repo status. Flags missing files, KW drift,
-  and configuration problems. Includes documentation health and link checking.
-  Trigger: "/bridge-status", "bridge status", "bridge health",
-  "health check", "docs health", "link check",
-  "documentation quality", "pre-release gate".
-  (Bare "bridge" and bare "status" are intentionally NOT triggers — too broad,
-  would collide with bridge-sync/bridge-dashboard/briefing.)
+  Bridge health dashboard: shows branch, config, ecosystem, agents, work
+  system and repo status, flags missing files and configuration problems,
+  includes docs health and link checking. Trigger: "/bridge-status",
+  "bridge status", "bridge health", "health check", "docs health",
+  "link check". Bare "bridge"/"status" are NOT triggers (collides with
+  bridge-dashboard/briefing).
 metadata:
   scope: core
 ---
