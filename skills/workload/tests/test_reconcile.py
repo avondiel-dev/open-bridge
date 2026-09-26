@@ -1243,6 +1243,62 @@ class TheTraceIsReadBackOrTheEvidenceIsDecoration(ReconcileBase):
         states = self.states("calendar-export", {"calendar-export": lines}, now="2026-08-23T08:01:00Z")
         self.assertIn(model.WorkloadState.last_run_failed, states)
 
+    # -- a run that said "try again" -------------------------------------
+    # 2026-09-26: two suppliers end with 75 (EX_TEMPFAIL) when GitHub does not
+    # answer for a moment, and every one of those rang a phone although the
+    # next tick an hour later went through. A declaration may name such codes;
+    # the first one stays quiet, a second failure in a row speaks. Everything
+    # not named keeps speaking on the first run, because critical things must.
+    def states_transient(self, lines, codes=(75,)):
+        w = self.load("calendar-export")
+        w = dataclasses.replace(
+            w, response=dataclasses.replace(w.response, transient_exit_codes=tuple(codes)))
+        obs = self.observed_with({"calendar-export": "".join(lines)})
+        findings = reconcile.classify([w], obs, self.inv(), {}, now="2026-08-23T08:01:00Z")
+        return self.states_for(findings, w.id)
+
+    def test_a_first_transient_failure_after_a_clean_run_stays_quiet(self):
+        states = self.states_transient([
+            self.trace_line("calendar-export", rc=0, when="2026-08-23T07:00:00Z"),
+            self.trace_line("calendar-export", rc=75, when="2026-08-23T08:00:00Z", verdict="failed")])
+        self.assertNotIn(model.WorkloadState.last_run_failed, states,
+                         "the run said 'try again' once; the next tick decides")
+
+    def test_a_second_failure_in_a_row_speaks(self):
+        states = self.states_transient([
+            self.trace_line("calendar-export", rc=75, when="2026-08-23T07:00:00Z", verdict="failed"),
+            self.trace_line("calendar-export", rc=75, when="2026-08-23T08:00:00Z", verdict="failed")])
+        self.assertIn(model.WorkloadState.last_run_failed, states,
+                      "twice in a row is no longer a blip")
+
+    def test_a_transient_code_as_the_only_run_speaks(self):
+        states = self.states_transient([
+            self.trace_line("calendar-export", rc=75, when="2026-08-23T08:00:00Z", verdict="failed")])
+        self.assertIn(model.WorkloadState.last_run_failed, states,
+                      "with no clean run before it there is nothing to lean on")
+
+    def test_a_code_not_named_transient_speaks_at_once(self):
+        states = self.states_transient([
+            self.trace_line("calendar-export", rc=0, when="2026-08-23T07:00:00Z"),
+            self.trace_line("calendar-export", rc=65, when="2026-08-23T08:00:00Z", verdict="failed")])
+        self.assertIn(model.WorkloadState.last_run_failed, states,
+                      "65 means a human is needed; that must not wait an hour")
+
+    def test_without_the_field_every_failure_speaks_at_once(self):
+        states = self.states_transient([
+            self.trace_line("calendar-export", rc=0, when="2026-08-23T07:00:00Z"),
+            self.trace_line("calendar-export", rc=75, when="2026-08-23T08:00:00Z", verdict="failed")],
+            codes=())
+        self.assertIn(model.WorkloadState.last_run_failed, states)
+
+    def test_an_expired_run_is_never_transient(self):
+        states = self.states_transient([
+            self.trace_line("calendar-export", rc=0, when="2026-08-23T07:00:00Z"),
+            self.trace_line("calendar-export", rc=75, when="2026-08-23T08:00:00Z", verdict="expired")])
+        self.assertIn(model.WorkloadState.last_run_failed, states,
+                      "a deadline cut the run off; that is not the program asking to retry")
+
+
     # -- a run that never came --------------------------------------------
     def test_a_cadence_that_stopped_firing_is_overdue(self):
         # calendar-export declares every_sec 900, so two cadences is 1800s.
