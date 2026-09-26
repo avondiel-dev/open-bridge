@@ -124,6 +124,6 @@ output format) lives in
   A full reference implementation ships as `skills/meeting-transcription/`.
 - **process-transcription** (global, if installed): owns Org-specific
   participant lists and wiki routing — debrief defers to it.
-- **project-advisor**: governance + execution for GitHub issues created from
-  extracted action items.
+- **github-projects-manager**: governance + execution for GitHub issues
+  created from extracted action items.
 - **workflow/projects/{slug}.yaml**: source of truth for issue field values.
