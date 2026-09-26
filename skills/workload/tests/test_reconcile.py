@@ -1229,6 +1229,20 @@ class TheTraceIsReadBackOrTheEvidenceIsDecoration(ReconcileBase):
             "it failed an hour ago and has run cleanly since; reporting the old "
             "failure forever is how a report becomes noise")
 
+    # -- a daemon that crashed once and runs again -------------------------
+    def test_a_started_line_after_old_failures_clears_the_failure(self):
+        lines = (self.trace_line("calendar-export", rc=2, when="2026-08-10T17:16:19Z", verdict="failed")
+                 + self.trace_line("calendar-export", rc=0, when="2026-08-23T07:05:31Z", verdict="started"))
+        states = self.states("calendar-export", {"calendar-export": lines}, now="2026-08-23T08:01:00Z")
+        self.assertNotIn(model.WorkloadState.last_run_failed, states,
+                         "it started again after the crash and has not ended since")
+
+    def test_a_failure_after_the_start_is_still_reported(self):
+        lines = (self.trace_line("calendar-export", rc=0, when="2026-08-23T07:05:31Z", verdict="started")
+                 + self.trace_line("calendar-export", rc=1, when="2026-08-23T07:30:00Z", verdict="failed"))
+        states = self.states("calendar-export", {"calendar-export": lines}, now="2026-08-23T08:01:00Z")
+        self.assertIn(model.WorkloadState.last_run_failed, states)
+
     # -- a run that never came --------------------------------------------
     def test_a_cadence_that_stopped_firing_is_overdue(self):
         # calendar-export declares every_sec 900, so two cadences is 1800s.
